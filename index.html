@@ -1,0 +1,436 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style >
+        body {
+            min-width: 100%;
+            max-width: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            border: 0 none;
+            height: 100%;
+            min-height: 100%;
+            max-height: 100%;
+            overflow: hidden;
+        }
+        /*#container {*/
+
+        /*    !*min-width: 2800px;*/
+        /*    max-width: 2800px;*/
+        /*    width: 2800px;*!*/
+        /*    min-width: 1500px;*/
+        /*    max-width: 1500px;*/
+        /*    width: 1500px;*/
+        /*    padding: 0;*/
+        /*    margin: 0;*/
+        /*    border: 0 none;*/
+        /*    !*height: 100%;*/
+        /*    min-height: 100%;*/
+        /*    max-height: 100%;*!*/
+        /*    !*height: 33%;*/
+        /*    min-height: 33%;*/
+        /*    max-height: 33%;*!*/
+        /*    height: 65%;*/
+        /*    min-height: 65%;*/
+        /*    max-height: 65%;*/
+        /*    !*height: 250px;*!*/
+        /*    !*min-height: 250px;*!*/
+        /*    !*max-height: 250px;*!*/
+
+        /*}*/
+        #container {
+            resize: both;
+            /*min-width: 2800px;
+            max-width: 2800px;
+            width: 2800px;*/
+            /*min-width: 1500px;
+            max-width: 1500px;*/
+            width: 1500px;
+            padding: 0;
+            margin: 0;
+            border: 0 none;
+            /*height: 100%;
+            min-height: 100%;
+            max-height: 100%;*/
+            /*height: 33%;
+            min-height: 33%;
+            max-height: 33%;*/
+            height: 65%;
+            /*min-height: 65%;
+            max-height: 65%;*/
+            /*height: 250px;*/
+            /*min-height: 250px;*/
+            /*max-height: 250px;*/
+
+        }
+        .flex-grid-row {
+            max-height:100%;
+        }
+        .money-format {
+            text-align: right;
+        }
+        /*.flex-grid-tree-cell {*/
+        /*    --tree-lvl-padding: 10px;*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-1 {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 1);*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-2 {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 2);*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-3 {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 3);*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-4 {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 4);*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-5 {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 5);*/
+        /*}*/
+        /*.flex-grid-tree-cell.lvl-exceed {*/
+        /*    padding-left: calc(var(--tree-lvl-padding) * 5);*/
+        /*}*/
+
+    </style>
+<!--    <script type="text/javascript" src="flexGrid.js"></script>-->
+    <script type="text/javascript" src="./testdata.js"></script>
+    <script type="text/javascript" src="./Scroller.js"></script>
+    <script type="text/javascript" src="./FlexPanel.js"></script>
+    <script type="text/javascript" src="./flexGridVisualizer.js"></script>
+    <script type="text/javascript" src="./flexGrid.js"></script>
+
+
+
+</head>
+<body>
+    <div id="container"></div>
+    <div id="container2"></div>
+    <script type="text/javascript">
+        //import FlexGrid from './flexGrid.js'
+
+
+        var config = FlexGrid.getDefaultConfig();
+
+        var headers = [
+            {
+                id: 'id',
+                title: 'Идентификатор',
+                type: 'string',
+                filter: 'string',
+                width: 100,
+            },
+            {
+                id: 'name',
+                title: 'Наименование',
+                type: function(fieldName, itemData, headerData){
+                    return itemData[config.entityClassField] === 'IncomeStageBundle\\Entity\\IncomeStage' ?
+                        this.getVisualizationComponent('string') :
+                        this.getVisualizationComponent('budgetNameVisualizer');
+
+                },
+                //filter: 'string',
+                width: 300,
+            },
+            {
+                id: 'number',
+                title: 'Номер',
+                type: 'string',
+                filter: 'string',
+                width: 300,
+            },
+            {
+                id: 'estimateItem',
+                title: 'Смета',
+                type: function(fieldName, itemData, headerData){
+                    return itemData[config.entityClassField] === 'IncomeStageBundle\\Entity\\IncomeStage' ?
+                        null :
+                        this.getVisualizationComponent('budgetEstimateItemVisualizer');
+
+                },
+                width: 300,
+            },
+            {
+                id: 'sums',
+                title: 'Суммы',
+                children: [
+                    {
+                        id: 'baseSums',
+                        title: 'БЦ',
+                        children: [
+                            {
+                               id: 'baseTotalSum',
+                               title: 'БЦ Итого',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'baseEquipmentSum',
+                               title: 'БЦ ОБ',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'baseServiceSum',
+                               title: 'БЦ Услуги',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'baseMaterialSum',
+                               title: 'БЦ Материалы',
+                               type: 'money',
+                               width: 150,
+                           },
+
+                       ],
+                    },
+                    {
+                        id: 'factSums',
+                        title: 'ТЦ',
+                        children: [
+                            {
+                               id: 'sumWoNds',
+                               title: 'Итого',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'equipmentSum',
+                               title: 'Оборудование',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'serviceSum',
+                               title: 'Услуги',
+                               type: 'money',
+                               width: 150,
+                           },
+                            {
+                               id: 'materialSum',
+                               title: 'Материалы',
+                               type: 'money',
+                               width: 150,
+                           },
+
+                       ],
+                    },
+
+                ],
+            },
+            {
+                id: 'completed',
+                title: 'Выполнена',
+                type: function(fieldName, itemData, headerData){
+                    return itemData[config.entityClassField] === 'IncomeStageBundle\\Entity\\IncomeStage' ?
+                        null :
+                        this.getVisualizationComponent('budgetCCVisualizer');
+
+                },
+                width: 150,
+            },
+            {
+                id: 'contracted',
+                title: 'Законтрактована',
+                type: function(fieldName, itemData, headerData){
+                    return itemData[config.entityClassField] === 'IncomeStageBundle\\Entity\\IncomeStage' ?
+                        null :
+                        this.getVisualizationComponent('budgetCCVisualizer');
+
+                },
+                width: 150,
+            },
+
+
+        ];
+
+
+        config.headers = headers;
+        config.data = data;
+        // config.data = (function(data){
+        //     let res = [];
+        //     let objectsDict = {};
+        //     let c = data.length;
+        //     for (let i = 0; i < c; i++) {
+        //         let entityData = data[i];
+        //         let entityClass = entityData.entityClass;
+        //         let entityId = entityData.id;
+        //         objectsDict[entityClass] = objectsDict[entityClass] || {};
+        //         objectsDict[entityClass][entityId] = entityData;
+        //     }
+        //     for (let i = 0; i < c; i++) {
+        //         let entityData = data[i];
+        //         if (entityData.parent) {
+        //             let parentEntityData = entityData.parent;
+        //             let parentEntityClass = parentEntityData.entityClass;
+        //             let parentEntityId = parentEntityData.id;
+        //             let parentEntity = objectsDict[parentEntityClass][parentEntityId];
+        //             for (let key in parentEntityData) {
+        //                 parentEntity[key] = parentEntityData[key];
+        //             }
+        //             entityData.parent = parentEntity;
+        //             parentEntity.children = parentEntity.children || [];
+        //             parentEntity.children.push(entityData);
+        //         }
+        //
+        //     }
+        //     return data;
+        // })(data);
+        config.container = document.getElementById('container');
+        config.entityClassField = 'entityClass';
+        config.entityIdField = 'id';
+        config.draggableColumns = true;
+        config.draggableRows = true;
+        config.events = {
+            moveItem: function(acceptorItem, draggedItem){
+                console.log('element ' + acceptorItem.id + ' accept element ' + draggedItem.id)
+            }
+        };
+
+        var fg = new FlexGrid.TreeGrid();
+        fg.addVisualizationComponent(
+            'budgetNameVisualizer',
+            (function(){
+                let v = function(){
+                    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+                        let dataItem = gridElement.getData();
+                        DOMContainer.innerHTML = '(' + dataItem.itemType + ') ' + dataItem.number;
+                    };
+                };
+                v.prototype = new FlexGrid.StringVisualizationComponent();
+
+                return new v();
+            })()
+        );
+        fg.addVisualizationComponent(
+            'budgetEstimateItemVisualizer',
+            (function(){
+                let v = function(){
+                    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+                        let dataItem = gridElement.getData();
+                        DOMContainer.innerHTML = dataItem.estimate.number;
+                    };
+                };
+                v.prototype = new FlexGrid.StringVisualizationComponent();
+
+                return new v();
+            })()
+        );
+        fg.addVisualizationComponent(
+            'budgetCCVisualizer',
+            (function(){
+                let v = function(){
+                    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+                        let itemType = gridElement.get('itemType');
+                        DOMContainer.innerHTML = '';
+                        if (itemType in {estimate_cust: true, est_contr: true}) {
+                            let flag = !!gridElement.get(fieldName);
+                            let icon = '<img style="width: 20px; max-width: 20px; height: 20px; max-height: 20px;" src="img/' + (flag ? 'true' : 'false') + '-icon.png" />';
+                            DOMContainer.innerHTML = icon;
+                        }
+                    };
+                };
+                v.prototype = new FlexGrid.BooleanVisualizationComponent();
+
+                return new v();
+            })()
+        );
+        fg.addVisualizationComponent(
+            'tree',
+            (function(){
+                let v = function(){
+                    //&#128447; - черная папка
+                    let f = function (
+                        /** @type {Element}*/DOMContainer,
+                        /** @type {string}*/fieldName,
+                        /** @type {object}*/gridElement,
+                        /** @type {object}*/headerData,
+                    ){
+                        let dataItem = gridElement.getData();
+
+                        if (dataItem.entityClass === "IncomeStageBundle\\Entity\\IncomeStage") {
+                            if (gridElement.children.length) {
+                                if (gridElement.expanded()) {
+
+                                    DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+                                }
+                                else {
+                                    DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
+                                }
+                            }
+                            else {
+                                DOMContainer.innerHTML = '<span style="color: red;">&#128447;</span>'
+                            }
+                        } else{
+                            if (gridElement.children.length) {
+                                if (gridElement.expanded()) {
+
+                                    DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128459;</span>'
+                                }
+                                else {
+                                    DOMContainer.innerHTML = '<span style="color: green;">&#128464;</span>'
+                                }
+                            }
+                            else {
+                                DOMContainer.innerHTML = '<span style="color: red;">&#128464;</span>'
+                            }
+                        }
+
+
+                    };
+                    this.buildReadForm = this.buildEditform = f;
+                };
+                v.prototype = new FlexGrid.TreeVisualizationComponent();
+
+                return new v();
+            })()
+        );
+        let n = (new Date).getTime();
+        fg.build(config);
+
+        console.log('time building ', (new Date()).getTime() - n);
+        (function(){
+            const ro = new ResizeObserver(function(mutations){
+                //TODO НЕ выполнять при первой инициализации страницы
+                // Возможно, timeout тут вообще не нужен, т.к. пока пользователь не остановит перемещение resizer'а, событие не наступает
+                ro.timeout && clearTimeout(ro.timeout);
+                ro.timeout = setTimeout(function(){fg.updatePreview();}, 100)
+            })
+            ro.observe(document.getElementById('container'));
+        })();
+
+
+
+        // var workerCode = 'onmessage = function(e){ \
+        //     let counter = 0; \
+        //     console.log("WORKER WORKS!!!", e);  \
+        //     console.log(e.data);  \
+        //     let i = setInterval(function(){ \
+        //         let ch = {name: "child",};\
+        //         postMessage([{count: ++counter, name: "parent1", child: ch}, {count: ++counter, name: "parent2", child: ch}]);  \
+        //         if (counter > 1) { \
+        //             clearInterval(i); \
+        //         } \
+        //     }, 1000); \
+        // };'
+        // var wf = function(){
+        //     console.log(window);
+        // };
+        //
+        // var worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'text/javascript'})));
+        // worker.onmessage = function(e){
+        //      let o1 = e.data[0];
+        //      let o2 = e.data[1];
+        //     console.log('WORKER OBJECTS', o1.child === o2.child, e);
+        //     console.log('WORKER', e);
+        // };
+
+
+        // worker.postMessage(data)
+
+        // fg.debug();
+
+    </script>
+</body>
+</html>

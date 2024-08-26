@@ -1,0 +1,958 @@
+(function(){
+    let pluginIds = {};
+    window.VisualizerInterface = function(){
+        this.init = function(){throw 'Define init method'};
+        this.setHeaders = function(headers){throw 'Define setHeaders method';}
+        this.setContainer = function(container){throw 'Define setContainer method';}
+        return this;
+    };
+
+    window.DefaultVisualizer = function(){
+        let pub = this;
+        let priv = {
+            id: null,
+            pub: pub,
+            config: {},
+            DOM: {
+                container: undefined,
+                middlePanel: undefined,
+                topPanel: undefined,
+                leftPanel: undefined,
+                rightPanel: undefined,
+                bottomPanel: undefined,
+                contentPanel: undefined,
+                centralPanel: undefined,
+                headerPanel: undefined,
+                filterPanel: undefined,
+                dataPanel: undefined,
+                footerPanel: undefined,
+                contentRightPanel: undefined,
+            },
+            panels: {
+                topPanel: undefined,
+                leftPanel: undefined,
+                rightPanel: undefined,
+                bottomPanel: undefined,
+                footerPanel: undefined,
+                contentRightPanel: undefined,
+            },
+            callbacks: {
+                getItemsCount: function(){return 0;},
+                getElement: function(){return document.createElement('div');},
+            },
+            styleContainer: null,
+            sizesStyleContainer: null,
+            orderStyleContainer: null,
+            widthUnit: 'px',
+            headers: {
+                leafs: null,
+                nodes: null,
+                dict: null,
+            },
+            draggedHeader: undefined,
+            styles: {//TODO Организовать
+                '.flex-grid-container': 'display: flex; flex-direction: column; overflow-x: hidden; overflow-y: hidden;',
+                '.flex-grid-panel': 'box-sizing: border-box; display: flex; overflow: hidden;',
+                '.flex-grid-panel.flex-grid-horizontal-panel': 'flex-direction: row;',
+                '.flex-grid-panel.flex-grid-vertical-panel': 'flex-direction: column;',
+                '.flex-grid-panel.flex-grid-nowrapped-panel': 'flex-wrap: nowrap; align-items: stretch;',
+                '.flex-grid-panel.flex-grid-wrapped-panel': 'flex-wrap: wrap; ',
+                '.flex-grid-top-panel' : 'overflow: visible;',
+                '.flex-grid-middle-panel' : 'flex-grow: 1;',
+                '.flex-grid-bottom-panel' : 'overflow-y: visible;',
+                '.flex-grid-left-panel' : '',
+                '.flex-grid-central-panel' : 'flex-grow: 1;',
+                '.flex-grid-right-panel' : '',
+                '.flex-grid-content-panel' : 'flex-grow: 1; overflow-x: visible;',
+                '.flex-grid-content-right-panel' : '',
+                '.flex-grid-header-panel': 'flex-grow: 0; overflow: visible; /*padding-right: 16px;*/',
+                '.flex-grid-filter-panel' : 'overflow: visible;',
+                '.flex-grid-data-panel': 'flex-grow:1; overflow-y: hidden; overflow-x: visible;',
+                '.flex-grid-footer-panel' : 'overflow: visible;',
+                '.flex-grid-row': 'flex-wrap: nowrap; display: flex; align-items: stretch; overflow: visible;',
+                '.flex-grid-cell': 'margin: 0 !important; box-sizing: border-box !important; padding: 0px 5px; border: 1px solid grey; overflow: visible; text-wrap: wrap; word-break: break-all;',
+                '.flex-grid-header-cell': 'text-align: center;',
+                '.flex-grid-header-cell.virtual-header': 'border-bottom-color: transparent;',
+                '.flex-grid-header-cell.has-virtual-parent': 'border-top-color: transparent;',
+                '.flex-grid-headers-row:not(:first-child) .flex-grid-header-cell.virtual-header': 'border-top-color: transparent;',
+                '.flex-grid-data-cell': '',
+                '.flex-grid-row.flex-grid-data-row': 'overflow-x: visible; overflow-y: hidden; flex-grow: 0; flex-shrink: 0;',
+                '.flex-grid-row.flex-grid-filters-row .flex-grid-filter-cell': 'text-align: center; padding: 5px 0px;',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container': 'display: flex; flex-direction: row; flex-wrap: nowrap; box-sizing: border-box;  align-items: stretch; width: 100%; min-width: 100%; max-width: 100%; position: relative;',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field': 'padding-right: 16px; width: calc(100% - 4px); min-width: calc(100% - 4px); max-width: calc(100% - 4px);',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-option': 'position: absolute; right: 2px; cursor: pointer;',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container input, .flex-grid-filter-panel .flex-grid-filter-component-container select': '--w: calc(100% - 20px); max-width: var(--w); min-width: var(--w); var(--w); box-sizing: border-box;',
+
+
+
+                '.flex-grid-footer-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+                '.flex-grid-left-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+                '.flex-grid-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+                '.flex-grid-content-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+                '.flex-grid-bottom-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+
+            },
+            // styles_colored: {//TODO Организовать
+            //     '.flex-grid-container': 'display: flex; flex-direction: column; overflow-x: hidden; overflow-y: hidden;',
+            //     '.flex-grid-panel': 'box-sizing: border-box; display: flex; overflow: hidden;',
+            //     '.flex-grid-panel.flex-grid-horizontal-panel': 'flex-direction: row;',
+            //     '.flex-grid-panel.flex-grid-vertical-panel': 'flex-direction: column;',
+            //     '.flex-grid-panel.flex-grid-nowrapped-panel': 'flex-wrap: nowrap; align-items: stretch;',
+            //     '.flex-grid-top-panel' : 'min-height: 10px; background-color: lightblue;',
+            //     '.flex-grid-middle-panel' : 'flex-grow: 1;',
+            //     '.flex-grid-bottom-panel' : 'min-height: 10px; background-color: lightcoral;',
+            //     '.flex-grid-left-panel' : 'min-width: 10px; background-color: lightgreen;',
+            //     '.flex-grid-central-panel' : 'flex-grow: 1;',
+            //     '.flex-grid-right-panel' : 'min-width: 10px; background-color: yellow;',
+            //     '.flex-grid-content-panel' : 'flex-grow: 1; overflow-x: visible;',
+            //     '.flex-grid-content-right-panel' : 'min-width: 10px; background-color: lightseagreen;',
+            //     '.flex-grid-header-panel': 'flex-grow: 0; overflow: visible; /*padding-right: 16px;*/',
+            //     '.flex-grid-filter-panel' : 'overflow: visible; min-height: 25px; background-color: lime;',
+            //     '.flex-grid-data-panel': 'flex-grow:1; overflow-y: hidden; overflow-x: visible;',
+            //     '.flex-grid-footer-panel' : 'overflow: visible;min-height: 25px; background-color: green;',
+            //     '.flex-grid-row': 'flex-wrap: nowrap; display: flex; align-items: stretch; overflow: visible;',
+            //     '.flex-grid-cell': 'margin: 0 !important; box-sizing: border-box !important; padding: 0px 5px; border: 1px solid grey; overflow: visible;',
+            //     '.flex-grid-header-cell': 'text-align: center;',
+            //     '.flex-grid-data-cell': '',
+            //     '.flex-grid-row.flex-grid-data-row': 'overflow-x: visible; overflow-y: hidden; flex-grow: 0; flex-shrink: 0;',
+            //
+            // },
+            sizeStyles: {
+                /**
+                 * Размеры компонентов могут активно и часто меняться, поэтому для них выделим отдельный style-объект, чтобы
+                 * как можно меньше было парсить стилей
+                 */
+            },
+            orderStyles: {},
+            initContainer: function(){
+
+                /**
+                 * Вычищаем всё содержимое
+                 */
+                while (this.DOM.container.firstChild) {
+                    this.DOM.container.removeChild(this.DOM.container.lastChild);
+                }
+                this.DOM.container.classList.add('flex-grid-container');
+                this.DOM.container.classList.add('flex-grid-panel');
+                this.DOM.container.classList.add('flex-grid-vertical-panel');
+                this.DOM.container.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.container.classList.add(this.getRootClassName());
+                // this.styles['.flex-grid-' + this.id] = 'display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;'
+            },
+
+            getRootClassName: function(){
+                return 'flex-grid-' + this.id;
+            },
+
+            createId: function(){
+                let r;
+                while ((r = 'defaultGridVisualizer_' + (Math.ceil(Math.random() * 1000000) + 1)) in pluginIds) {}
+                this.id = r;
+                pluginIds[r] = true;// true instead of this to avoid memory leak
+            },
+            createTopPanel: function(){
+                this.DOM.topPanel = document.createElement('div');
+                this.DOM.topPanel.id = 'top-panel-' + this.id;
+                this.DOM.topPanel.classList.add('flex-grid-panel');
+                this.DOM.topPanel.classList.add('flex-grid-options-panel');
+                this.DOM.topPanel.classList.add('flex-grid-top-panel');
+                this.DOM.topPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.container.appendChild(this.DOM.topPanel);
+                this.panels.topPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.topPanel,
+                    }
+                );
+            },
+            createMiddlePanel: function(){
+                this.DOM.middlePanel = document.createElement('div');
+                this.DOM.middlePanel.id = 'middle-panel-' + this.id;
+                this.DOM.middlePanel.classList.add('flex-grid-panel');
+                this.DOM.middlePanel.classList.add('flex-grid-middle-panel');
+                this.DOM.middlePanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.middlePanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.container.appendChild(this.DOM.middlePanel);
+            },
+            createBottomPanel: function(){
+                this.DOM.bottomPanel = document.createElement('div');
+                this.DOM.bottomPanel.id = 'bottom-panel-' + this.id;
+                this.DOM.bottomPanel.classList.add('flex-grid-panel');
+                this.DOM.bottomPanel.classList.add('flex-grid-options-panel');
+                this.DOM.bottomPanel.classList.add('flex-grid-bottom-panel');
+                this.DOM.bottomPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.bottomPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.container.appendChild(this.DOM.bottomPanel);
+                this.panels.bottomPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.bottomPanel,
+                    }
+                );
+                let c = 20;
+                while (c) {
+                    let option = document.createElement('div');
+                    option.classList.add('button');
+                    option.innerHTML = c;
+                    c--;
+                    this.DOM.bottomPanel.appendChild(option);
+                }
+            },
+            createLeftPanel: function(){
+                this.DOM.leftPanel = document.createElement('div');
+                this.DOM.leftPanel.id = 'left-panel-' + this.id;
+                this.DOM.leftPanel.classList.add('flex-grid-panel');
+                this.DOM.leftPanel.classList.add('flex-grid-options-panel');
+                this.DOM.leftPanel.classList.add('flex-grid-left-panel');
+                this.DOM.leftPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.leftPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.middlePanel.appendChild(this.DOM.leftPanel);
+                this.panels.leftPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.leftPanel,
+                    }
+                );
+                let c = 20;
+                while (c) {
+                    let option = document.createElement('div');
+                    option.classList.add('button');
+                    option.innerHTML = c;
+                    c--;
+                    this.panels.leftPanel.addItem('option-' + c, option);
+                }
+            },
+            createRightPanel: function(){
+                this.DOM.rightPanel = document.createElement('div');
+                this.DOM.rightPanel.id = 'right-panel-' + this.id;
+                this.DOM.rightPanel.classList.add('flex-grid-panel');
+                this.DOM.rightPanel.classList.add('flex-grid-options-panel');
+                this.DOM.rightPanel.classList.add('flex-grid-right-panel');
+                this.DOM.rightPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.rightPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.middlePanel.appendChild(this.DOM.rightPanel);
+                this.panels.rightPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.rightPanel,
+                    }
+                );
+                // let c = 20;
+                // while (c) {
+                //     let option = document.createElement('div');
+                //     option.classList.add('button');
+                //     option.innerHTML = c;
+                //     c--;
+                //     this.DOM.rightPanel.appendChild(option);
+                // }
+            },
+            createCentralPanel: function(){
+                this.DOM.centralPanel = document.createElement('div');
+                this.DOM.centralPanel.id = 'central-panel-' + this.id;
+                this.DOM.centralPanel.classList.add('flex-grid-panel');
+                this.DOM.centralPanel.classList.add('flex-grid-central-panel');
+                this.DOM.centralPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.centralPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.middlePanel.appendChild(this.DOM.centralPanel);
+            },
+            createContentRightPanel: function(){
+                this.DOM.contentRightPanel = document.createElement('div');
+                this.DOM.contentRightPanel.id = 'contentRight-panel-' + this.id;
+                this.DOM.contentRightPanel.classList.add('flex-grid-panel');
+                this.DOM.contentRightPanel.classList.add('flex-grid-options-panel');
+                this.DOM.contentRightPanel.classList.add('flex-grid-content-right-panel');
+                this.DOM.contentRightPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.contentRightPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.centralPanel.appendChild(this.DOM.contentRightPanel);
+                this.panels.contentRightPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.contentRightPanel,
+                    }
+                );
+                let c = 20;
+                while (c) {
+                    let option = document.createElement('div');
+                    option.classList.add('button');
+                    option.innerHTML = c;
+                    c--;
+                    this.DOM.contentRightPanel.appendChild(option);
+                }
+            },
+            createContentPanel: function(){
+                this.DOM.contentPanel = document.createElement('div');
+                this.DOM.contentPanel.id = 'content-panel-' + this.id;
+                this.DOM.contentPanel.classList.add('flex-grid-panel');
+                this.DOM.contentPanel.classList.add('flex-grid-content-panel');
+                this.DOM.contentPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.contentPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.centralPanel.appendChild(this.DOM.contentPanel);
+            },
+            createHeaderPanel: function(){
+                this.DOM.headerPanel = document.createElement('div');
+                this.DOM.headerPanel.id = 'header-panel-' + this.id;
+                this.DOM.headerPanel.classList.add('flex-grid-panel');
+                this.DOM.headerPanel.classList.add('flex-grid-header-panel');
+                this.DOM.headerPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.headerPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.contentPanel.appendChild(this.DOM.headerPanel);
+            },
+            createFilterPanel: function(){
+                this.DOM.filterPanel = document.createElement('div');
+                this.DOM.filterPanel.id = 'filter-panel-' + this.id;
+                this.DOM.filterPanel.classList.add('flex-grid-panel');
+                this.DOM.filterPanel.classList.add('flex-grid-filter-panel');
+                this.DOM.filterPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.filterPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.contentPanel.appendChild(this.DOM.filterPanel);
+            },
+            createDataPanel: function(){
+                this.DOM.dataPanel = document.createElement('div');
+                this.DOM.dataPanel.id = 'data-panel-' + this.id;
+                this.DOM.dataPanel.classList.add('flex-grid-panel');
+                this.DOM.dataPanel.classList.add('flex-grid-data-panel');
+                this.DOM.dataPanel.classList.add('flex-grid-vertical-panel');
+                this.DOM.dataPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.contentPanel.appendChild(this.DOM.dataPanel);
+            },
+            createFooterPanel: function(){
+                this.DOM.footerPanel = document.createElement('div');
+                this.DOM.footerPanel.id = 'footer-panel-' + this.id;
+                this.DOM.footerPanel.classList.add('flex-grid-panel');
+                this.DOM.footerPanel.classList.add('flex-grid-options-panel');
+                this.DOM.footerPanel.classList.add('flex-grid-footer-panel');
+                this.DOM.footerPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.footerPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.contentPanel.appendChild(this.DOM.footerPanel);
+                this.panels.footerPanel = new FlexPanel.Panel(
+                    {
+                        panel: this.DOM.footerPanel,
+                    }
+                );
+                let c = 20;
+                while (c) {
+                    let option = document.createElement('div');
+                    option.classList.add('button');
+                    option.innerHTML = c;
+                    c--;
+                    this.DOM.footerPanel.appendChild(option);
+                }
+            },
+
+
+            createStyleElement: function(){
+                //TODO Добавить префикс - корневой класс типа '.flex-grid-visualizer-' + this.id, чтобы стили влияли только на используемый DOM-контейнер
+                this.styleContainer = document.createElement('style');
+                this.styleContainer.id = 'flex-grid-visualizer-style-container-' + this.id;
+                document.getElementsByTagName('head')[0].appendChild(this.styleContainer);
+            },
+            createOrderStyleElement: function(){
+                //TODO Добавить префикс - корневой класс типа '.flex-grid-visualizer-' + this.id, чтобы стили влияли только на используемый DOM-контейнер
+                this.orderStyleContainer = document.createElement('style');
+                this.orderStyleContainer.id = 'flex-grid-visualizer-order-style-container-' + this.id;
+                document.getElementsByTagName('head')[0].appendChild(this.orderStyleContainer);
+            },
+            createSizesStyleElement: function(){
+                this.sizesStyleContainer = document.createElement('style');
+                this.sizesStyleContainer.id = 'flex-grid-visualizer-sizes-style-container-' + this.id;
+                document.getElementsByTagName('head')[0].appendChild(this.sizesStyleContainer);
+            },
+            updateStyleElement: function(){
+                let styles = '';
+                for (let styleId in this.styles) {
+                    styles += styleId + ' {' + this.styles[styleId] + '}' + "\n"
+                }
+                this.styleContainer.textContent = styles;
+            },
+            updateSizesStyleElement: function(){
+                let styles = '';
+                let rootClassName = '.' + this.getRootClassName() + ' ';
+                for (let styleId in this.sizeStyles) {
+                    styles += rootClassName + styleId + ' {' + this.sizeStyles[styleId] + '}' + "\n"
+                }
+                this.sizesStyleContainer.textContent = styles;
+            },
+            updateOrderStyleElement: function(){
+                let iRow = 0;
+                while (iRow < this.headers.nodes.length) {
+                    let iCell = 0;
+                    while (iCell < this.headers.nodes[iRow].length) {
+                        let headerData = this.headers.nodes[iRow][iCell];
+                        let selector = '.flex-grid-nodal-headers-row-lvl' + iRow +
+                        ' .' + headerData.id.replaceAll('.', '_');
+                        this.orderStyles[selector] = 'order: ' + iCell + ';';
+                        iCell++;
+                    }
+                    iRow++;
+                }
+
+                let iCell = 0;
+                while (iCell < this.headers.leafs.length) {
+                    let headerData = this.headers.leafs[iCell];
+                    let idClass = headerData.id.replaceAll('.', '_');
+                    let selector = '.flex-grid-row .flex-grid-cell.' + idClass;
+                    this.orderStyles[selector] = 'order: ' + iCell + ';';
+                    iCell++;
+
+                }
+                let styles = '';
+                let rootClassName = '.' + this.getRootClassName() + ' ';
+                for (let styleId in this.orderStyles) {
+                    styles += rootClassName + styleId + ' {' + this.orderStyles[styleId] + '}' + "\n"
+                }
+                this.orderStyleContainer.textContent = styles;
+            },
+            wrap: function(){
+                this.initContainer();
+                this.createTopPanel();
+                this.createMiddlePanel();
+                this.createBottomPanel();
+                this.createLeftPanel();
+                this.createCentralPanel();
+                this.createRightPanel();
+                this.createContentPanel();
+                this.createContentRightPanel();
+                this.createHeaderPanel();
+                this.createFilterPanel();
+                this.createDataPanel();
+                this.createFooterPanel();
+                this.createStyleElement();
+                this.createSizesStyleElement();
+                this.createOrderStyleElement();
+            },
+            setHeaderAsDraggable: function(cell){
+                cell.setAttribute('draggable', 'true');
+                cell.addEventListener(
+                    'dragstart',
+                    function(e){
+                        priv.draggedHeader = e.target || e.srcElement;
+                    }
+                );
+                cell.addEventListener(
+                    'dragover',
+                    function(e){
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    }
+                );
+                cell.addEventListener(
+                    'drop',
+                    function(e){
+                        e.preventDefault();
+                        //TODO Если сюда перетащена не строка, не позволять такую операцию (скорее всего просто ее игнорировать (по крайней мере для элементво панелей и самих панелей)
+                        let acceptorCell = this;
+                        let draggedCell = priv.draggedHeader;
+                        if (!draggedCell) {
+                            return;
+                        }
+                        if (!draggedCell.classList.contains('flex-grid-header-cell')) {
+                            return;
+                        }
+                        let draggedHeader = draggedCell.headerData;
+                        let acceptorHeader = acceptorCell.headerData;
+                        let changeOrder = false;
+
+                        let reorder = function(collection, d, a){
+                            let i = 0;
+                            let h;
+                            let c = [];
+                            while (h = collection[i++]) {
+                                if (h === d) {
+                                    continue;
+                                }
+                                c.push(h);
+                                if (h === a) {
+                                    c.push(d);
+                                }
+                            }
+                            return c;
+                        };
+                        let reorder2 = function(lvl){
+                            let i = lvl;
+                            let l = priv.headers.nodes.length - 1;
+                            while (i < l) {
+                                let c = [];
+                                for (let x = 0; x < priv.headers.nodes[i].length; x++) {
+                                    c.splice(c.length, 0, ...priv.headers.nodes[i][x].children);
+                                }
+                                priv.headers.nodes[i + 1] = c;
+                                i++;
+                            }
+
+                            let c = [];
+                            for (let x = 0; x < priv.headers.nodes[l].length; x++) {
+                                c.splice(c.length, 0, ...priv.headers.nodes[l][x].children);
+                            }
+                            priv.headers.leafs = c;
+                        };
+
+                        if (draggedHeader.parent === acceptorHeader.parent) {
+                            if (draggedHeader.parent) {
+                                //Переупорядочиваем внутри родителя
+                                draggedHeader.parent.children = reorder(draggedHeader.parent.children, draggedHeader, acceptorHeader);
+                            }
+                            if (draggedHeader.leaf) {
+                                // Перемещен листовой заголовок - переупорядочиваем листовые заголовки
+                                //parent-уровня может не быть, поэтому тут нельзя применить другую тактику упорядочивания заголовков
+                                priv.headers.leafs = reorder(priv.headers.leafs, draggedHeader, acceptorHeader);
+                            }
+                            else {
+                                //Перемещен узловой заголовок - переупорядочиваем заголовки на текущем уровне и ниже
+                                priv.headers.nodes[draggedHeader.lvl] = reorder(priv.headers.nodes[draggedHeader.lvl], draggedHeader, acceptorHeader);
+                                reorder2(draggedHeader.lvl);
+                            }
+                            changeOrder = true;
+                        }
+                        else {
+                            let linearAcceptorHeadersBranch = true, linearDraggedHeadersBranch = true;
+                            let topAcceptorHeader = acceptorHeader, topDraggedHeader = draggedHeader;
+                            while (topAcceptorHeader.parent) {
+                                topAcceptorHeader = topAcceptorHeader.parent;
+                                if (topAcceptorHeader.children.length !== 1) {
+                                    linearAcceptorHEadersBranch = false;
+                                }
+                            }
+                            while (topDraggedHeader.parent) {
+                                topDraggedHeader = topDraggedHeader.parent;
+                                if (topDraggedHeader.children.length !== 1) {
+                                    linearDraggedHeadersBranch = false;
+                                }
+                            }
+                            if (!(linearAcceptorHeadersBranch && linearDraggedHeadersBranch)
+                            ) {
+                                alert('Заголовок \'' + draggedHeader.title + '\' можно перемещать только внутри группы заголовков \'' + (draggedHeader.parent.title || draggedHeader.parent.id) + '\'');
+                                return;
+                            }
+
+                            priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
+                            reorder2(0);
+                            changeOrder = true;
+                        }
+
+
+
+                        changeOrder && priv.updateOrderStyleElement();
+
+
+                    }
+                )
+            },
+            setHeadersHandlers: function(){
+                let iRow = 0;
+                while (iRow < this.headers.nodes.length) {
+                    let iCell = 0;
+
+                    while (iCell < this.headers.nodes[iRow].length) {
+                        let headerData = this.headers.nodes[iRow][iCell];
+                        let row = headerData.DOM.row;
+                        let cell = headerData.DOM.cell;
+
+                        if (headerData.draggable) {
+                            cell.setAttribute('draggable', 'true');
+                            this.setHeaderAsDraggable(cell);
+                        }
+
+
+                        iCell++;
+                    }
+                    iRow++;
+                }
+
+
+
+
+
+                let iCell = 0;
+                while (iCell < this.headers.leafs.length) {
+                    let headerData = this.headers.leafs[iCell];
+                    let row = headerData.DOM.row;
+                    let cell = headerData.DOM.cell;
+                    if (headerData.draggable) {
+                        cell.setAttribute('draggable', 'true');
+                        this.setHeaderAsDraggable(cell);
+                    }
+
+                    iCell++;
+
+                }
+            },
+            createFilters: function(){
+                let filtersExists = false;
+
+                let filtersRow = document.createElement('div');
+                filtersRow.id = 'flex-grid-filters-row-' + this.id;
+                filtersRow.classList.add('flex-grid-row');
+                filtersRow.classList.add('flex-grid-filters-row');
+
+                let iCell = 0;
+                while (iCell < this.headers.leafs.length) {
+                    let headerData = this.headers.leafs[iCell];
+                    let cell = document.createElement('div');
+                    let idClass = headerData.id.replaceAll('.', '_');
+                    cell.classList.add('flex-grid-cell');
+                    cell.classList.add('flex-grid-filter-cell');
+                    cell.classList.add(idClass);
+                    cell.name = 'flex-grid-filter-' + headerData.id;
+                    filtersRow.appendChild(cell);
+                    headerData.DOM.filterCell = cell;
+                    if (headerData.getFilter)
+                    {
+                        /**
+                         * @type {FlexGridDataFilterComponentInterface}
+                         */
+                        let filter = headerData.getFilter(
+                            headerData.id,
+                            headerData
+                        );
+                        filter && (filtersExists = true, filter.buildFilterForm(cell, headerData.id, headerData));
+                    }
+                    iCell++;
+
+                }
+
+                while (this.DOM.filterPanel.firstChild) {
+                    this.DOM.headerPanelfilterPanel.removeChild(this.DOM.filterPanel.lastChild);
+                }
+
+
+                this.DOM.filterPanel.appendChild(filtersRow);
+
+                if (!filtersExists) {
+                    this.DOM.filterPanel.style.display = 'none;'
+                }
+
+            },
+            createHeaders: function(){
+                while (this.DOM.headerPanel.firstChild) {
+                    this.DOM.headerPanel.removeChild(this.DOM.headerPanel.lastChild);
+                }
+                let iRow = this.headers.nodes.length - 1;
+                while (this.headers.nodes[iRow]) {
+                    let iCell = 0;
+                    while (iCell < this.headers.nodes[iRow].length) {
+                        let headerData = this.headers.nodes[iRow][iCell];
+                        if (
+                            // headerData.virtual &&
+                            headerData.children.length === 1
+                        ) {
+                            let child = headerData.children[0];
+                            if (child.extClass) {
+                                headerData.extClass = child.extClass;
+                            }
+                            else {
+                                let extClass = [];
+                                extClass.push(child.id);
+                                headerData.extClass = extClass;
+                            }
+
+
+                        }
+                        iCell++;
+                    }
+
+                    iRow--;
+                }
+
+                let widths = {};
+
+                iRow = 0;
+                while (iRow < this.headers.nodes.length) {
+                    let headersRow = document.createElement('div');
+                    headersRow.id = 'flex-grid-nodal-headers-row-lvl' + iRow + '-' + this.id;
+                    headersRow.classList.add('flex-grid-row');
+                    headersRow.classList.add('flex-grid-headers-row');
+                    headersRow.classList.add('flex-grid-headers-row-lvl' + iRow);
+                    headersRow.classList.add('flex-grid-nodal-headers-row');
+                    headersRow.classList.add('flex-grid-nodal-headers-row-lvl' + iRow);
+                    headersRow.dataset.lvl = iRow;
+                    let iCell = 0;
+
+                    while (iCell < this.headers.nodes[iRow].length) {
+                        let headerData = this.headers.nodes[iRow][iCell];
+                        headerData.lvl = iRow;
+                        let cell = document.createElement('div');
+                        cell.classList.add('flex-grid-cell');
+                        cell.classList.add('flex-grid-header-cell');
+                        cell.classList.add('flex-grid-nodal-header-cell');
+                        cell.classList.add(headerData.id.replaceAll('.', '_'));
+                        cell.headerData = headerData;
+                        if (headerData.extClass) {
+                            let iClass = 0;
+                            while (headerData.extClass[iClass]) {
+                                cell.classList.add(headerData.extClass[iClass].replaceAll('.', '_'));
+                                iClass++;
+                            }
+                        }
+
+                        if (headerData.virtual) {
+                            cell.classList.add('virtual-header');
+                        }
+                        if (headerData.parent && headerData.parent.virtual) {
+                            cell.classList.add('has-virtual-parent');
+                        }
+                        cell.innerHTML = headerData.title;
+                        cell.name = 'flex-grid-header-' + headerData.id;
+                        headersRow.appendChild(cell);
+                        widths[headerData.id] = 0;
+                        headerData.DOM = {
+                            cell: cell,
+                            row: headersRow,
+                        };
+                        iCell++;
+                    }
+                    this.DOM.headerPanel.appendChild(headersRow);
+                    iRow++;
+                }
+
+
+
+                let headersRow = document.createElement('div');
+                headersRow.id = 'flex-grid-leafs-headers-row-' + this.id;
+                headersRow.classList.add('flex-grid-row');
+                headersRow.classList.add('flex-grid-headers-row');
+                headersRow.classList.add('flex-grid-leafs-headers-row');
+
+                let totalWidth = 0;
+                let iCell = 0;
+                while (iCell < this.headers.leafs.length) {
+                    let headerData = this.headers.leafs[iCell];
+                    headerData.lvl = this.headers.nodes.length;
+                    let cell = document.createElement('div');
+                    let idClass = headerData.id.replaceAll('.', '_');
+                    cell.classList.add('flex-grid-cell');
+                    cell.classList.add('flex-grid-header-cell');
+                    cell.classList.add('flex-grid-leaf-header-cell');
+                    cell.classList.add(idClass);
+                    cell.headerData = headerData;
+
+                    if (headerData.parent && headerData.parent.virtual) {
+                        cell.classList.add('has-virtual-parent');
+                    }
+
+                    cell.innerHTML = headerData.title;
+                    cell.name = 'flex-grid-header-' + headerData.id;
+                    headersRow.appendChild(cell);
+                    // this.sizeStyles['.flex-grid-leaf-header-cell.' + headerData.id] = 'width: ' + headerData.width + this.widthUnit;
+                    this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + headerData.width + this.widthUnit;
+                    totalWidth += +headerData.width;
+                    let h = headerData;
+                    while (h.parent) {
+                        widths[h.parent.id] += +headerData.width;
+                        h = h.parent;
+                    }
+                    headerData.DOM = {
+                        cell: cell,
+                        row: headersRow,
+                    };
+                    iCell++;
+
+                }
+
+                for (let headerName in widths)
+                {
+                    if (!this.headers.dict[headerName].extClass) {
+
+                        this.sizeStyles['.flex-grid-nodal-header-cell.' + headerName.replaceAll('.', '_')] = 'width: ' + widths[headerName] + this.widthUnit;
+                    }
+                }
+                let tw = totalWidth + this.widthUnit;
+                this.sizeStyles['.flex-grid-row'] = 'width: ' + tw;
+                this.sizeStyles['.flex-grid-content-panel>.flex-grid-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
+                this.sizeStyles['.flex-grid-content-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
+
+                this.DOM.headerPanel.appendChild(headersRow);
+                this.updateSizesStyleElement();
+                this.updateOrderStyleElement();
+                this.setHeadersHandlers();
+            },
+            createScroller: function(){
+
+                let scroller = new Scroller(
+                    {
+                        firstIndex:0,
+                        itemsCount: this.callbacks.getItemsCount(),
+                        DOM: {
+                            container: this.DOM.centralPanel,
+                            scrolledItemsContainer: this.DOM.dataPanel,
+                        },
+                        getElement: this.callbacks.getElement
+                    }
+                );
+                window.scrollerInstance = scroller;
+                this.scroller = scroller;
+                //scroller.goTo(25)
+                // console.log(scroller)
+
+                // scroller.goTo(250);
+
+            },
+
+        };
+
+        pub.init = function(){
+
+            this.createId();
+
+            this.wrap();
+
+            this.updateStyleElement();
+            this.createHeaders();
+            this.createFilters();
+            this.createScroller();
+
+
+        }.bind(priv);
+
+        pub.setHeaders = function(headers){
+            //TODO Если данные уже загружены, то их надо либо выгрузить, либо обновить с учетом новых заголовков
+            this.headers.leafs = headers;
+            this.headers.dict = {};
+
+            let nodalHeaders = [];
+            let nodalDict = {};
+            let c = headers.length;
+            for (let i = 0; i < c; i++) {
+                let header = headers[i];
+                let depth = 0;
+                this.headers.dict[header.id] = header;
+                while (header.parent) {
+                    header = header.parent;
+                    if (!nodalHeaders[depth]) {
+                        nodalHeaders.push([]);
+
+                    }
+                    if (!(header.id in nodalDict))
+                    {
+                        nodalDict[header.id] = header;
+                        nodalHeaders[depth].push(header);
+                        this.headers.dict[header.id] = header;
+                    }
+
+                    depth++;
+                }
+            }
+
+            nodalHeaders.reverse();
+            this.headers.nodes = nodalHeaders;
+
+
+        }.bind(priv);
+
+        pub.setContainer = function(container){
+            if (typeof container === typeof 'aaa') {
+                let collection;
+                this.DOM.container = document.getElementById(container) || ((collection = document.getElementsByClassName(container)) ? collection[0] : null) || document.querySelector(container);
+            }
+            else if (container && typeof container === typeof {} && container.nodeType === Node.ELEMENT_NODE) {
+                this.DOM.container = container;
+            }
+            else {
+                throw 'Incorrect main container';
+            }
+        }.bind(priv);
+
+        pub.setCallbacks = function(
+            callback,
+            eventName
+        ){
+            if (typeof callback === typeof function(){} && typeof eventName === typeof 'aaa') {
+                this.callbacks[eventName] = callback
+            } else if (callback && typeof callback === typeof {}) {
+                for (eventName in callback) {
+                    this.callbacks[eventName] = callback[eventName];
+                }
+            }
+        }.bind(priv);
+
+        pub.updatePreview = function(){
+            this.scroller.updateItemsCount(this.callbacks.getItemsCount());
+            this.scroller.reload();
+        }.bind(priv);
+
+        for (let panelName in priv.panels) {
+            Object.defineProperty(
+                pub,
+                panelName.charAt(0).toUpperCase() + panelName.slice(1),
+                {
+                    // writable: false,
+                    configurable: false,
+                    enumerable: false,
+                    get: (function(){let pn = panelName; return function(){ return priv.panels[pn]};})()
+                }
+            )
+        }
+        return this;
+    }
+
+    window.DefaultVisualizer.prototype = new VisualizerInterface();
+    window.DefaultVisualizer.getFlags = function(){
+        let flags = Scroller.getFlags();
+        //Тут можно расширить список флагов
+        return flags;
+    };
+
+    function FlexGridPanel (config) {
+        let pub, priv;
+
+        priv = {
+            items: {},
+            config: config,
+            DOM: {
+                panel: config.panel
+            }
+        };
+
+
+        pub = {
+            setStyle: function(propName, propValue){
+                this.DOM.panel.style[propName] = propValue;
+            }.bind(priv),
+            addItem: function (key, item){
+
+                if (key in this.items) {
+                    this.items[key].parentElement.removeChild(this.items[key]);
+                }
+                this.items[key] = item;
+                this.DOM.panel.appendChild(item);
+            }.bind(priv),
+            addItemAfter: function (key, item, after){
+                //TODO Если after - число, то
+                if (key in this.items) {
+                    this.items[key].parentElement.removeChild(this.items[key]);
+                }
+                this.items[key] = item;
+                this.DOM.panel.appendChild(item);
+            }.bind(priv),
+            addItemBefore: function (key, item, before){
+                //TODO Можно доавить after, before
+                if (key in this.items) {
+                    this.items[key].parentElement.removeChild(this.items[key]);
+                }
+                this.items[key] = item;
+                this.DOM.panel.appendChild(item);
+            }.bind(priv),
+            addItemBefore: function (key, item, /** @type {number} */ position){
+                //TODO Вставка в позицию №position
+                if (key in this.items) {
+                    this.items[key].parentElement.removeChild(this.items[key]);
+                }
+                this.items[key] = item;
+                this.DOM.panel.appendChild(item);
+            }.bind(priv),
+            removeItem: function (key, item){
+                if (key in this.items) {
+                    this.items[key].parentElement.removeChild(this.items[key]);
+                }
+            }.bind(priv),
+            draggable: function(/** @type {boolean} */ flag){
+                //Можно ли перемещать панель
+            },
+            droppable: function(/** @type {boolean} */ flag){
+                //Может ли панель принимать другие панели после себя
+            },
+        };
+
+
+
+
+
+        return pub;
+    };
+
+})()
+

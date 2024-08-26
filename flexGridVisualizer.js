@@ -1,5 +1,73 @@
 (function(){
     let pluginIds = {};
+
+    let ClassModel = Object.defineProperties(
+        Object.create(null),
+        {
+            FlexGridPanel: {
+                get: () => 'flex-grid-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridContainer: {
+                get: () => 'flex-grid-container',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridVerticalPanel: {
+                get: () => 'flex-grid-vertical-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridHorizontalPanel: {
+                get: () => 'flex-grid-horizontal-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridNowrappedPanel: {
+                get: () => 'flex-grid-nowrapped-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridWrappedPanel: {
+                get: () => 'flex-grid-wrapped-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridTopPanel: {
+                get: () => 'flex-grid-top-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridLeftPanel: {
+                get: () => 'flex-grid-left-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridRightPanel: {
+                get: () => 'flex-grid-right-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridMiddlePanel: {
+                get: () => 'flex-grid-middle-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridBottomPanel: {
+                get: () => 'flex-grid-bottom-panel',
+                configurable: false,
+                enumerable: false,
+            },
+            FlexGridOptionsPanel: {
+                get: () => 'flex-grid-options-panel',
+                configurable: false,
+                enumerable: false,
+            },
+        }
+    );
+
+
     window.VisualizerInterface = function(){
         this.init = function(){throw 'Define init method'};
         this.setHeaders = function(headers){throw 'Define setHeaders method';}
@@ -132,10 +200,10 @@
                 while (this.DOM.container.firstChild) {
                     this.DOM.container.removeChild(this.DOM.container.lastChild);
                 }
-                this.DOM.container.classList.add('flex-grid-container');
-                this.DOM.container.classList.add('flex-grid-panel');
-                this.DOM.container.classList.add('flex-grid-vertical-panel');
-                this.DOM.container.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.container.classList.add(ClassModel.FlexGridContainer);
+                this.DOM.container.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.container.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.container.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.container.classList.add(this.getRootClassName());
                 // this.styles['.flex-grid-' + this.id] = 'display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;'
             },
@@ -153,12 +221,12 @@
             createTopPanel: function(){
                 this.DOM.topPanel = document.createElement('div');
                 this.DOM.topPanel.id = 'top-panel-' + this.id;
-                this.DOM.topPanel.classList.add('flex-grid-panel');
-                this.DOM.topPanel.classList.add('flex-grid-options-panel');
-                this.DOM.topPanel.classList.add('flex-grid-top-panel');
-                this.DOM.topPanel.classList.add('flex-grid-horizontal-panel');
+                this.DOM.topPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.topPanel.classList.add(ClassModel.FlexGridOptionsPanel);
+                this.DOM.topPanel.classList.add(ClassModel.FlexGridTopPanel);
+                this.DOM.topPanel.classList.add(ClassModel.FlexGridHorizontalPanel);
                 this.DOM.container.appendChild(this.DOM.topPanel);
-                this.panels.topPanel = new FlexPanel.Panel(
+                this.panels.topPanel = new FlexPanel.Panel(//TODO Зачем FlexPanel.Panel вместо FlexPanel ?
                     {
                         panel: this.DOM.topPanel,
                     }
@@ -167,20 +235,20 @@
             createMiddlePanel: function(){
                 this.DOM.middlePanel = document.createElement('div');
                 this.DOM.middlePanel.id = 'middle-panel-' + this.id;
-                this.DOM.middlePanel.classList.add('flex-grid-panel');
+                this.DOM.middlePanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.middlePanel.classList.add('flex-grid-middle-panel');
-                this.DOM.middlePanel.classList.add('flex-grid-horizontal-panel');
-                this.DOM.middlePanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.middlePanel.classList.add(ClassModel.FlexGridHorizontalPanel);
+                this.DOM.middlePanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.container.appendChild(this.DOM.middlePanel);
             },
             createBottomPanel: function(){
                 this.DOM.bottomPanel = document.createElement('div');
                 this.DOM.bottomPanel.id = 'bottom-panel-' + this.id;
-                this.DOM.bottomPanel.classList.add('flex-grid-panel');
-                this.DOM.bottomPanel.classList.add('flex-grid-options-panel');
+                this.DOM.bottomPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.bottomPanel.classList.add(ClassModel.FlexGridOptionsPanel);
                 this.DOM.bottomPanel.classList.add('flex-grid-bottom-panel');
-                this.DOM.bottomPanel.classList.add('flex-grid-horizontal-panel');
-                this.DOM.bottomPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.bottomPanel.classList.add(ClassModel.FlexGridHorizontalPanel);
+                this.DOM.bottomPanel.classList.add(ClassModel.FlexGridWrappedPanel);
                 this.DOM.container.appendChild(this.DOM.bottomPanel);
                 this.panels.bottomPanel = new FlexPanel.Panel(
                     {
@@ -199,11 +267,11 @@
             createLeftPanel: function(){
                 this.DOM.leftPanel = document.createElement('div');
                 this.DOM.leftPanel.id = 'left-panel-' + this.id;
-                this.DOM.leftPanel.classList.add('flex-grid-panel');
-                this.DOM.leftPanel.classList.add('flex-grid-options-panel');
+                this.DOM.leftPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.leftPanel.classList.add(ClassModel.FlexGridOptionsPanel);
                 this.DOM.leftPanel.classList.add('flex-grid-left-panel');
-                this.DOM.leftPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.leftPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.leftPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.leftPanel.classList.add(ClassModel.FlexGridWrappedPanel);
                 this.DOM.middlePanel.appendChild(this.DOM.leftPanel);
                 this.panels.leftPanel = new FlexPanel.Panel(
                     {
@@ -222,11 +290,11 @@
             createRightPanel: function(){
                 this.DOM.rightPanel = document.createElement('div');
                 this.DOM.rightPanel.id = 'right-panel-' + this.id;
-                this.DOM.rightPanel.classList.add('flex-grid-panel');
-                this.DOM.rightPanel.classList.add('flex-grid-options-panel');
+                this.DOM.rightPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.rightPanel.classList.add(ClassModel.FlexGridOptionsPanel);
                 this.DOM.rightPanel.classList.add('flex-grid-right-panel');
-                this.DOM.rightPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.rightPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.rightPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.rightPanel.classList.add(ClassModel.FlexGridWrappedPanel);
                 this.DOM.middlePanel.appendChild(this.DOM.rightPanel);
                 this.panels.rightPanel = new FlexPanel.Panel(
                     {
@@ -245,20 +313,20 @@
             createCentralPanel: function(){
                 this.DOM.centralPanel = document.createElement('div');
                 this.DOM.centralPanel.id = 'central-panel-' + this.id;
-                this.DOM.centralPanel.classList.add('flex-grid-panel');
+                this.DOM.centralPanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.centralPanel.classList.add('flex-grid-central-panel');
-                this.DOM.centralPanel.classList.add('flex-grid-horizontal-panel');
-                this.DOM.centralPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.centralPanel.classList.add(ClassModel.FlexGridHorizontalPanel);
+                this.DOM.centralPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.middlePanel.appendChild(this.DOM.centralPanel);
             },
             createContentRightPanel: function(){
                 this.DOM.contentRightPanel = document.createElement('div');
                 this.DOM.contentRightPanel.id = 'contentRight-panel-' + this.id;
-                this.DOM.contentRightPanel.classList.add('flex-grid-panel');
-                this.DOM.contentRightPanel.classList.add('flex-grid-options-panel');
+                this.DOM.contentRightPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.contentRightPanel.classList.add(ClassModel.FlexGridOptionsPanel);
                 this.DOM.contentRightPanel.classList.add('flex-grid-content-right-panel');
-                this.DOM.contentRightPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.contentRightPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.contentRightPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.contentRightPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.centralPanel.appendChild(this.DOM.contentRightPanel);
                 this.panels.contentRightPanel = new FlexPanel.Panel(
                     {
@@ -277,47 +345,47 @@
             createContentPanel: function(){
                 this.DOM.contentPanel = document.createElement('div');
                 this.DOM.contentPanel.id = 'content-panel-' + this.id;
-                this.DOM.contentPanel.classList.add('flex-grid-panel');
+                this.DOM.contentPanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.contentPanel.classList.add('flex-grid-content-panel');
-                this.DOM.contentPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.contentPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.contentPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.contentPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.centralPanel.appendChild(this.DOM.contentPanel);
             },
             createHeaderPanel: function(){
                 this.DOM.headerPanel = document.createElement('div');
                 this.DOM.headerPanel.id = 'header-panel-' + this.id;
-                this.DOM.headerPanel.classList.add('flex-grid-panel');
+                this.DOM.headerPanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.headerPanel.classList.add('flex-grid-header-panel');
-                this.DOM.headerPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.headerPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.headerPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.headerPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.contentPanel.appendChild(this.DOM.headerPanel);
             },
             createFilterPanel: function(){
                 this.DOM.filterPanel = document.createElement('div');
                 this.DOM.filterPanel.id = 'filter-panel-' + this.id;
-                this.DOM.filterPanel.classList.add('flex-grid-panel');
+                this.DOM.filterPanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.filterPanel.classList.add('flex-grid-filter-panel');
-                this.DOM.filterPanel.classList.add('flex-grid-horizontal-panel');
-                this.DOM.filterPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.filterPanel.classList.add(ClassModel.FlexGridHorizontalPanel);
+                this.DOM.filterPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.contentPanel.appendChild(this.DOM.filterPanel);
             },
             createDataPanel: function(){
                 this.DOM.dataPanel = document.createElement('div');
                 this.DOM.dataPanel.id = 'data-panel-' + this.id;
-                this.DOM.dataPanel.classList.add('flex-grid-panel');
+                this.DOM.dataPanel.classList.add(ClassModel.FlexGridPanel);
                 this.DOM.dataPanel.classList.add('flex-grid-data-panel');
-                this.DOM.dataPanel.classList.add('flex-grid-vertical-panel');
-                this.DOM.dataPanel.classList.add('flex-grid-nowrapped-panel');
+                this.DOM.dataPanel.classList.add(ClassModel.FlexGridVerticalPanel);
+                this.DOM.dataPanel.classList.add(ClassModel.FlexGridNowrappedPanel);
                 this.DOM.contentPanel.appendChild(this.DOM.dataPanel);
             },
             createFooterPanel: function(){
                 this.DOM.footerPanel = document.createElement('div');
                 this.DOM.footerPanel.id = 'footer-panel-' + this.id;
-                this.DOM.footerPanel.classList.add('flex-grid-panel');
-                this.DOM.footerPanel.classList.add('flex-grid-options-panel');
+                this.DOM.footerPanel.classList.add(ClassModel.FlexGridPanel);
+                this.DOM.footerPanel.classList.add(ClassModel.FlexGridOptionsPanel);
                 this.DOM.footerPanel.classList.add('flex-grid-footer-panel');
-                this.DOM.footerPanel.classList.add('flex-grid-horizontal-panel');
-                this.DOM.footerPanel.classList.add('flex-grid-wrapped-panel');
+                this.DOM.footerPanel.classList.add(ClassModel.FlexGridHorizontalPanel);
+                this.DOM.footerPanel.classList.add(ClassModel.FlexGridWrappedPanel);
                 this.DOM.contentPanel.appendChild(this.DOM.footerPanel);
                 this.panels.footerPanel = new FlexPanel.Panel(
                     {
@@ -885,6 +953,17 @@
         //Тут можно расширить список флагов
         return flags;
     };
+
+    Object.defineProperties(
+        window.DefaultVisualizer,
+        {
+            ClassModel: {
+                get: () => ClassModel,
+                configurable: false,
+                enumerable: false,
+            }
+        }
+    )
 
     function FlexGridPanel (config) {
         let pub, priv;

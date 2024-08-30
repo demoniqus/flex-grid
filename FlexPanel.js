@@ -34,6 +34,10 @@
 
         };
 
+        this.init = function(){
+            this.setPanelAsDroppable();
+        };
+
         this.specificConfigValidation = function(){
             return [];
         };
@@ -67,6 +71,82 @@
             errors = errors.splice(0, 0, ...this.specificConfigValidation(config));
 
             return errors.length ? errors : null;
+        };
+
+        this.setPanelAsDroppable = function(){
+            window.dragger.initAcceptor(
+                {
+                    acceptorElement: this.DOM.panel,
+                    onDrop: function(drawElement, acceptorElement){
+                        if (!drawElement.classList.contains(ClassModel.PanelItem)) {
+                            //Не принимаем прочие элементы, которые может сюда перетащить пользователь.
+                            // Можно даже выбрасывать сообщение, но проще не реагировать на неверные действия
+                            return;
+                        }
+
+                        if (
+                            drawElement.classList.contains(ClassModel.OnlyVerticalItem) &&
+                            this.config.orientation === OrientationModel.Horizontal ||
+                            drawElement.classList.contains(ClassModel.OnlyHorizontalItem) &&
+                            this.config.orientation === OrientationModel.Vertical
+                        ) {
+                            alert(
+                                'Элемент панели не имеет представления для ' +
+                                (
+                                    this.config.orientation === OrientationModel.Horizontal ?
+                                        'горизонтальной' :
+                                        'вертикальной'
+                                ) +
+                                ' ориентации'
+                            );
+                            return;
+                        }
+                        acceptorElement.appendChild(drawElement);
+                    }
+                }
+            );
+        };
+
+        this.setPanelItemAsDraggable = function(panelItem)
+        {
+            window.dragger
+                .initDraw(
+                    {
+                        drawElement: panelItem
+                    }
+                )
+                .initAcceptor(
+                    {
+                        acceptorElement: panelItem,
+                        onDrop: function(drawElement, acceptorElement){
+                            if (!drawElement.classList.contains(ClassModel.PanelItem)) {
+                                //Не принимаем прочие элементы, которые может сюда перетащить пользователь.
+                                // Можно даже выбрасывать сообщение, но проще не реагировать на неверные действия
+                                return;
+                            }
+
+                            if (
+                                drawElement.classList.contains(ClassModel.OnlyVerticalItem) &&
+                                priv.config.orientation === OrientationModel.Horizontal ||
+                                drawElement.classList.contains(ClassModel.OnlyHorizontalItem) &&
+                                priv.config.orientation === OrientationModel.Vertical
+                            ) {
+                                alert(
+                                    'Элемент панели не имеет представления для ' +
+                                    (
+                                        priv.config.orientation === OrientationModel.Horizontal ?
+                                            'горизонтальной' :
+                                            'вертикальной'
+                                    ) +
+                                    ' ориентации'
+                                );
+                                return;
+                            }
+                            let acceptorPanel = priv.DOM.panel;
+                            acceptorPanel.insertBefore(drawElement, acceptorElement);
+                        }
+                    }
+                )
         };
     }
 
@@ -136,6 +216,7 @@
         }
 
         priv.setConfig(config);
+        priv.init();
 
 
         return pub;

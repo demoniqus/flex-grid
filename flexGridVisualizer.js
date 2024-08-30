@@ -484,121 +484,112 @@
                 this.createOrderStyleElement();
             },
             setHeaderAsDraggable: function(cell){
-                cell.setAttribute('draggable', 'true');
-                cell.addEventListener(
-                    'dragstart',
-                    function(e){
-                        priv.draggedHeader = e.target || e.srcElement;
-                    }
-                );
-                cell.addEventListener(
-                    'dragover',
-                    function(e){
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                    }
-                );
-                cell.addEventListener(
-                    'drop',
-                    function(e){
-                        e.preventDefault();
-                        //TODO Если сюда перетащена не строка, не позволять такую операцию (скорее всего просто ее игнорировать (по крайней мере для элементво панелей и самих панелей)
-                        let acceptorCell = this;
-                        let draggedCell = priv.draggedHeader;
-                        if (!draggedCell) {
-                            return;
+                window.dragger
+                    .initDraw(
+                        {
+                            drawElement: cell
                         }
-                        if (!draggedCell.classList.contains('flex-grid-header-cell')) {
-                            return;
+                    )
+                    .initAcceptor(
+                        {
+                            acceptorElement: cell,
+                            onDrop: function(draggedCell, acceptorCell){
+                                if (!draggedCell.classList.contains('flex-grid-header-cell')) {
+                                    //TODO Можно вытащить с отдельную настройку конфига типа isAccepted = function():bool {}
+                                    //Не принимаем прочие элементы, которые может сюда перетащить пользователь.
+                                    // Можно даже выбрасывать сообщение, но проще не реагировать на неверные действия
+                                    return;
+                                }
+                                let draggedHeader = draggedCell.headerData;
+                                let acceptorHeader = acceptorCell.headerData;
+                                let changeOrder = false;
+
+                                let reorder = function(collection, d, a){
+                                    let i = 0;
+                                    let h;
+                                    let c = [];
+                                    while (h = collection[i++]) {
+                                        if (h === d) {
+                                            continue;
+                                        }
+                                        c.push(h);
+                                        if (h === a) {
+                                            c.push(d);
+                                        }
+                                    }
+                                    return c;
+                                };
+                                let reorder2 = function(lvl){
+                                    let i = lvl;
+                                    let l = priv.headers.nodes.length - 1;
+                                    while (i < l) {
+                                        let c = [];
+                                        for (let x = 0; x < priv.headers.nodes[i].length; x++) {
+                                            c.splice(c.length, 0, ...priv.headers.nodes[i][x].children);
+                                        }
+                                        priv.headers.nodes[i + 1] = c;
+                                        i++;
+                                    }
+
+                                    let c = [];
+                                    for (let x = 0; x < priv.headers.nodes[l].length; x++) {
+                                        c.splice(c.length, 0, ...priv.headers.nodes[l][x].children);
+                                    }
+                                    priv.headers.leafs = c;
+                                };
+
+                                if (draggedHeader.parent === acceptorHeader.parent) {
+                                    if (draggedHeader.parent) {
+                                        //Переупорядочиваем внутри родителя
+                                        draggedHeader.parent.children = reorder(draggedHeader.parent.children, draggedHeader, acceptorHeader);
+                                    }
+                                    if (draggedHeader.leaf) {
+                                        // Перемещен листовой заголовок - переупорядочиваем листовые заголовки
+                                        //parent-уровня может не быть, поэтому тут нельзя применить другую тактику упорядочивания заголовков
+                                        priv.headers.leafs = reorder(priv.headers.leafs, draggedHeader, acceptorHeader);
+                                    }
+                                    else {
+                                        //Перемещен узловой заголовок - переупорядочиваем заголовки на текущем уровне и ниже
+                                        priv.headers.nodes[draggedHeader.lvl] = reorder(priv.headers.nodes[draggedHeader.lvl], draggedHeader, acceptorHeader);
+                                        reorder2(draggedHeader.lvl);
+                                    }
+                                    changeOrder = true;
+                                }
+                                else {
+                                    let linearAcceptorHeadersBranch = true, linearDraggedHeadersBranch = true;
+                                    let topAcceptorHeader = acceptorHeader, topDraggedHeader = draggedHeader;
+                                    while (topAcceptorHeader.parent) {
+                                        topAcceptorHeader = topAcceptorHeader.parent;
+                                        if (topAcceptorHeader.children.length !== 1) {
+                                            linearAcceptorHEadersBranch = false;
+                                        }
+                                    }
+                                    while (topDraggedHeader.parent) {
+                                        topDraggedHeader = topDraggedHeader.parent;
+                                        if (topDraggedHeader.children.length !== 1) {
+                                            linearDraggedHeadersBranch = false;
+                                        }
+                                    }
+                                    if (!(linearAcceptorHeadersBranch && linearDraggedHeadersBranch)
+                                    ) {
+                                        alert('Заголовок \'' + draggedHeader.title + '\' можно перемещать только внутри группы заголовков \'' + (draggedHeader.parent.title || draggedHeader.parent.id) + '\'');
+                                        return;
+                                    }
+
+                                    priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
+                                    reorder2(0);
+                                    changeOrder = true;
+                                }
+
+
+
+                                changeOrder && priv.updateOrderStyleElement();
+
+
+                            }
                         }
-                        let draggedHeader = draggedCell.headerData;
-                        let acceptorHeader = acceptorCell.headerData;
-                        let changeOrder = false;
-
-                        let reorder = function(collection, d, a){
-                            let i = 0;
-                            let h;
-                            let c = [];
-                            while (h = collection[i++]) {
-                                if (h === d) {
-                                    continue;
-                                }
-                                c.push(h);
-                                if (h === a) {
-                                    c.push(d);
-                                }
-                            }
-                            return c;
-                        };
-                        let reorder2 = function(lvl){
-                            let i = lvl;
-                            let l = priv.headers.nodes.length - 1;
-                            while (i < l) {
-                                let c = [];
-                                for (let x = 0; x < priv.headers.nodes[i].length; x++) {
-                                    c.splice(c.length, 0, ...priv.headers.nodes[i][x].children);
-                                }
-                                priv.headers.nodes[i + 1] = c;
-                                i++;
-                            }
-
-                            let c = [];
-                            for (let x = 0; x < priv.headers.nodes[l].length; x++) {
-                                c.splice(c.length, 0, ...priv.headers.nodes[l][x].children);
-                            }
-                            priv.headers.leafs = c;
-                        };
-
-                        if (draggedHeader.parent === acceptorHeader.parent) {
-                            if (draggedHeader.parent) {
-                                //Переупорядочиваем внутри родителя
-                                draggedHeader.parent.children = reorder(draggedHeader.parent.children, draggedHeader, acceptorHeader);
-                            }
-                            if (draggedHeader.leaf) {
-                                // Перемещен листовой заголовок - переупорядочиваем листовые заголовки
-                                //parent-уровня может не быть, поэтому тут нельзя применить другую тактику упорядочивания заголовков
-                                priv.headers.leafs = reorder(priv.headers.leafs, draggedHeader, acceptorHeader);
-                            }
-                            else {
-                                //Перемещен узловой заголовок - переупорядочиваем заголовки на текущем уровне и ниже
-                                priv.headers.nodes[draggedHeader.lvl] = reorder(priv.headers.nodes[draggedHeader.lvl], draggedHeader, acceptorHeader);
-                                reorder2(draggedHeader.lvl);
-                            }
-                            changeOrder = true;
-                        }
-                        else {
-                            let linearAcceptorHeadersBranch = true, linearDraggedHeadersBranch = true;
-                            let topAcceptorHeader = acceptorHeader, topDraggedHeader = draggedHeader;
-                            while (topAcceptorHeader.parent) {
-                                topAcceptorHeader = topAcceptorHeader.parent;
-                                if (topAcceptorHeader.children.length !== 1) {
-                                    linearAcceptorHEadersBranch = false;
-                                }
-                            }
-                            while (topDraggedHeader.parent) {
-                                topDraggedHeader = topDraggedHeader.parent;
-                                if (topDraggedHeader.children.length !== 1) {
-                                    linearDraggedHeadersBranch = false;
-                                }
-                            }
-                            if (!(linearAcceptorHeadersBranch && linearDraggedHeadersBranch)
-                            ) {
-                                alert('Заголовок \'' + draggedHeader.title + '\' можно перемещать только внутри группы заголовков \'' + (draggedHeader.parent.title || draggedHeader.parent.id) + '\'');
-                                return;
-                            }
-
-                            priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
-                            reorder2(0);
-                            changeOrder = true;
-                        }
-
-
-
-                        changeOrder && priv.updateOrderStyleElement();
-
-
-                    }
-                )
+                    )
+                ;
             },
             setHeadersHandlers: function(){
                 let iRow = 0;

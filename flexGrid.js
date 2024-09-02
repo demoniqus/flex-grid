@@ -88,7 +88,8 @@
         this.styleContainer = undefined;
         this.styles = {
             '.selected-row': 'background-color: rgba(200, 200, 200, .3);',
-            '.filter-reset-button': 'border: 1px solid #fcc; color: red; font-weight: bold;'
+            '.filter-reset-button': 'border: 1px solid #fcc; color: red; font-weight: bold;',
+            '.flex-grid-row .flex-grid-cell.flexGrid_numerableHeader': 'text-wrap: nowrap !important;',
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 5s; position: relative; pointer-events: none;',
             // '.flex-grid-entity-data-cell:hover::after': 'transition-delay: 5s;  position: absolute; content: "\\1F58D"; color: blue; top: 0px; right: 0px; pointer-events: auto;',
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 1s; position: relative;',

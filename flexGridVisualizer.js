@@ -155,6 +155,7 @@
 
                 '.flex-grid-footer-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
                 '.flex-grid-left-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
+                '.flex-grid-left-panel .button-wrapper': 'display: inline-block; box-sizing: border-box; ',
                 '.flex-grid-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
                 '.flex-grid-content-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
                 '.flex-grid-bottom-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
@@ -278,13 +279,19 @@
                         panel: this.DOM.leftPanel,
                     }
                 );
-                let c = 20;
-                while (c) {
+                let c = 40;
+                let options = [];
+                let i = 0;
+                while (i < c) {
+                    let optionWrapper = document.createElement('div');
                     let option = document.createElement('div');
+                    optionWrapper.appendChild(option)
+                    optionWrapper.classList.add('button-wrapper');
                     option.classList.add('button');
-                    option.innerHTML = c;
-                    c--;
-                    this.panels.leftPanel.addItem('option-' + c, option);
+                    option.innerHTML = i;
+                    i++;
+                    this.panels.leftPanel.addItem('option-' + i, optionWrapper);
+                    options.push(option)
                 }
             },
             createRightPanel: function(){

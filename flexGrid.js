@@ -88,6 +88,7 @@
         this.styleContainer = undefined;
         this.styles = {
             '.selected-row': 'background-color: rgba(200, 200, 200, .3);',
+            '.filter-reset-button': 'border: 1px solid #fcc; color: red; font-weight: bold;'
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 5s; position: relative; pointer-events: none;',
             // '.flex-grid-entity-data-cell:hover::after': 'transition-delay: 5s;  position: absolute; content: "\\1F58D"; color: blue; top: 0px; right: 0px; pointer-events: auto;',
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 1s; position: relative;',
@@ -1969,10 +1970,21 @@
 
 
         this.buildResetOption = function(){
-            let option = document.createElement('div');
-            option.classList.add('flex-grid-filter-option');
-            option.innerHTML = 'X';
-            return option;
+            let container = document.createElement('div');
+            container.classList.add('flex-grid-filter-option');
+            let button = document.createElement('button');
+            button.classList.add('filter-reset-button');
+            button.innerHTML = 'X';
+
+            container.appendChild(button);
+            return {
+                container: container,
+                button: button
+            };
+        };
+
+        this.customizeComponents = function(componentsDict){
+
         };
         // this.buildResetOption = function(){
         //     let option = document.createElement('div');
@@ -2001,13 +2013,14 @@
             let input = document.createElement('input');
             div.classList.add('flex-grid-filter-field');
             div.appendChild(input);
-            let resetBtn = this.buildResetOption();
+            let resetOption = this.buildResetOption();
             console.log(this.Filter); //(pubFilter)
 
             forms.componentContainer.appendChild(div);
-            forms.componentContainer.appendChild(resetBtn);
+            forms.componentContainer.appendChild(resetOption.container);
 
             DOMContainer.appendChild(forms.componentContainer);
+            //DOMContainer.appendChild(forms.componentOptionsContainer);
             input.addEventListener(
                 'keyup',
                 function(e){
@@ -2016,6 +2029,13 @@
                         filterComponent)
                 }
             )
+
+            this.customizeComponents(
+                {
+                    inputField: input,
+                    resetButton: resetOption.button
+                }
+            );
         };
 
         this.filtrate = function(

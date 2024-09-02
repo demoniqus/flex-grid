@@ -387,6 +387,13 @@
                 return new v();
             })()
         );
+
+        fg.getFilterComponent('string').customizeComponents = function(componentsDict){
+            componentsDict.inputField.classList.add('form-control');
+            componentsDict.resetButton.classList.add('btn');
+            componentsDict.resetButton.classList.add('btn-light');
+            componentsDict.resetButton.classList.add('filter');
+        }
         let n = (new Date).getTime();
         fg.build(config);
 

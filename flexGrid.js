@@ -506,6 +506,7 @@
             editBtn.style.minWidth = '32px';
             editBtn.style.minHeight = '32px';
             this.visualizer.RightPanel.addItem('editBtn', editBtn);
+            //TODO Можно добавлять для элементов классы only-vertical, only-horizontal
 
             let createBtn = document.createElement('div');
             createBtn.style.cursor = 'pointer';

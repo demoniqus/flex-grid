@@ -556,6 +556,7 @@
                                 };
 
                                 if (draggedHeader.parent === acceptorHeader.parent) {
+                                    //Общий родитель, либо есть только листовые заголовки
                                     if (draggedHeader.parent) {
                                         //Переупорядочиваем внутри родителя
                                         draggedHeader.parent.children = reorder(draggedHeader.parent.children, draggedHeader, acceptorHeader);
@@ -573,12 +574,14 @@
                                     changeOrder = true;
                                 }
                                 else {
+                                    //Родитель отличается. Проверим, находятся ли оба заголовка в одной ветке и если
+                                    // это так, то какой из заголовков является их общим предком
                                     let linearAcceptorHeadersBranch = true, linearDraggedHeadersBranch = true;
                                     let topAcceptorHeader = acceptorHeader, topDraggedHeader = draggedHeader;
                                     while (topAcceptorHeader.parent) {
                                         topAcceptorHeader = topAcceptorHeader.parent;
                                         if (topAcceptorHeader.children.length !== 1) {
-                                            linearAcceptorHEadersBranch = false;
+                                            linearAcceptorHeadersBranch = false;
                                         }
                                     }
                                     while (topDraggedHeader.parent) {
@@ -587,15 +590,53 @@
                                             linearDraggedHeadersBranch = false;
                                         }
                                     }
-                                    if (!(linearAcceptorHeadersBranch && linearDraggedHeadersBranch)
-                                    ) {
-                                        alert('Заголовок \'' + draggedHeader.title + '\' можно перемещать только внутри группы заголовков \'' + (draggedHeader.parent.title || draggedHeader.parent.id) + '\'');
-                                        return;
+
+                                    if (topDraggedHeader === topAcceptorHeader) {
+                                        //Заголовки находятся в общей ветке
+                                        //Поищем их общего ближайшего предка
+                                        let acceptorAncestor = acceptorHeader, draggedAncestor = draggedHeader;
+                                        while (acceptorAncestor.lvl < draggedAncestor.lvl) {
+                                            acceptorAncestor = acceptorAncestor.parent;
+                                        }
+
+                                        while (draggedAncestor.lvl < acceptorAncestor.lvl) {
+                                            draggedAncestor = draggedAncestor.parent;
+                                        }
+                                        //Теперь draggedAncestor и acceptorAncestor находятся на одном уровне - ищем общего предка
+                                        // (т.к. есть общий корневой элемент, то и общий предок в любом случае есть, даже если это корневой узел)
+
+
+                                        while (draggedAncestor.parent !== acceptorAncestor.parent) {
+                                            draggedAncestor = draggedAncestor.parent;
+                                            acceptorAncestor = acceptorAncestor.parent;
+                                        }
+
+                                        if (draggedAncestor.parent === topDraggedHeader) {
+                                            //Общим оказался только корневой заголовок - в этом случае нечего переставлять
+
+                                        }
+                                        else {
+                                            let lvl  = draggedAncestor.lvl
+                                            priv.headers.nodes[lvl] = reorder(priv.headers.nodes[lvl], draggedAncestor, acceptorAncestor);
+                                            reorder2(0);
+                                            changeOrder = true;
+                                        }
+
+                                        //TODO это заголовки в одной ветке
+                                        // тут надо перемещать в рамках одного уровня
+                                        //  еще сделать компонент для ширины колонок в панель ,
+                                        //  еще сделать кнопки для включения режимов перетаскивания колонок и изменения их ширины
+                                        // return;
+                                    }
+                                    else {
+                                        //Заголовки в разных ветках.
+                                        //В этом случае можно переставить местами сразу две ветки заголовков
+                                        priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
+                                        reorder2(0);
+                                        changeOrder = true;
                                     }
 
-                                    priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
-                                    reorder2(0);
-                                    changeOrder = true;
+
                                 }
 
 

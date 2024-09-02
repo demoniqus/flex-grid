@@ -230,6 +230,7 @@
                 this.panels.topPanel = new FlexPanel.Panel(//TODO Зачем FlexPanel.Panel вместо FlexPanel ?
                     {
                         panel: this.DOM.topPanel,
+                        orientation: FlexPanel.OrientationModel.Horizontal,
                     }
                 );
             },
@@ -254,6 +255,7 @@
                 this.panels.bottomPanel = new FlexPanel.Panel(
                     {
                         panel: this.DOM.bottomPanel,
+                        orientation: FlexPanel.OrientationModel.Horizontal,
                     }
                 );
                 let c = 20;
@@ -277,6 +279,7 @@
                 this.panels.leftPanel = new FlexPanel.Panel(
                     {
                         panel: this.DOM.leftPanel,
+                        orientation: FlexPanel.OrientationModel.Vertical,
                     }
                 );
                 let c = 40;
@@ -306,6 +309,7 @@
                 this.panels.rightPanel = new FlexPanel.Panel(
                     {
                         panel: this.DOM.rightPanel,
+                        orientation: FlexPanel.OrientationModel.Vertical,
                     }
                 );
                 // let c = 20;
@@ -338,6 +342,7 @@
                 this.panels.contentRightPanel = new FlexPanel.Panel(
                     {
                         panel: this.DOM.contentRightPanel,
+                        orientation: FlexPanel.OrientationModel.Vertical,
                     }
                 );
                 let c = 20;
@@ -397,6 +402,7 @@
                 this.panels.footerPanel = new FlexPanel.Panel(
                     {
                         panel: this.DOM.footerPanel,
+                        orientation: FlexPanel.OrientationModel.Horizontal,
                     }
                 );
                 let c = 20;
@@ -831,7 +837,6 @@
                 this.setHeadersHandlers();
             },
             createScroller: function(){
-
                 let scroller = new Scroller(
                     {
                         firstIndex:0,

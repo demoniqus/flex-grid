@@ -1,11 +1,63 @@
 (function(){
     let pluginIds = {};
+    let draggedPanelItem = undefined;
+    /**
+     * TODO Не факт, что панельки допустимо перемещать - тут и вопрос с их возвратом обратно на пустое место, и со сменой ориентации (горизонт- вертикаль) и пр.
+     */
+    let draggedPanel = undefined;
+
+    let ClassModel = Object.defineProperties(
+        Object.create(null),
+        {
+            PanelItem: {
+                get: () =>  'panel-item',
+                configurable: false,
+                enumerable: false,
+            },
+            OnlyVerticalItem: {
+                get: () => 'only-vertical-panel-item',
+                configurable: false,
+                enumerable: false
+            },
+            OnlyHorizontalItem: {
+                get: () => 'only-horizontal-panel-item',
+                configurable: false,
+                enumerable: false
+            },
+        }
+    );
+
+    let OrientationModel = Object.defineProperties(
+        Object.create(null),
+        {
+            Vertical: {
+                get: () => 'vertical',
+                configurable: false,
+                enumerable: false,
+            },
+            Horizontal: {
+                get: () => 'horizontal',
+                configurable: false,
+                enumerable: false,
+            }
+        }
+    );
 
     window.FlexPanel = Object.defineProperties(
         Object.create(null),
         {
             Panel: {
                 get: function(){return Panel;},
+                configurable: false,
+                enumerable: false,
+            },
+            OrientationModel: {
+                get: function () { return OrientationModel;},
+                configurable: false,
+                enumerable: false,
+            },
+            ClassModel: {
+                get: function() {return ClassModel;},
                 configurable: false,
                 enumerable: false,
             }
@@ -66,7 +118,15 @@
                 errors.push('Incorrect panel container');
             }
 
-
+            if (
+                !config.orientation ||
+                ! (
+                    config.orientation === OrientationModel.Horizontal ||
+                    config.orientation === OrientationModel.Vertical
+                )
+            ) {
+                errors.push('Incorrect panel orientation');
+            }
 
             errors = errors.splice(0, 0, ...this.specificConfigValidation(config));
 
@@ -174,7 +234,7 @@
         }.bind(priv)
 
         this.addItemBefore = function (key, item, before){
-            //TODO Можно доавить after, before
+            //TODO Можно добавить after, before
             if (key in this.items) {
                 this.items[key].parentElement.removeChild(this.items[key]);
             }
@@ -223,11 +283,14 @@
 
     };
 
+
     abstractPanel.prototype = new (function(){
         this.getDefaultConfig = function(){
             return {
                 _panel: 'DOM-элемент.',
                 panel: undefined,
+                _orientation: 'vertical | horizontal',
+                orientation: undefined
             };
         };
     })();

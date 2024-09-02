@@ -460,6 +460,7 @@
                         let headerData = this.headers.nodes[iRow][iCell];
                         let selector = '.flex-grid-nodal-headers-row-lvl' + iRow +
                         ' .' + headerData.id.replaceAll('.', '_');
+                        console.log(selector, iCell);
                         this.orderStyles[selector] = 'order: ' + iCell + ';';
                         iCell++;
                     }
@@ -470,7 +471,7 @@
                 while (iCell < this.headers.leafs.length) {
                     let headerData = this.headers.leafs[iCell];
                     let idClass = headerData.id.replaceAll('.', '_');
-                    let selector = '.flex-grid-row .flex-grid-cell.' + idClass;
+                    let selector = '.flex-grid-row .flex-grid-leaf-header-cell.' + idClass;
                     this.orderStyles[selector] = 'order: ' + iCell + ';';
                     iCell++;
 
@@ -574,21 +575,15 @@
                                     changeOrder = true;
                                 }
                                 else {
+                                    let lvl = false;
                                     //Родитель отличается. Проверим, находятся ли оба заголовка в одной ветке и если
                                     // это так, то какой из заголовков является их общим предком
-                                    let linearAcceptorHeadersBranch = true, linearDraggedHeadersBranch = true;
                                     let topAcceptorHeader = acceptorHeader, topDraggedHeader = draggedHeader;
                                     while (topAcceptorHeader.parent) {
                                         topAcceptorHeader = topAcceptorHeader.parent;
-                                        if (topAcceptorHeader.children.length !== 1) {
-                                            linearAcceptorHeadersBranch = false;
-                                        }
                                     }
                                     while (topDraggedHeader.parent) {
                                         topDraggedHeader = topDraggedHeader.parent;
-                                        if (topDraggedHeader.children.length !== 1) {
-                                            linearDraggedHeadersBranch = false;
-                                        }
                                     }
 
                                     if (topDraggedHeader === topAcceptorHeader) {
@@ -613,14 +608,15 @@
 
                                         if (draggedAncestor.parent === topDraggedHeader) {
                                             //Общим оказался только корневой заголовок - в этом случае нечего переставлять
+                                            return;
 
                                         }
-                                        else {
-                                            let lvl  = draggedAncestor.lvl
-                                            priv.headers.nodes[lvl] = reorder(priv.headers.nodes[lvl], draggedAncestor, acceptorAncestor);
-                                            reorder2(0);
-                                            changeOrder = true;
-                                        }
+                                        lvl  = draggedAncestor.lvl
+                                        topDraggedHeader = draggedAncestor;
+                                        topAcceptorHeader = acceptorAncestor;
+                                        // priv.headers.nodes[lvl] = reorder(priv.headers.nodes[lvl], draggedAncestor, acceptorAncestor);
+                                        // reorder2(lvl);
+                                        // changeOrder = true;
 
                                         //TODO это заголовки в одной ветке
                                         // тут надо перемещать в рамках одного уровня
@@ -631,10 +627,11 @@
                                     else {
                                         //Заголовки в разных ветках.
                                         //В этом случае можно переставить местами сразу две ветки заголовков
-                                        priv.headers.nodes[0] = reorder(priv.headers.nodes[0], topDraggedHeader, topAcceptorHeader);
-                                        reorder2(0);
-                                        changeOrder = true;
+                                        lvl = 0;
                                     }
+                                    priv.headers.nodes[lvl] = reorder(priv.headers.nodes[lvl], topDraggedHeader, topAcceptorHeader);
+                                    reorder2(lvl);
+                                    changeOrder = true;
 
 
                                 }

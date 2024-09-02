@@ -46,7 +46,7 @@
             width: 2800px;*/
             /*min-width: 1500px;
             max-width: 1500px;*/
-            width: 1500px;
+            width: 3000px;
             padding: 0;
             margin: 0;
             border: 0 none;
@@ -487,8 +487,10 @@
                         DOMContainer.innerHTML = '';
                         if (itemType in {estimate_cust: true, est_contr: true}) {
                             let flag = !!gridElement.get(fieldName);
-                            let icon = '<img style="width: 20px; max-width: 20px; height: 20px; max-height: 20px;" src="img/' + (flag ? 'true' : 'false') + '-icon.png" />';
-                            DOMContainer.innerHTML = icon;
+                            let input = '<input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled" ' + (flag ? 'checked' : '') + ' disabled>';
+                            // let icon = '<img style="width: 20px; max-width: 20px; height: 20px; max-height: 20px;" src="img/' + (flag ? 'true' : 'false') + '-icon.png" />';
+                            DOMContainer.innerHTML = input;
+                            DOMContainer.style.textAlign = 'center'
                         }
                     };
                 };
@@ -563,7 +565,13 @@
                 //TODO НЕ выполнять при первой инициализации страницы
                 // Возможно, timeout тут вообще не нужен, т.к. пока пользователь не остановит перемещение resizer'а, событие не наступает
                 ro.timeout && clearTimeout(ro.timeout);
-                ro.timeout = setTimeout(function(){fg.updatePreview();}, 100)
+                ro.timeout = setTimeout(
+                    function(){
+                        fg.updatePreview();
+                    },
+                    100
+                )
+                //TODO resize для скроллируемых панелей!!
             })
             ro.observe(document.getElementById('container'));
         })();

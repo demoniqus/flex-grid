@@ -431,7 +431,11 @@
                 let styles = '';
                 let rootClassName = '.' + this.getRootClassName() + ' ';
                 for (let styleId in this.sizeStyles) {
-                    styles += rootClassName + styleId + ' {' + this.sizeStyles[styleId] + '}' + "\n"
+                    let selector = styleId
+                        .split(',')
+                        .map(function(selector){return rootClassName + selector;})
+                        .join(',');
+                    styles += selector + ' {' + this.sizeStyles[styleId] + '}' + "\n"
                 }
                 this.sizesStyleContainer.textContent = styles;
             },

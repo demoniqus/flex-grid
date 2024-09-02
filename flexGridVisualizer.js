@@ -869,6 +869,7 @@
             this.createHeaders();
             this.createFilters();
             this.createScroller();
+            this.panels.leftPanel.setScrollable();
 
 
         }.bind(priv);

@@ -222,6 +222,54 @@
             }
             this.items[key] = item;
             this.DOM.panel.appendChild(item);
+            item.classList.add(ClassModel.PanelItem);
+            this.setPanelItemAsDraggable(item);
+        }.bind(priv);
+
+        this.setScrollable = function(){
+            let div = document.createElement('div')
+            div.classList.add('panel-scroll-wrapper')
+            div.classList.add('flex-grid-panel')
+            div.classList.add('flex-grid-nowrapped-panel')
+            div.classList.add('flex-grid-vertical-panel')
+            let options = [];
+            while (this.DOM.panel.children.length) {
+                let panelItem = this.DOM.panel.children[0]
+                div.appendChild(panelItem);
+                options.push(panelItem)
+            }
+            this.DOM.panel.appendChild(div)
+
+
+            let scroller = new Scroller(
+                {
+                    firstIndex:0,
+                    itemsCount: options.length,
+                    DOM: {
+                        container: this.DOM.panel,
+                        scrolledItemsContainer: div,
+                    },
+                    getElement: function (index) {
+                        return options[index];
+                    },
+                    name: 'Panel'
+                }
+            );
+            // let scroller = new Scroller(
+            //     {
+            //         firstIndex:0,
+            //         itemsCount: () => div.children.length,
+            //         DOM: {
+            //             container: this.DOM.panel,
+            //             scrolledItemsContainer: div,
+            //         },
+            //         getElement: (index) => div.children[index]
+            //     }
+            // );
+
+            scroller.reload();
+
+            // scroller.reload();
         }.bind(priv);
 
         this.addItemAfter = function (key, item, after){

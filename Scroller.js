@@ -81,6 +81,8 @@
                     itemsCount: 0,
                     _scrollSensitivity: 'Чувствительность скроллбара - количество пикселей, которые надо прокрутить для прокрутки на один элемент. Влияет на отображение полосы вертикальной прокрутки',
                     scrollSensitivity: 10,
+                    _noScrollbar: 'Не показывать полосу прокрутки',
+                    noScrollbar: false
                     // _minIndex: 'Минимально возможный индекс в наборе. При загрузке компонента Scroller не с первого элемента возникает ситуация, что под предыдущие элементы не выделяется никакого места и становится невозможно выполнить прокрутку вверх. Поэтому необходимо выделять место под "виртуальные" элементы, которые еще ни разу не были загружены в Scroller',
                     // minIndex: 0, //TODO А нужен ли? Или всегда считать, что минимальный индекс равен нулю, т.к. индексы всегда числовые и всегда должны быть упорядоченными
 
@@ -264,6 +266,9 @@
             scrolledContainer.classList.add(this.getRootClassName());
             scrolledContainer.classList.add('root-scrolled-container');
             scrolledContainer.classList.add('scrolled-data-container');
+            if (this.config.noScrollbar) {
+                scrolledContainer.classList.add('no-scrollbar');
+            }
 
             scrolledItemsContainer.classList.add('scrolled-items-container');
 
@@ -610,7 +615,8 @@
             '.scroller-scrollbar': 'display: inline-block; min-width: 1px; width: 1px; max-width: 1px; opacity: 0;',
             '.transparent': 'opacity: 0;',
             '.mode-scroll .scroller-data-container .scrolled-item': 'flex-grow: 0 !important; flex-shrink: 0 !important;',
-            '.scroller-data-container .scrolled-item:last-child': 'flex-shrink: 1;'
+            '.scroller-data-container .scrolled-item:last-child': 'flex-shrink: 1;',
+            '.root-scrolled-container.no-scrollbar .scroller-scrollbar-container': 'width: 1px; opacity: 0; scrollbar-width: none;'
         };
 
         this.items = {

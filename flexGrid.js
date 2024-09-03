@@ -126,12 +126,15 @@
             // Набор фильтров данных
         };
         this.setGridElementHtmlHandlers = function(/** @type {GridElement} */ gridElement){
+            let grid = this;
+
             gridElement.DOM.row.addEventListener('contextmenu', function(e){
                 console.log(e);
                 console.log(this);
             });
 
             if (this.config.draggableRows === true || this.config.draggableRows === 1) {
+                //TODO переделать на dragger
                 gridElement.DOM.row.setAttribute('draggable', 'true');
 
                 //https://developer.mozilla.org/ru/docs/Web/API/HTML_Drag_and_Drop_API
@@ -172,6 +175,19 @@
                                 dragged.gridElement.getData(),
                             )
                         }
+                    }
+                );
+                gridElement.DOM.row.addEventListener(
+                    'click',
+                    function(e){
+                        //TODO запрашивать не от document, а от visualizer.DOM.dataPanel
+                        document.body.querySelectorAll('.flex-grid-data-row.selected').forEach(
+                            function(selectedRow){
+                                selectedRow.classList.remove('selected-row');
+                            }
+                        );
+                        this.classList.add('selected-row');
+                        grid.activeRow = this;
                     }
                 );
 
@@ -1025,6 +1041,7 @@
 
                 this.visualizer.updatePreview();
             }.bind(this));
+            setGridElementHtmlHandlers(gridElement);
         };
 
 

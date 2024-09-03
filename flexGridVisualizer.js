@@ -145,6 +145,8 @@
                 '.flex-grid-headers-row:not(:first-child) .flex-grid-header-cell.virtual-header': 'border-top-color: transparent;',
                 '.flex-grid-data-cell': '',
                 '.flex-grid-row.flex-grid-data-row': 'overflow-x: visible; overflow-y: hidden; flex-grow: 0; flex-shrink: 0;',
+                '.flex-grid-row.flex-grid-data-row:hover .flex-grid-cell.flex-grid-data-cell': '--brd-clr: lime; border-top-color: var(--brd-clr); border-bottom-color: var(--brd-clr);',
+                '.flex-grid-row.flex-grid-data-row.selected-row': 'background-color: rgba(220, 220, 220, .5);',
                 '.flex-grid-row.flex-grid-filters-row .flex-grid-filter-cell': 'text-align: center; padding: 5px 0px; display: flex; flex-direction: column; row-gap: 2px;',
                 '.flex-grid-filter-panel .flex-grid-filter-component-container': 'display: flex; flex-direction: row; flex-wrap: nowrap; box-sizing: border-box;  align-items: center; width: 100%; min-width: 100%; max-width: 100%; position: relative; column-gap: 2px;',
                 '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field': 'flex-grow: 1; /*padding-right: 16px; width: calc(100% - 4px); min-width: calc(100% - 4px); max-width: calc(100% - 4px);*/',

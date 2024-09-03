@@ -139,7 +139,7 @@
                 '.flex-grid-footer-panel' : 'overflow: visible;',
                 '.flex-grid-row': 'flex-wrap: nowrap; display: flex; align-items: stretch; overflow: visible;',
                 '.flex-grid-cell': 'margin: 0 !important; box-sizing: border-box !important; padding: 0px 5px; border: 1px solid grey; overflow: visible; text-wrap: wrap; word-break: break-all;',
-                '.flex-grid-header-cell': 'text-align: center;',
+                '.flex-grid-header-cell': 'text-align: center; font-weight: bold; background-color: rgba(100, 180, 130, .3);',
                 '.flex-grid-header-cell.virtual-header': 'border-bottom-color: transparent;',
                 '.flex-grid-header-cell.has-virtual-parent': 'border-top-color: transparent;',
                 '.flex-grid-headers-row:not(:first-child) .flex-grid-header-cell.virtual-header': 'border-top-color: transparent;',
@@ -836,6 +836,7 @@
                     cell.classList.add('flex-grid-leaf-header-cell');
                     cell.classList.add(idClass);
                     cell.headerData = headerData;
+                    //TODO Для экономии места можно сделать длинные заголовки без возможности переноса с text-overflow: ellipsis и text-wrap: nowrap, а также устанавливать title для листовых заголовков
 
                     if (headerData.parent && headerData.parent.virtual) {
                         cell.classList.add('has-virtual-parent');

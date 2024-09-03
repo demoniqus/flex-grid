@@ -2033,37 +2033,112 @@
                 }
             );
 
-            let button = document.createElement('button');
-            button.classList.add('string-filter-option');
-            button.classList.add('btn');
-            button.classList.add('btn-outline-info');
-            button.innerHTML = '^*';
-            button.title = 'Начинается с ...';
-            forms.componentOptionsContainer.appendChild(button);
+            let random = Math.ceil(Math.random() * 1000000);//TODO Ввести идентификатор для компонента фильтра
 
-            button = document.createElement('button');
-            button.classList.add('string-filter-option');
-            button.classList.add('btn');
-            button.classList.add('btn-outline-info');
-            button.innerHTML = '%%';
-            button.title = 'Поиск по вхождению';
-            forms.componentOptionsContainer.appendChild(button);
+            let btnGroupContainer = document.createElement('div');
+            btnGroupContainer.classList.add('btn-group');
+            btnGroupContainer.setAttribute('role', 'group');
 
-            button = document.createElement('button');
-            button.classList.add('string-filter-option');
-            button.classList.add('btn');
-            button.classList.add('btn-outline-info');
-            button.innerHTML = '**';
-            button.title = 'Поиск по точному совпадению';
-            forms.componentOptionsContainer.appendChild(button);
+            let radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.classList.add('btn-check');
+            radio.name = 'string-filter-component-mode-' + random;
+            radio.id = 'string-filter-component-mode-start-with-' + random;
+            radio.autocomplete = 'off';
+            let label = document.createElement('label');
+            label.classList.add('btn');
+            label.classList.add('btn-outline-primary');
+            label.classList.add('string-filter-option');
+            label.setAttribute('for', radio.id)
+            label.textContent = '^*';
+            label.title = 'Начинается с ...';
+            btnGroupContainer.appendChild(radio);
+            btnGroupContainer.appendChild(label);
 
-            button = document.createElement('button');
-            button.classList.add('string-filter-option');
-            button.classList.add('btn');
-            button.classList.add('btn-outline-info');
-            button.innerHTML = '*$';
-            button.title = 'Заканчивается на...';
-            forms.componentOptionsContainer.appendChild(button);
+            radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.classList.add('btn-check');
+            radio.name = 'string-filter-component-mode-' + random;
+            radio.id = 'string-filter-component-mode-contains-' + random;
+            radio.autocomplete = 'off';
+            label = document.createElement('label');
+            label.classList.add('btn');
+            label.classList.add('btn-outline-primary');
+            label.classList.add('string-filter-option');
+            label.setAttribute('for', radio.id)
+            label.textContent = '%%';
+            label.title = 'Поиск по вхождению';
+            btnGroupContainer.appendChild(radio);
+            btnGroupContainer.appendChild(label);
+
+            radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.classList.add('btn-check');
+            radio.name = 'string-filter-component-mode-' + random;
+            radio.id = 'string-filter-component-mode-equals-' + random;
+            radio.autocomplete = 'off';
+            label = document.createElement('label');
+            label.classList.add('btn');
+            label.classList.add('btn-outline-primary');
+            label.classList.add('string-filter-option');
+            label.setAttribute('for', radio.id)
+            label.textContent = '**';
+            label.title = 'Поиск по точному совпадению';
+            btnGroupContainer.appendChild(radio);
+            btnGroupContainer.appendChild(label);
+
+            radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.classList.add('btn-check');
+            radio.name = 'string-filter-component-mode-' + random;
+            radio.id = 'string-filter-component-mode-end-with-' + random;
+            radio.autocomplete = 'off';
+            label = document.createElement('label');
+            label.classList.add('btn');
+            label.classList.add('btn-outline-primary');
+            label.classList.add('string-filter-option');
+            label.setAttribute('for', radio.id)
+            label.textContent = '*$';
+            label.title = 'Заканчивается на...';
+            btnGroupContainer.appendChild(radio);
+            btnGroupContainer.appendChild(label);
+
+
+            forms.componentOptionsContainer.appendChild(btnGroupContainer);
+
+
+
+            // let button = document.createElement('button');
+            // button.classList.add('string-filter-option');
+            // button.classList.add('btn');
+            // button.classList.add('btn-outline-info');
+            // button.innerHTML = '^*';
+            // button.title = 'Начинается с ...';
+            // forms.componentOptionsContainer.appendChild(button);
+            //
+            // button = document.createElement('button');
+            // button.classList.add('string-filter-option');
+            // button.classList.add('btn');
+            // button.classList.add('btn-outline-info');
+            // button.innerHTML = '%%';
+            // button.title = 'Поиск по вхождению';
+            // forms.componentOptionsContainer.appendChild(button);
+            //
+            // button = document.createElement('button');
+            // button.classList.add('string-filter-option');
+            // button.classList.add('btn');
+            // button.classList.add('btn-outline-info');
+            // button.innerHTML = '**';
+            // button.title = 'Поиск по точному совпадению';
+            // forms.componentOptionsContainer.appendChild(button);
+            //
+            // button = document.createElement('button');
+            // button.classList.add('string-filter-option');
+            // button.classList.add('btn');
+            // button.classList.add('btn-outline-info');
+            // button.innerHTML = '*$';
+            // button.title = 'Заканчивается на...';
+            // forms.componentOptionsContainer.appendChild(button);
 
             this.customizeComponents(
                 {

@@ -243,7 +243,7 @@
                 //TODO Возвращать количество видимых в данный момент элементов, а не всех!!!
                 return this.data.current.length;
             },
-            getElement: function(index){
+            getElement: function(index, direction){
                 if (index < 0 || index > this.data.current.length - 1)
                 {
                     return DefaultVisualizer.getFlags().noElements;

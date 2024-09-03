@@ -70,7 +70,7 @@
                  */
                 return {
                     _getElement: 'Метод, возвращающий DOM-объект для отображения пользователю',
-                    getElement: function(/** @type {number} */index){
+                    getElement: function(/** @type {number} */index, /** @type {string} */direction){
 
                     },
                     // _direction: 'Способ прокрутки контейнера. По умолчанию - прокрутка в одном измерении, вертикальном',
@@ -493,7 +493,7 @@
             /** Ищем индекс для следующего элемента */
             elementIndex = refElement instanceof ScrolledElement ? refElement.getIndex() + incrementValue : (refElement || 0);
             while (true) {
-                element = /*this.items.items[elementIndex] || */this.config.getElement.call(this, elementIndex);
+                element = /*this.items.items[elementIndex] || */this.config.getElement.call(this, elementIndex, incrementValue > 0? 'forward': 'backward');
                 if (element === this.flags.noElements) {
                     /** Больше нет элементов, которые можно загрузить */
                     return false;

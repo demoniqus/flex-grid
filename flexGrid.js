@@ -90,6 +90,7 @@
             '.selected-row': 'background-color: rgba(200, 200, 200, .3);',
             '.filter-reset-button': 'border: 1px solid #fcc; color: red; font-weight: bold;',
             '.flex-grid-row .flex-grid-cell.flexGrid_numerableHeader': 'text-wrap: nowrap !important;',
+            ',string-filter-option': '',
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 5s; position: relative; pointer-events: none;',
             // '.flex-grid-entity-data-cell:hover::after': 'transition-delay: 5s;  position: absolute; content: "\\1F58D"; color: blue; top: 0px; right: 0px; pointer-events: auto;',
             // '.flex-grid-entity-data-cell:hover': 'transition-delay: 1s; position: relative;',
@@ -2003,6 +2004,7 @@
     };
 
     function StringFilterComponent(){
+        //TODO Пустая строка - сброс строкового фильтра
         this.buildFilterForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/headerData){
             let Filter = this.Filter;
             let filterComponent = this;
@@ -2021,7 +2023,7 @@
             forms.componentContainer.appendChild(resetOption.container);
 
             DOMContainer.appendChild(forms.componentContainer);
-            //DOMContainer.appendChild(forms.componentOptionsContainer);
+            DOMContainer.appendChild(forms.componentOptionsContainer);
             input.addEventListener(
                 'keyup',
                 function(e){
@@ -2029,7 +2031,39 @@
                         this.value,
                         filterComponent)
                 }
-            )
+            );
+
+            let button = document.createElement('button');
+            button.classList.add('string-filter-option');
+            button.classList.add('btn');
+            button.classList.add('btn-outline-info');
+            button.innerHTML = '^*';
+            button.title = 'Начинается с ...';
+            forms.componentOptionsContainer.appendChild(button);
+
+            button = document.createElement('button');
+            button.classList.add('string-filter-option');
+            button.classList.add('btn');
+            button.classList.add('btn-outline-info');
+            button.innerHTML = '%%';
+            button.title = 'Поиск по вхождению';
+            forms.componentOptionsContainer.appendChild(button);
+
+            button = document.createElement('button');
+            button.classList.add('string-filter-option');
+            button.classList.add('btn');
+            button.classList.add('btn-outline-info');
+            button.innerHTML = '**';
+            button.title = 'Поиск по точному совпадению';
+            forms.componentOptionsContainer.appendChild(button);
+
+            button = document.createElement('button');
+            button.classList.add('string-filter-option');
+            button.classList.add('btn');
+            button.classList.add('btn-outline-info');
+            button.innerHTML = '*$';
+            button.title = 'Заканчивается на...';
+            forms.componentOptionsContainer.appendChild(button);
 
             this.customizeComponents(
                 {

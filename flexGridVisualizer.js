@@ -145,12 +145,15 @@
                 '.flex-grid-headers-row:not(:first-child) .flex-grid-header-cell.virtual-header': 'border-top-color: transparent;',
                 '.flex-grid-data-cell': '',
                 '.flex-grid-row.flex-grid-data-row': 'overflow-x: visible; overflow-y: hidden; flex-grow: 0; flex-shrink: 0;',
-                '.flex-grid-row.flex-grid-filters-row .flex-grid-filter-cell': 'text-align: center; padding: 5px 0px;',
-                '.flex-grid-filter-panel .flex-grid-filter-component-container': 'display: flex; flex-direction: row; flex-wrap: nowrap; box-sizing: border-box;  align-items: stretch; width: 100%; min-width: 100%; max-width: 100%; position: relative;',
-                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field': 'padding-right: 16px; width: calc(100% - 4px); min-width: calc(100% - 4px); max-width: calc(100% - 4px);',
-                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-option': 'position: absolute; right: 2px; cursor: pointer;',
-                '.flex-grid-filter-panel .flex-grid-filter-component-container input, .flex-grid-filter-panel .flex-grid-filter-component-container select': '--w: calc(100% - 20px); max-width: var(--w); min-width: var(--w); var(--w); box-sizing: border-box;',
-
+                '.flex-grid-row.flex-grid-filters-row .flex-grid-filter-cell': 'text-align: center; padding: 5px 0px; display: flex; flex-direction: column; row-gap: 2px;',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container': 'display: flex; flex-direction: row; flex-wrap: nowrap; box-sizing: border-box;  align-items: center; width: 100%; min-width: 100%; max-width: 100%; position: relative; column-gap: 2px;',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field': 'flex-grow: 1; /*padding-right: 16px; width: calc(100% - 4px); min-width: calc(100% - 4px); max-width: calc(100% - 4px);*/',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-option': '/*position: absolute; right: 2px; cursor: pointer;*/',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container input, .flex-grid-filter-panel .flex-grid-filter-component-container select': '/*--w: calc(100% - 20px); max-width: var(--w); min-width: var(--w); var(--w);*/ box-sizing: border-box;',
+                '.flex-grid-filter-component-options-container': 'display: flex; justify-content: center; column-gap: 2px; flex-wrap: flex-wrap: wrap;',
+                '.string-filter-option': 'text-wrap: nowrap !important; font-size: 1rem; padding: 2px; ',
+                '.flex-grid-filter-panel .flex-grid-filter-component-container .filter-reset-button': 'padding: 3px; line-height: 1;',
+                '.flex-grid-filter-component-container': '',
 
 
                 '.flex-grid-footer-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',

@@ -424,7 +424,11 @@
             while (this.DOM.scrolledItemsContainer.firstElementChild) {
                 this.DOM.scrolledItemsContainer.removeChild(this.DOM.scrolledItemsContainer.lastElementChild);
             }
-
+            /**
+             * Перезагружаем каждый раз весь список отображаемых строк, т.к. источник мог измениться и scroller не может
+             * решить, какие строки можно оставить при прокрутке без обновления, а какие строки надо обновлять.
+             * Сам источник должен решать, какие строки можно закешировать, а какие нет.
+             */
 
             this.DOM.wrapper.classList.add('mode-scroll');
 

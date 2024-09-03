@@ -2004,6 +2004,10 @@
     };
 
     function StringFilterComponent(){
+        let storage = {
+            DOM: {},
+            mode: 'startWith'
+        };
         //TODO Пустая строка - сброс строкового фильтра
         this.buildFilterForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/headerData){
             let Filter = this.Filter;
@@ -2044,6 +2048,7 @@
             radio.classList.add('btn-check');
             radio.name = 'string-filter-component-mode-' + random;
             radio.id = 'string-filter-component-mode-start-with-' + random;
+            radio.dataset.mode = 'startWith';
             radio.autocomplete = 'off';
             let label = document.createElement('label');
             label.classList.add('btn');
@@ -2054,12 +2059,16 @@
             label.title = 'Начинается с ...';
             btnGroupContainer.appendChild(radio);
             btnGroupContainer.appendChild(label);
+            radio.onchange = function(){
+                storage.mode = this.dataset.mode;
+            };
 
             radio = document.createElement('input');
             radio.type = 'radio';
             radio.classList.add('btn-check');
             radio.name = 'string-filter-component-mode-' + random;
             radio.id = 'string-filter-component-mode-contains-' + random;
+            radio.dataset.mode = 'contains';
             radio.autocomplete = 'off';
             label = document.createElement('label');
             label.classList.add('btn');
@@ -2070,12 +2079,16 @@
             label.title = 'Поиск по вхождению';
             btnGroupContainer.appendChild(radio);
             btnGroupContainer.appendChild(label);
+            radio.onchange = function(){
+                storage.mode = this.dataset.mode;
+            };
 
             radio = document.createElement('input');
             radio.type = 'radio';
             radio.classList.add('btn-check');
             radio.name = 'string-filter-component-mode-' + random;
             radio.id = 'string-filter-component-mode-equals-' + random;
+            radio.dataset.mode = 'equals';
             radio.autocomplete = 'off';
             label = document.createElement('label');
             label.classList.add('btn');
@@ -2086,12 +2099,16 @@
             label.title = 'Поиск по точному совпадению';
             btnGroupContainer.appendChild(radio);
             btnGroupContainer.appendChild(label);
+            radio.onchange = function(){
+                storage.mode = this.dataset.mode;
+            };
 
             radio = document.createElement('input');
             radio.type = 'radio';
             radio.classList.add('btn-check');
             radio.name = 'string-filter-component-mode-' + random;
             radio.id = 'string-filter-component-mode-end-with-' + random;
+            radio.dataset.mode = 'endWith';
             radio.autocomplete = 'off';
             label = document.createElement('label');
             label.classList.add('btn');
@@ -2102,7 +2119,12 @@
             label.title = 'Заканчивается на...';
             btnGroupContainer.appendChild(radio);
             btnGroupContainer.appendChild(label);
+            radio.onchange = function(){
+                storage.mode = this.dataset.mode;
+            };
 
+            //TODO Компонент может также содержать опции учета регистра, а также инверсии результатов поиска
+            // Отдельно продумать поиск пустые / непустые и т.п. - возможно, для компонента надо делать отдельное вспылвающее окошко с расширенными настройками
 
             forms.componentOptionsContainer.appendChild(btnGroupContainer);
 
@@ -2153,10 +2175,25 @@
             filterValue,
             /** @type {GridElement[]} */gridElements
         ){
-            return gridElements.filter(
-                function(gridElement, index){
+            let filterCallbacks = {
+                startWith: function(gridElement, index){
+                    return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) === 0;
+                },
+                endWith: function(gridElement, index){
+
+                    return (gridElement.get(fieldName) ?? '').endsWith(filterValue);
+                },
+
+                contains: function(gridElement, index){
+                    return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) > -1;
+                },
+                equals: function(gridElement, index){
                     return (gridElement.get(fieldName) ?? '').toString() === filterValue;
-                }
+                },
+
+            }
+            return gridElements.filter(
+                filterCallbacks[storage.mode ?? 'startWith']
             );
         };
 

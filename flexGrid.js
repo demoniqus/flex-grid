@@ -22,7 +22,7 @@
         config = config ? config : {};
         /**
          * TODO
-         * 1. Продумать зависимость дочерный-родительский(-е) гриды
+         * 1. Продумать зависимость дочерний-родительский(-е) гриды
          * 2. Возможно, следует заменить array.splice на использование циклов для повышения быстродействия
          * 3. Устранить утечки памяти: создаем в функции DOM-элемент и устанавливаем на него обработчики событий. При этом
          *      данные обработчики помнят могут хранить значение всех временных переменных, определенных при создании
@@ -106,8 +106,6 @@
 
         this.activeRow = undefined;
 
-        this.draggedRow = undefined;
-
 
         this.createStyleElement = function(){
             //TODO Добавить префикс - корневой класс типа '.flex-grid-visualizer-' + this.id, чтобы стили влияли только на используемый DOM-контейнер
@@ -189,8 +187,8 @@
                 'click',
                 function(e){
                     //css :hover::after влияет на e.target - вместо ячейки может придти вся строка в том же FF!!
-                    console.log('activaterow ', this)
-                    console.log(e)
+                    // console.log('activaterow ', this)
+                    // console.log(e)
                     grid.activeRow && grid.activeRow.classList.remove('selected-row');
                     grid.activeRow = this;
                     this.classList.add('selected-row');
@@ -1652,10 +1650,7 @@
 
                 //В grid.dataset устанавливаем копию отфильтрованных данных, т.к. пользователь может разворачивать
                 //строки и портить тем самым результат фильтрации
-                let copy = [], i = 0, l = data.length;
-                while (i < l)  {
-                    copy.push(data[i++]);
-                }
+                let copy = [...data];
                 priv.privFlexGrid.data.current.setData(copy);
                 /**
                  * expanded просто так менять нельзя на true.
@@ -2039,7 +2034,7 @@
             div.classList.add('flex-grid-filter-field');
             div.appendChild(input);
             let resetOption = this.buildResetOption();
-            console.log(this.Filter); //(pubFilter)
+            // console.log(this.Filter); //(pubFilter)
 
             forms.componentContainer.appendChild(div);
             forms.componentContainer.appendChild(resetOption.container);

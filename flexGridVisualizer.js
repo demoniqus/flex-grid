@@ -464,8 +464,7 @@
                     while (iCell < this.headers.nodes[iRow].length) {
                         let headerData = this.headers.nodes[iRow][iCell];
                         let selector = '.flex-grid-nodal-headers-row-lvl' + iRow +
-                        ' .' + headerData.id.replaceAll('.', '_');
-                        console.log(selector, iCell);
+                            ' .' + headerData.id.replaceAll('.', '_');
                         this.orderStyles[selector] = 'order: ' + iCell + ';';
                         iCell++;
                     }
@@ -517,7 +516,11 @@
                         {
                             acceptorElement: cell,
                             onDrop: function(draggedCell, acceptorCell){
-                                if (!draggedCell.classList.contains('flex-grid-header-cell')) {
+                                if (
+                                    !draggedCell.classList.contains('flex-grid-header-cell') ||
+                                    //Заголовки можно перемещать только внутри одной таблицы
+                                    draggedCell.parentElement.parentElement !== acceptorCell.parentElement.parentElement
+                                ) {
                                     //TODO Можно вытащить с отдельную настройку конфига типа isAccepted = function():bool {}
                                     //Не принимаем прочие элементы, которые может сюда перетащить пользователь.
                                     // Можно даже выбрасывать сообщение, но проще не реагировать на неверные действия

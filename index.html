@@ -444,12 +444,26 @@
         config.draggableColumns = true;
         config.draggableRows = true;
         config.events = {
-            moveItem: function(acceptorItem, draggedItem){
+            moveItem: function(acceptorItem, draggedItem, acceptorFlexGridId, sourceFlexGridId){
+                if (
+                        acceptorFlexGridId.gridClass !== sourceFlexGridId.gridClass ||
+                        acceptorFlexGridId.id !== sourceFlexGridId.id
+                ) {
+                    // Из других grid'ов не принимаем строки
+                    return;
+                }
                 console.log('element ' + acceptorItem.id + ' accept element ' + draggedItem.id)
             }
         };
 
-        var fg = new FlexGrid.TreeGrid();
+        var fg = new FlexGrid.TreeGrid(
+                {
+                    id: {
+                        gridClass: 'TestGrid',
+                        id: 1,
+                    }
+                }
+        );
         fg.addVisualizationComponent(
             'budgetNameVisualizer',
             (function(){

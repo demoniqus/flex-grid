@@ -15,7 +15,11 @@
             }
         }
     );
-    function abstractFlexGrid (){
+    function abstractFlexGrid (config){
+        if (config && typeof config !== typeof {}) {
+            throw 'Config must be an object or null/undefined!';
+        }
+        config = config ? config : {};
         /**
          * TODO
          * 1. Продумать зависимость дочерный-родительский(-е) гриды
@@ -25,7 +29,7 @@
          *      этих обработчиков, что и может стать утечкой памяти.
          * 4. Заменить undefined на null для возможности сравнения двух пустых значений ( а может и не надо)
          * 5. Колонки "Номер строки" и "Дерево" должны при запросе элементов через getElement-callbsack изменять свою ширину:
-         * - "Номер строки" - в зависимости от длины номера
+         * - "Номер строки" - в зависимости от длины номера (Сделано - text-wrap: nowrap !important)
          * - "Дерево" - в зависимости от максимальной глубины запрошенного элемента
          * При этом также надо регулировать ширину их родительских агрегирующих заголовков
          * 6. Возможно, что "Номер строки" должен браться не из набора видимых элементов, а из полного набора данных текущего dataSet,
@@ -33,7 +37,10 @@
          *
          */
 
+        //Уникальный идентификатор таблицы
         this.id = null;
+        //Пользовательский идентификатор таблицы. Используется для организации пользовательского взаимодействия между разными таблицами
+        this.customId = config.id ? config.id : null;
         this.headers = {
             /**
              * Оригинальный порядок листовых заголовков
@@ -134,49 +141,34 @@
             });
 
             if (this.config.draggableRows === true || this.config.draggableRows === 1) {
-                //TODO переделать на dragger
-                gridElement.DOM.row.setAttribute('draggable', 'true');
-
                 //https://developer.mozilla.org/ru/docs/Web/API/HTML_Drag_and_Drop_API
 
                 //TODO Можно установить картинку при перетаскивании строки
-                gridElement.DOM.row.addEventListener(
-                    'dragstart',
-                    function(e){
-                        grid.draggedRow = e.target || e.srcElement;
-
-                    }
-                );
-                gridElement.DOM.row.addEventListener(
-                    'dragover',
-                    function(e){
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-
-
-                    }
-                );
-                gridElement.DOM.row.addEventListener(
-                    'drop',
-                    function(e){
-                        e.preventDefault();
-                        //TODO Если сюда перетащена не строка, не позволять такую операцию (скорее всего просто ее игнорировать (по крайней мере для элементво панелей и самих панелей)
-                        let acceptor = this;
-                        let dragged = grid.draggedRow;
-                        if (!dragged) {
-                            return;
+                window.dragger
+                    .initDraw(
+                        {drawElement: gridElement.DOM.row}
+                    )
+                    .initAcceptor(
+                        {
+                            acceptorElement: gridElement.DOM.row,
+                            onDrop: function(draggedRow, acceptorRow){
+                                if (!draggedRow.classList.contains('flex-grid-data-row')) {
+                                    //Не принимаем элементы, не являющиеся строками таблицы.
+                                    //При этом здесь не проверяем, относятся ли строки к одной таблице, т.к. теоретически может потребоваться взаимодействие между разными таблицами
+                                    return;
+                                }
+                                if (typeof grid.config.events.moveItem === typeof function(){}) {
+                                    grid.config.events.moveItem(
+                                        acceptorRow.gridElement.getData(),
+                                        draggedRow.gridElement.getData(),
+                                        acceptorRow.gridElement.getGrid().getId(),
+                                        draggedRow.gridElement.getGrid().getId(),
+                                    )
+                                }
+                            }
                         }
-                        if (!dragged.classList.contains('flex-grid-data-row')) {
-                            return;
-                        }
-                        if (typeof grid.config.events.moveItem === typeof function(){}) {
-                            grid.config.events.moveItem(
-                                acceptor.gridElement.getData(),
-                                dragged.gridElement.getData(),
-                            )
-                        }
-                    }
-                );
+                    );
+
                 gridElement.DOM.row.addEventListener(
                     'click',
                     function(e){
@@ -912,6 +904,10 @@
 
         }.bind(priv);
 
+        this.getId = function(){
+            return this.customId &&  typeof this.customId === typeof {} ? {...this.customId} : this.customId;
+        }.bind(priv)
+
 
         this.addVisualizationComponent('tree', new TreeVisualizationComponent());
         this.addVisualizationComponent('empty', new EmptyVisualizationComponent());
@@ -973,9 +969,9 @@
         };
     })();
 
-    function TreeGrid(){
+    function TreeGrid(config){
 
-        let priv = new abstractFlexGrid();
+        let priv = new abstractFlexGrid(config);
         let pub = new pubFlexGrid(priv);
         priv.pub = pub;
 
@@ -1089,7 +1085,7 @@
                 !(entityClass in objectsDict) && (objectsDict[entityClass] = {}, gridElementsDict[entityClass] = {});
 
                 objectsDict[entityClass][entityId] = entityData;
-                gridElement = new GridElement(this.config, this);
+                gridElement = new GridElement(this.config, this, pub);
                 gridElement.initData(entityData);
 
                 gridElementsDict[entityClass][entityId] = gridElement;
@@ -1146,8 +1142,8 @@
     };
 
 
-    function FlatGrid() {
-        let priv = new abstractFlexGrid();
+    function FlatGrid(config) {
+        let priv = new abstractFlexGrid(config);
         let pub = new pubFlexGrid(priv);
         priv.pub = pub;
 
@@ -1698,7 +1694,7 @@
         return pub;
     }
 
-    function GridElement(config, flexGrid){
+    function GridElement(config, privFlexGrid, pubFlexGrid){
         let priv = {
             DOM: {
                 row: undefined,
@@ -1715,7 +1711,8 @@
                 entityParentField: config.entityParentField,
             },
             //priv
-            privFlexGrid: flexGrid,
+            privFlexGrid: privFlexGrid,
+            pubFlexGrid: pubFlexGrid,
         };
         let pub = {
             initData: function(/**@type {object}*/data){
@@ -1781,6 +1778,10 @@
                     //index
                 );
             }.bind(priv),
+
+            getGrid: function(){
+                return this.pubFlexGrid
+            }.bind(priv)
         };
 
         Object.defineProperties(

@@ -850,12 +850,14 @@
                     cell.innerHTML = headerData.title;
                     cell.name = 'flex-grid-header-' + headerData.id;
                     headersRow.appendChild(cell);
-                    // this.sizeStyles['.flex-grid-leaf-header-cell.' + headerData.id] = 'width: ' + headerData.width + this.widthUnit;
-                    this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + headerData.width + this.widthUnit;
-                    totalWidth += +headerData.width;
+                    let width = typeof headerData.width === typeof function(){} ?
+                        +headerData.width() :
+                        +headerData.width;
+                    this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + width + this.widthUnit;
+                    totalWidth += width;
                     let h = headerData;
                     while (h.parent) {
-                        widths[h.parent.id] += +headerData.width;
+                        widths[h.parent.id] += width;
                         h = h.parent;
                     }
                     headerData.DOM = {

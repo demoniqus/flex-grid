@@ -720,7 +720,10 @@
                     id: 'flexGrid.numerableHeader',
                     title: '',
                     type: 'numerable',
-                    width: '30',
+                    width: function(){
+                        //Размер колонки зависит от количества элементов в гриде
+                        return (this.data.flat.length + '').length * parseFloat(getComputedStyle(document.documentElement).fontSize);
+                    }.bind(this),
                     isVirtual: false,
                     filterable: false,
                     sortable: false,
@@ -1045,7 +1048,6 @@
                 id: 'flexGrid.treeHeader',
                 title: '',
                 type: 'tree',
-                width: '30',
                 isVirtual: false,
                 filterable: false,
                 sortable: false,

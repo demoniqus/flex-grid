@@ -1,5 +1,31 @@
 (function(){
     let pluginIds = {};
+
+    let StringFilterModesModel = Object.defineProperties(
+        Object.create(null),
+        {
+            StartWith: {
+                get: () =>  'startWith',
+                configurable: false,
+                enumerable: false,
+            },
+            EndWith: {
+                get: () => 'endWith',
+                configurable: false,
+                enumerable: false
+            },
+            Contains: {
+                get: () => 'contains',
+                configurable: false,
+                enumerable: false
+            },
+            Equals: {
+                get: () => 'equals',
+                configurable: false,
+                enumerable: false
+            },
+        }
+    );
     window.FlexGrid = Object.defineProperties(
         Object.create(null),
         {
@@ -1624,30 +1650,29 @@
                  * @type {FilterLayer[]}
                  */
                 list: []
-            }
-        };
-        let pub = {
-            addComponent: function(key, component){
-                priv.components[key] = component;
-            }.bind(priv),
-            setFilter: function(
-                fieldName,
-                filterValue,
-                filterComponent
-            ){
+            },
+            filters: [
 
+            ],
+            filtersDict: {
+
+            },
+            filtrate: function(){
                 /**
                  * @type {GridElement[]}
                  */
-                let data = priv.layers.dict.length ?
-                    priv.layers.dict[priv.layers.dict.length - 1].getData() :
-                    priv.privFlexGrid.data.current.getData(true);
+                let data =
+                    priv.privFlexGrid.data.flat.getData(true);
 
-                data = filterComponent.filtrate(
-                    fieldName,
-                    filterValue,
-                    data
-                );
+                for (let i = 0; i < this.filters.length; i++) {
+                    let filter = this.filters[i];
+                    data = filter.filterComponent.filtrate(
+                        filter.fieldName,
+                        filter.filterValue,
+                        data
+                    );
+
+                }
 
 
                 //В grid.dataset устанавливаем копию отфильтрованных данных, т.к. пользователь может разворачивать
@@ -1668,8 +1693,54 @@
                 // }
 
                 priv.privFlexGrid.updatePreview();
-
             }
+        };
+        let pub = {
+            addComponent: function(key, component){
+                priv.components[key] = component;
+            }.bind(priv),
+            setFilter: function(
+                /** @type {string} */fieldName,
+                filterValue,
+                /** @type {FlexGridDataFilterComponentInterface} */ filterComponent
+            ){
+                if (fieldName in this.filtersDict && filterComponent.getId() in this.filtersDict[fieldName]) {
+                    let filter = this.filtersDict[fieldName][filterComponent.getId()];
+                    filter.filterValue = filterValue;
+                }
+                else {
+                    let filter = {
+                        fieldName: fieldName,
+                        filterValue: filterValue,
+                        filterComponent: filterComponent
+                    };
+                    if (!(fieldName in this.filtersDict)) {
+                        this.filtersDict[fieldName] = {};
+                    }
+                    this.filtersDict[fieldName][filterComponent.getId()] = filter;
+                    this.filters.push(filter);
+                }
+                this.filtrate();
+
+            }.bind(priv),
+            clearFilter: function(
+                /** @type {string} */fieldName,
+                /** @type {FlexGridDataFilterComponentInterface} */ filterComponent
+            ){
+                if (fieldName in this.filtersDict && filterComponent.getId() in this.filtersDict[fieldName]) {
+                    let filter = this.filtersDict[fieldName][filterComponent.getId()];
+                    delete this.filtersDict[fieldName];
+                    let i = this.filters.length;
+                    while (i--) {
+                        if (this.filters[i] === filter) {
+                            this.filters.splice(i, 1);
+                            this.filtrate();
+                            break;
+                        }
+                    }
+                }
+
+            }.bind(priv),
         };
 
 
@@ -1984,6 +2055,11 @@
             throw 'Method \'filtrate\' of filter component is not implemented'
         };
 
+        this.getId = function(
+        ){
+            throw 'Method \'getId\' of filter component is not implemented'
+        };
+
 
 
         this.buildResetOption = function(){
@@ -2016,14 +2092,28 @@
         //TODO Для числовых полей и дат в качестве опций можно добавить "Вне диапазона", "В диапазоне", "Точное значение", "Содержит..."
         // Для диапазонов - можно указывать одну из границ - тогда ищем либо больше, либо меньше, либо >=, либо <=
 
-    };
+    }
+
+    function abstractFilterComponent(){
+        this.DOM = {};
+        this.mode = StringFilterModesModel.StartWith
+        this.id = null;
+        this.createId = function(){
+            let r;
+            while ((r = 'filter-component_' + (Math.ceil(Math.random() * 1000000) + 1)) in pluginIds) {}
+            this.id = r;
+            pluginIds[r] = true;// true instead of this to avoid memory leak
+        };
+        this.init = function(){
+            this.createId();
+        };
+
+        this.init();
+    }
 
     function StringFilterComponent(){
-        let storage = {
-            DOM: {},
-            mode: 'startWith'
-        };
-        //TODO Пустая строка - сброс строкового фильтра
+        let priv = new abstractFilterComponent();
+
         this.buildFilterForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/headerData){
             let Filter = this.Filter;
             let filterComponent = this;
@@ -2035,108 +2125,69 @@
             let input = document.createElement('input');
             div.classList.add('flex-grid-filter-field');
             div.appendChild(input);
-            let resetOption = this.buildResetOption();
+            let resetOption = this.buildResetOption(filterComponent);
             // console.log(this.Filter); //(pubFilter)
 
             forms.componentContainer.appendChild(div);
             forms.componentContainer.appendChild(resetOption.container);
+
+            resetOption.button.addEventListener(
+                'click',
+                function(e){
+                    e.cancelBubble = true;
+                    e.preventDefault();
+                    input.value = '';
+                    Filter.clearFilter(fieldName, filterComponent);
+                }
+            );
 
             DOMContainer.appendChild(forms.componentContainer);
             DOMContainer.appendChild(forms.componentOptionsContainer);
             input.addEventListener(
                 'keyup',
                 function(e){
-                    e.keyCode === 13 && Filter.setFilter(fieldName,
-                        this.value,
-                        filterComponent)
+                    if (e.keyCode !== 13) {
+                        return;
+                    }
+                    this.value.trim() ?
+                        Filter.setFilter(fieldName, this.value, filterComponent) :
+                        Filter.clearFilter(fieldName, filterComponent);
                 }
             );
-
-            let random = Math.ceil(Math.random() * 1000000);//TODO Ввести идентификатор для компонента фильтра
 
             let btnGroupContainer = document.createElement('div');
             btnGroupContainer.classList.add('btn-group');
             btnGroupContainer.setAttribute('role', 'group');
 
-            let radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.classList.add('btn-check');
-            radio.name = 'string-filter-component-mode-' + random;
-            radio.id = 'string-filter-component-mode-start-with-' + random;
-            radio.dataset.mode = 'startWith';
-            radio.autocomplete = 'off';
-            let label = document.createElement('label');
-            label.classList.add('btn');
-            label.classList.add('btn-outline-primary');
-            label.classList.add('string-filter-option');
-            label.setAttribute('for', radio.id)
-            label.textContent = '^*';
-            label.title = 'Начинается с ...';
-            btnGroupContainer.appendChild(radio);
-            btnGroupContainer.appendChild(label);
-            radio.onchange = function(){
-                storage.mode = this.dataset.mode;
-            };
+            let modeComponents = {};
+            modeComponents[StringFilterModesModel.StartWith] = {title: 'Начинается с ...', caption: '^*'};
+            modeComponents[StringFilterModesModel.EndWith] = {title: 'Заканчивается на ...', caption: '*$'};
+            modeComponents[StringFilterModesModel.Contains] = {title: 'Содержит ...', caption: '%%'};
+            modeComponents[StringFilterModesModel.Equals] = {title: 'Точное совпадение ...', caption: '**'};
 
-            radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.classList.add('btn-check');
-            radio.name = 'string-filter-component-mode-' + random;
-            radio.id = 'string-filter-component-mode-contains-' + random;
-            radio.dataset.mode = 'contains';
-            radio.autocomplete = 'off';
-            label = document.createElement('label');
-            label.classList.add('btn');
-            label.classList.add('btn-outline-primary');
-            label.classList.add('string-filter-option');
-            label.setAttribute('for', radio.id)
-            label.textContent = '%%';
-            label.title = 'Поиск по вхождению';
-            btnGroupContainer.appendChild(radio);
-            btnGroupContainer.appendChild(label);
-            radio.onchange = function(){
-                storage.mode = this.dataset.mode;
-            };
+            for (let modeName in modeComponents) {
+                let modeParams = modeComponents[modeName];
+                let radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.classList.add('btn-check');
+                radio.name = 'string-filter-component-mode-' + priv.id;
+                radio.id = 'string-filter-component-mode-' + modeName + '-' + priv.id;
+                radio.dataset.mode = modeName;
+                radio.autocomplete = 'off';
+                let label = document.createElement('label');
+                label.classList.add('btn');
+                label.classList.add('btn-outline-primary');
+                label.classList.add('string-filter-option');
+                label.setAttribute('for', radio.id)
+                label.textContent = modeParams.caption;
+                label.title = modeParams.title;
+                btnGroupContainer.appendChild(radio);
+                btnGroupContainer.appendChild(label);
+                radio.onchange = function(){
+                    priv.mode = this.dataset.mode;
+                };
 
-            radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.classList.add('btn-check');
-            radio.name = 'string-filter-component-mode-' + random;
-            radio.id = 'string-filter-component-mode-equals-' + random;
-            radio.dataset.mode = 'equals';
-            radio.autocomplete = 'off';
-            label = document.createElement('label');
-            label.classList.add('btn');
-            label.classList.add('btn-outline-primary');
-            label.classList.add('string-filter-option');
-            label.setAttribute('for', radio.id)
-            label.textContent = '**';
-            label.title = 'Поиск по точному совпадению';
-            btnGroupContainer.appendChild(radio);
-            btnGroupContainer.appendChild(label);
-            radio.onchange = function(){
-                storage.mode = this.dataset.mode;
-            };
-
-            radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.classList.add('btn-check');
-            radio.name = 'string-filter-component-mode-' + random;
-            radio.id = 'string-filter-component-mode-end-with-' + random;
-            radio.dataset.mode = 'endWith';
-            radio.autocomplete = 'off';
-            label = document.createElement('label');
-            label.classList.add('btn');
-            label.classList.add('btn-outline-primary');
-            label.classList.add('string-filter-option');
-            label.setAttribute('for', radio.id)
-            label.textContent = '*$';
-            label.title = 'Заканчивается на...';
-            btnGroupContainer.appendChild(radio);
-            btnGroupContainer.appendChild(label);
-            radio.onchange = function(){
-                storage.mode = this.dataset.mode;
-            };
+            }
 
             //TODO Компонент может также содержать опции учета регистра, а также инверсии результатов поиска
             // Отдельно продумать поиск пустые / непустые и т.п. - возможно, для компонента надо делать отдельное вспылвающее окошко с расширенными настройками
@@ -2145,37 +2196,6 @@
 
 
 
-            // let button = document.createElement('button');
-            // button.classList.add('string-filter-option');
-            // button.classList.add('btn');
-            // button.classList.add('btn-outline-info');
-            // button.innerHTML = '^*';
-            // button.title = 'Начинается с ...';
-            // forms.componentOptionsContainer.appendChild(button);
-            //
-            // button = document.createElement('button');
-            // button.classList.add('string-filter-option');
-            // button.classList.add('btn');
-            // button.classList.add('btn-outline-info');
-            // button.innerHTML = '%%';
-            // button.title = 'Поиск по вхождению';
-            // forms.componentOptionsContainer.appendChild(button);
-            //
-            // button = document.createElement('button');
-            // button.classList.add('string-filter-option');
-            // button.classList.add('btn');
-            // button.classList.add('btn-outline-info');
-            // button.innerHTML = '**';
-            // button.title = 'Поиск по точному совпадению';
-            // forms.componentOptionsContainer.appendChild(button);
-            //
-            // button = document.createElement('button');
-            // button.classList.add('string-filter-option');
-            // button.classList.add('btn');
-            // button.classList.add('btn-outline-info');
-            // button.innerHTML = '*$';
-            // button.title = 'Заканчивается на...';
-            // forms.componentOptionsContainer.appendChild(button);
 
             this.customizeComponents(
                 {
@@ -2190,27 +2210,30 @@
             filterValue,
             /** @type {GridElement[]} */gridElements
         ){
-            let filterCallbacks = {
-                startWith: function(gridElement, index){
-                    return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) === 0;
-                },
-                endWith: function(gridElement, index){
+            let filterCallbacks = {};
+            filterCallbacks[StringFilterModesModel.StartWith] = function(gridElement, index){
+                return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) === 0;
+            };
+            filterCallbacks[StringFilterModesModel.EndWith] = function(gridElement, index){
 
-                    return (gridElement.get(fieldName) ?? '').endsWith(filterValue);
-                },
+                return (gridElement.get(fieldName) ?? '').endsWith(filterValue);
+            };
 
-                contains: function(gridElement, index){
-                    return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) > -1;
-                },
-                equals: function(gridElement, index){
-                    return (gridElement.get(fieldName) ?? '').toString() === filterValue;
-                },
+            filterCallbacks[StringFilterModesModel.Contains] = function(gridElement, index){
+                return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) > -1;
+            };
+            filterCallbacks[StringFilterModesModel.Equals] = function(gridElement, index){
+                return (gridElement.get(fieldName) ?? '').toString() === filterValue;
+            };
 
-            }
             return gridElements.filter(
-                filterCallbacks[storage.mode ?? 'startWith']
+                filterCallbacks[priv.mode ?? StringFilterModesModel.StartWith]
             );
         };
+
+        this.getId = function(){
+            return this.id;
+        }.bind(priv);
 
     };
     StringFilterComponent.prototype = new FlexGridDataFilterComponentInterface();

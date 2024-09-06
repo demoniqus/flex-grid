@@ -1,3 +1,4 @@
+"use strict";
 (function(){
     let pluginIds = {};
     window.Scroller = function(/** @type Object */ config){
@@ -8,7 +9,7 @@
         }
 
 
-        let p = this.getDefaultConfig();
+        let p = Scroller.getDefaultConfig();
         config = config === null || typeof config === typeof undefined ? {} : config;
 
         for (let key in config) { p[key] = config[key]; }
@@ -57,53 +58,60 @@
 
         pub.reload = function(){this.reload();}.bind(priv);
 
-
         return pub;
     }
 
-    window.Scroller.prototype = new (function(){
-        function f (){
-            this.getDefaultConfig = function() {
-                /**
-                 * С помощью этой функции можно предоставить пользователю образец конфига с пояснениями, а также
-                 * получить базовый конфиг для компонента, на который сверху можно наложить конфиг пользователя
-                 */
-                return {
-                    _getElement: 'Метод, возвращающий DOM-объект для отображения пользователю',
-                    getElement: function(/** @type {number} */index, /** @type {string} */direction){
+    function ScrollerDefaultConfig()
+    {
+        /**
+         * С помощью этой функции можно предоставить пользователю образец конфига с пояснениями, а также
+         * получить базовый конфиг для компонента, на который сверху можно наложить конфиг пользователя
+         */
+        return {
+            _getElement: 'Метод, возвращающий DOM-объект для отображения пользователю',
+            getElement: function(/** @type {number} */index, /** @type {string} */direction){
 
-                    },
-                    // _direction: 'Способ прокрутки контейнера. По умолчанию - прокрутка в одном измерении, вертикальном',
-                    // direction: ScrollerConstants().directions.onlyVertical,
-                    _firstIndex: 'Индексный номер первого элемента в наборе. Можно задавать отличный от нуля, если предполагается выводить дополнительные элементы типа заголовков, не входящие в основной набор данных',
-                    firstIndex: 0,
-                    _itemsCount: 'Количество элементов',
-                    itemsCount: 0,
-                    _scrollSensitivity: 'Чувствительность скроллбара - количество пикселей, которые надо прокрутить для прокрутки на один элемент. Влияет на отображение полосы вертикальной прокрутки',
-                    scrollSensitivity: 10,
-                    _noScrollbar: 'Не показывать полосу прокрутки',
-                    noScrollbar: false
-                    // _minIndex: 'Минимально возможный индекс в наборе. При загрузке компонента Scroller не с первого элемента возникает ситуация, что под предыдущие элементы не выделяется никакого места и становится невозможно выполнить прокрутку вверх. Поэтому необходимо выделять место под "виртуальные" элементы, которые еще ни разу не были загружены в Scroller',
-                    // minIndex: 0, //TODO А нужен ли? Или всегда считать, что минимальный индекс равен нулю, т.к. индексы всегда числовые и всегда должны быть упорядоченными
+            },
+            // _direction: 'Способ прокрутки контейнера. По умолчанию - прокрутка в одном измерении, вертикальном',
+            // direction: ScrollerConstants().directions.onlyVertical,
+            _firstIndex: 'Индексный номер первого элемента в наборе. Можно задавать отличный от нуля, если предполагается выводить дополнительные элементы типа заголовков, не входящие в основной набор данных',
+            firstIndex: 0,
+            _itemsCount: 'Количество элементов',
+            itemsCount: 0,
+            _scrollSensitivity: 'Чувствительность скроллбара - количество пикселей, которые надо прокрутить для прокрутки на один элемент. Влияет на отображение полосы вертикальной прокрутки',
+            scrollSensitivity: 10,
+            _noScrollbar: 'Не показывать полосу прокрутки',
+            noScrollbar: false
+            // _minIndex: 'Минимально возможный индекс в наборе. При загрузке компонента Scroller не с первого элемента возникает ситуация, что под предыдущие элементы не выделяется никакого места и становится невозможно выполнить прокрутку вверх. Поэтому необходимо выделять место под "виртуальные" элементы, которые еще ни разу не были загружены в Scroller',
+            // minIndex: 0, //TODO А нужен ли? Или всегда считать, что минимальный индекс равен нулю, т.к. индексы всегда числовые и всегда должны быть упорядоченными
 
-                    /*
-                     *Элементы пагинации не ограничивают количество выводимых на страницу элементов. Они лишь помогают навигации и быстрой прокрутке
-                     * к нужной точке набора элементов
-                     *
-                     */
-                    // pageSize: 10,
-                    // pagination: false,
+            /*
+			 *Элементы пагинации не ограничивают количество выводимых на страницу элементов. Они лишь помогают навигации и быстрой прокрутке
+			 * к нужной точке набора элементов
+			 *
+			 */
+            // pageSize: 10,
+            // pagination: false,
 
-                };
-
-            };
         };
-        f.prototype = new ScrollerConstants();
-        return f;
-    }());
+    }
 
-    window.Scroller.getDefaultConfig = window.Scroller.prototype.getDefaultConfig;
-    window.Scroller.getFlags = function(){return this.prototype.flags;}; //TODO Use Object.DefineProperty to denied redefine method and properties
+    Object.defineProperties(
+        window.Scroller,
+        {
+            getDefaultConfig :
+                {
+                    get: () => ScrollerDefaultConfig,
+                    configurable: false,
+                    enumerable: false,
+                },
+            getFlags: {
+                get: () => ScrollerFlags,
+                configurable: false,
+                enumerable: false
+            }
+        }
+    );
 
 
     /**
@@ -184,26 +192,6 @@
         );
     }
 
-
-    function ScrollerConstants() {
-        /**
-         * Различные константы Scroller'а
-         */
-        return Object.defineProperties(
-            Object.create(null),
-            {
-                flags: {
-                    value: ScrollerFlags(),
-                    writable: false,
-                    configurable: false,
-                    enumerable: false
-                },
-            }
-        );
-
-    }
-
-
     function abstractScroller (){
 
         this.init = function(){
@@ -250,7 +238,7 @@
         this.createLoadedElementInfoStorageItem = function(/** @type {number} */index, /** @type Element */element){
             return new ScrolledElement(index, element);
         };
-        this.wrap_new = function(){
+        this.wrap_new = function(){//TODO Заготовка под скроллер без полосы прокрутки
             /**
              * Контейнер
              */
@@ -498,11 +486,11 @@
             elementIndex = refElement instanceof ScrolledElement ? refElement.getIndex() + incrementValue : (refElement || 0);
             while (true) {
                 element = /*this.items.items[elementIndex] || */this.config.getElement.call(this, elementIndex, incrementValue > 0? 'forward': 'backward');
-                if (element === this.flags.noElements) {
+                if (element === Scroller.getFlags().noElements) {
                     /** Больше нет элементов, которые можно загрузить */
                     return false;
                 }
-                else if (element !== this.flags.skip) {
+                else if (element !== Scroller.getFlags().skip) {
                     /** Получен элемент, который можно отобразить */
                     break;
                 }
@@ -589,7 +577,6 @@
             return res;
         };
     };
-    abstractScroller.prototype = new ScrollerConstants();
 
 
     function standardScroller(p){

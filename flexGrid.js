@@ -2170,8 +2170,8 @@
                 let radio = document.createElement('input');
                 radio.type = 'radio';
                 radio.classList.add('btn-check');
-                radio.name = 'string-filter-component-mode-' + priv.id;
-                radio.id = 'string-filter-component-mode-' + modeName + '-' + priv.id;
+                radio.name = 'string-filter-component-mode-' + fieldName + '-' + priv.id;
+                radio.id = 'string-filter-component-mode-' + modeName + '-' + fieldName + '-' + priv.id;
                 radio.dataset.mode = modeName;
                 radio.autocomplete = 'off';
                 let label = document.createElement('label');

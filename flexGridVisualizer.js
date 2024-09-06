@@ -153,7 +153,7 @@
                 '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-option': '/*position: absolute; right: 2px; cursor: pointer;*/',
                 '.flex-grid-filter-panel .flex-grid-filter-component-container input, .flex-grid-filter-panel .flex-grid-filter-component-container select': '/*--w: calc(100% - 20px); max-width: var(--w); min-width: var(--w); var(--w);*/ box-sizing: border-box;',
                 '.flex-grid-filter-component-options-container': 'display: flex; justify-content: center; column-gap: 2px; flex-wrap: flex-wrap: wrap;',
-                '.string-filter-option': 'text-wrap: nowrap !important; font-size: 1rem; padding: 2px; ',
+                '.string-filter-option': 'text-wrap: nowrap !important; font-size: .6rem; padding: 2px; ',
                 '.flex-grid-filter-panel .flex-grid-filter-component-container .filter-reset-button': 'padding: 3px; line-height: 1;',
                 '.flex-grid-filter-component-container': '',
 

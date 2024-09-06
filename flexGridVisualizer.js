@@ -476,11 +476,20 @@ export function DefaultVisualizer(){
             }
 
             let iCell = 0;
+            let selectors = {
+                '.flex-grid-row .flex-grid-leaf-header-cell': true,
+                '.flex-grid-row .flex-grid-filter-cell': true,
+                '.flex-grid-row .flex-grid-data-cell': true,
+
+            };
             while (iCell < this.headers.leafs.length) {
                 let headerData = this.headers.leafs[iCell];
                 let idClass = headerData.id.replaceAll('.', '_');
-                let selector = '.flex-grid-row .flex-grid-leaf-header-cell.' + idClass;
-                this.orderStyles[selector] = 'order: ' + iCell + ';';
+                for (let selector in selectors) {
+
+                    selector += '.' + idClass;
+                    this.orderStyles[selector] = 'order: ' + iCell + ';';
+                }
                 iCell++;
 
             }

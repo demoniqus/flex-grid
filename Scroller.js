@@ -354,7 +354,7 @@
                 if (!direction) {
                     return;
                 }
-                this.DOM.scrollbarContainer.scrollTop += direction * this.config.scrollSensitivity;
+                this.DOM.scrollbarContainer.scrollTop += direction * this.config.scrollSensitivity * this.config.scrollStepSize;
             }.bind(this));
 
 
@@ -422,6 +422,10 @@
             };
 
             while (this.DOM.scrolledItemsContainer.firstElementChild) {
+                /** TODO теоретически можно не удалять все строки, а потом заново отрисовывать, а запрашивать по инедксам и по какому-нибудь признаку,
+                 *    определяющему, изменилась ли строка и есть ли она в текущей выборке. Если строка не изменилась и не исчезла из выборки, то ее можно не
+                 *    перезагружать и не тратить время на ее отрисовку, а запрашивать следующую
+                 */
                 this.DOM.scrolledItemsContainer.removeChild(this.DOM.scrolledItemsContainer.lastElementChild);
             }
             /**
@@ -607,6 +611,8 @@
          */
         this.virtualElementSize = 40;//??remove
         this.scrollSensitivity = 40;
+        //Количество прокручиваемых колесом мыши за один раз элементов
+        this.scrollStepSize = 1;
         this.scrollForwardEnough = true; //Флаг, указывающий, что при очередной прокрутке вперед элементов было достаточно для заполнения области просмотра
         this.currentScroll = 0; //Величина текущей прокрутки обертки //??remove
         this.scrollDirection = 0; // Направление прокрутки 1, -1 //??remove

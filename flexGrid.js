@@ -436,7 +436,12 @@
                     getElement: this.visualizerCallbacks.getElement.bind(this),
                 }
             );
-            this.visualizer.init();
+            this.visualizer.init(
+                {
+                    scrollSensitivity: this.config.scrollSensitivity ?? 40, //TODO Протянуть дефолтный размер из Scroller'а
+                    scrollStepSize: this.config.scrollStepSize ?? 1,
+                }
+            );
 
 
 

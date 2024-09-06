@@ -885,7 +885,7 @@
                 this.updateOrderStyleElement();
                 this.setHeadersHandlers();
             },
-            createScroller: function(){
+            createScroller: function(config){
                 let scroller = new Scroller(
                     {
                         firstIndex:0,
@@ -894,7 +894,9 @@
                             container: this.DOM.centralPanel,
                             scrolledItemsContainer: this.DOM.dataPanel,
                         },
-                        getElement: this.callbacks.getElement
+                        getElement: this.callbacks.getElement,
+                        scrollSensitivity: config.scrollSensitivity,
+                        scrollStepSize: config.scrollStepSize
                     }
                 );
                 window.scrollerInstance = scroller;
@@ -908,7 +910,7 @@
 
         };
 
-        pub.init = function(){
+        pub.init = function(config){
 
             this.createId();
 
@@ -917,7 +919,7 @@
             this.updateStyleElement();
             this.createHeaders();
             this.createFilters();
-            this.createScroller();
+            this.createScroller(config);
             this.panels.leftPanel.setScrollable();
 
 

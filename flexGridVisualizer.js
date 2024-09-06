@@ -1008,7 +1008,8 @@
 
     window.DefaultVisualizer.prototype = new VisualizerInterface();
     window.DefaultVisualizer.getFlags = function(){
-        let flags = Scroller.getFlags();
+        //Копируем объект с флагами, чтобы снаружи нельзя было изменить исходный объект
+        let flags = {...Scroller.getFlags()};
         //Тут можно расширить список флагов
         return flags;
     };

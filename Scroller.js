@@ -1,6 +1,63 @@
 "use strict";
 (function(){
     let pluginIds = {};
+
+    let ClassModel = Object.defineProperties(
+        Object.create(null),
+        {
+            RootScrolledContainer: {
+                get: () => 'root-scrolled-container',
+                configurable: false,
+                enumerable: false
+            },
+            ScrolledDataContainer: {
+                get: () => 'scrolled-data-container',
+                configurable: false,
+                enumerable: false
+            },
+            NoScrollbar: {
+                get: () => 'no-scrollbar',
+                configurable: false,
+                enumerable: false
+            },
+            ScrolledItemsContainer: {
+                get: () => 'scrolled-items-container',
+                configurable: false,
+                enumerable: false
+            },
+            ScrollerWrapper: {
+                get: () => 'scroller-wrapper',
+                configurable: false,
+                enumerable: false
+            },
+            ScrollerScrollbarContainer: {
+                get: () => 'scroller-scrollbar-container',
+                configurable: false,
+                enumerable: false
+            },
+            ScrollerScrollbar: {
+                get: () => 'scroller-scrollbar',
+                configurable: false,
+                enumerable: false
+            },
+            ScrollerDataContainer: {
+                get: () => 'scroller-data-container',
+                configurable: false,
+                enumerable: false
+            },
+            ModeScroll: {
+                get: () => 'mode-scroll',
+                configurable: false,
+                enumerable: false
+            },
+            Transparent: {
+                get: () => 'transparent',
+                configurable: false,
+                enumerable: false
+            },
+        }
+    );
+
     window.Scroller = function(/** @type Object */ config){
 
 
@@ -109,7 +166,12 @@
                 get: () => ScrollerFlags,
                 configurable: false,
                 enumerable: false
-            }
+            },
+            ClassModel: {
+                get: () => ScrollerFlags,
+                configurable: false,
+                enumerable: false
+            },
         }
     );
 
@@ -252,28 +314,28 @@
 
 
             scrolledContainer.classList.add(this.getRootClassName());
-            scrolledContainer.classList.add('root-scrolled-container');
-            scrolledContainer.classList.add('scrolled-data-container');
+            scrolledContainer.classList.add(ClassModel.RootScrolledContainer);
+            scrolledContainer.classList.add(ClassModel.ScrolledDataContainer);
             if (this.config.noScrollbar) {
-                scrolledContainer.classList.add('no-scrollbar');
+                scrolledContainer.classList.add(ClassModel.NoScrollbar);
             }
 
-            scrolledItemsContainer.classList.add('scrolled-items-container');
+            scrolledItemsContainer.classList.add(ClassModel.ScrolledItemsContainer);
 
             let scrollerWrapper = document.createElement('div');
-            scrollerWrapper.className = 'scroller-wrapper';
+            scrollerWrapper.className = ClassModel.ScrollerWrapper;
             this.DOM.wrapper = scrollerWrapper;
 
             // let dataContainer = document.createElement('div');
-            // dataContainer.className = 'scroller-data-container';
+            // dataContainer.className = ClassModel.ScrollerDataContainer;
             // this.DOM.dataContainer = dataContainer;
 
             let scrollbarContainer = document.createElement('div');
-            scrollbarContainer.className = 'scroller-scrollbar-container'
-            this.DOM.scrollbarContainer = scrollbarContainer;
+            scrollbarContainer.className = ClassModel.ScrollerScrollbarContainer
+            this.DOM.scrollbarContainer = ClassModel.ScrollerScrollbarContainer;
 
             let scrollbar = document.createElement('div');
-            scrollbar.className = 'scroller-scrollbar';
+            scrollbar.className = ClassModel.ScrollerScrollbar;
             this.DOM.scrollbar = scrollbar;
 
             scrollbarContainer.appendChild(scrollbar);
@@ -302,25 +364,25 @@
 
 
             scrolledContainer.classList.add(this.getRootClassName());
-            scrolledContainer.classList.add('root-scrolled-container');
+            scrolledContainer.classList.add(ClassModel.RootScrolledContainer);
 
-            scrolledItemsContainer.classList.add('scrolled-items-container');
+            scrolledItemsContainer.classList.add(ClassModel.ScrolledItemsContainer);
 
             let scrollerWrapper = document.createElement('div');
-            scrollerWrapper.className = 'scroller-wrapper';
+            scrollerWrapper.className = ClassModel.ScrollerWrapper;
             this.DOM.wrapper = scrollerWrapper;
 
             let dataContainer = document.createElement('div');
-            dataContainer.className = 'scroller-data-container';
+            dataContainer.className = ClassModel.ScrollerDataContainer;
             this.DOM.dataContainer = dataContainer;
             dataContainer.style.flexDirection = scrolledContainer.style.flexDirection;
 
             let scrollbarContainer = document.createElement('div');
-            scrollbarContainer.className = 'scroller-scrollbar-container'
+            scrollbarContainer.className = ClassModel.ScrollerScrollbarContainer
             this.DOM.scrollbarContainer = scrollbarContainer;
 
             let scrollbar = document.createElement('div');
-            scrollbar.className = 'scroller-scrollbar';
+            scrollbar.className =ClassModel.ScrollerScrollbar;
             this.DOM.scrollbar = scrollbar;
 
             scrollbarContainer.appendChild(scrollbar);
@@ -422,16 +484,16 @@
              * Сам источник должен решать, какие строки можно закешировать, а какие нет.
              */
 
-            this.DOM.wrapper.classList.add('mode-scroll');
+            this.DOM.wrapper.classList.add(ClassModel.ModeScroll);
 
             while (h < this.DOM.scrolledItemsContainer.offsetHeight && (elementInfo = this.loadNextElement(requestIndex))) {
                 /** Индекс первого элемента передали, после этого нужно позволить алгоритму самому инкрементировать индексные номера следующих загружаемых элементов набора, сбросив firstItemIndex в undefined */
                 requestIndex = elementInfo.getIndex() + 1;
 
-                elementInfo.getElement().classList.add('transparent');
+                elementInfo.getElement().classList.add(ClassModel.Transparent);
                 this.appendOnViewportEnd(elementInfo.getElement());
                 h += elementInfo.getOffsetHeight();
-                elementInfo.getElement().classList.remove('transparent');
+                elementInfo.getElement().classList.remove(ClassModel.Transparent);
             }
             /**
              * Если не нашли ни одного элемента, двигаясь вперед, двинемся назад и найдем хотя бы один элемент для отображения.
@@ -441,16 +503,16 @@
                 break;
             }
             while (!loadedItems &&  (elementInfo = this.loadPrevElement(firstItemIndex - 1))) {
-                elementInfo.getElement().classList.add('transparent');
+                elementInfo.getElement().classList.add(ClassModel.Transparent);
                 this.appendOnViewportEnd(elementInfo.getElement());
-                elementInfo.getElement().classList.remove('transparent');
+                elementInfo.getElement().classList.remove(ClassModel.Transparent);
             }
 
             /**
              * Если не загрузили ни одного элемента, надо попробовать в обратную сторону
              */
 
-            this.DOM.wrapper.classList.remove('mode-scroll');
+            this.DOM.wrapper.classList.remove(ClassModel.ModeScroll);
 
         };
 
@@ -613,7 +675,7 @@
             '.transparent': 'opacity: 0;',
             '.mode-scroll .scroller-data-container .scrolled-item': 'flex-grow: 0 !important; flex-shrink: 0 !important;',
             '.scroller-data-container .scrolled-item:last-child': 'flex-shrink: 1;',
-            '.root-scrolled-container.no-scrollbar .scroller-scrollbar-container': 'width: 1px; opacity: 0; scrollbar-width: none;'
+            '.root-scrolled-container.no-scrollbar .scroller-scrollbar-container': 'width: 1px; opacity: 0; scrollbar-width: none;/**TODO position: absolute; heaight: 100%; opacity: 0;*/'
         };
 
         this.items = {

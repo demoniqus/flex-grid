@@ -2216,7 +2216,7 @@
             };
             filterCallbacks[StringFilterModesModel.EndWith] = function(gridElement, index){
 
-                return (gridElement.get(fieldName) ?? '').endsWith(filterValue);
+                return (gridElement.get(fieldName) ?? '').toString().endsWith(filterValue);
             };
 
             filterCallbacks[StringFilterModesModel.Contains] = function(gridElement, index){

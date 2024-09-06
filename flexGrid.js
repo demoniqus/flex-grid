@@ -26,26 +26,74 @@
             },
         }
     );
+
+    function FlexGridDefaultConfig()
+    {
+        return {
+            __headerFormat: {
+                _id: 'Идентификатор заголовка',
+                id: 'string',
+                _title: 'Наименование заголовка',
+                title: '?string',
+                _type: 'Наименование пользовательского или предопределенного типа компонента(-ов)',
+                type: 'string|object{entityClass : string}',
+                _width: 'Ширина заголовка. Указывается только для листовых заголовков',
+                width: 'int',
+                _children: 'Дочерние заголовки',
+                children: '?array',
+                _isVirtual: 'Виртуальный заголовок. Используется для заполнения пустых ячеек в иерархических заголовках',
+                isVirtual: '?bool',
+                filterable: '?bool',
+                sortable: '?bool',
+                draggable: '?bool',
+            },
+            _id: 'Пользовательский идентификатор FlexGrid\'а для организации взаимодействия между таблицами',
+            id: null,
+            _headers: 'Иерархический набор заголовков FlexGrid',
+            headers: undefined,
+            _container: 'Контейнер для размещения flexGrid',
+            container: undefined,
+            _entityClassField: 'Наименование поля с указанием класса сущности',
+            entityClassField: 'entityClass',
+            _entityIdField: 'Наименование поля с указанием id сущности',
+            entityIdField: 'id',
+            _entityParentField: 'Наименование поля с указанием родителя сущности',
+            entityParentField: 'parent',
+            _treeMaxVisualDepth: 'Максимальная визуальная глубина дерева. Элементы с бОльшим уровнем вложенности не будут смещаться сильнее',
+            treeMaxVisualDepth: 5,
+            _treeLvlPadding: 'Отступ в пикселях на каждый уровень вложенности',
+            treeLvlPadding: 10,
+            _draggableColumns: 'Возможно перетаскивание колонок',
+            draggableColumns: false,
+            _draggableRows: 'Возможно перетаскивание строк',
+            draggableRows: false,
+            _numerable: 'Колонка с нумерацией строк',
+            numerable: true,
+            _filterable: 'Локальный фильтр данных',
+            filterable: true,
+        };
+    }
     window.FlexGrid = Object.defineProperties(
         Object.create(null),
         {
             TreeGrid: {
-                get: function () {return TreeGrid;},
+                get: () => TreeGrid,
                 configurable: false,
                 enumerable: false,
             },
             FlatGrid: {
-                get: function () {return FlatGrid;},
+                get: () =>  FlatGrid,
+                configurable: false,
+                enumerable: false,
+            },
+            getDefaultConfig: {
+                get: () => FlexGridDefaultConfig,
                 configurable: false,
                 enumerable: false,
             }
         }
     );
     function abstractFlexGrid (config){
-        if (config && typeof config !== typeof {}) {
-            throw 'Config must be an object or null/undefined!';
-        }
-        config = config ? config : {};
         /**
          * TODO
          * 1. Продумать зависимость дочерний-родительский(-е) гриды
@@ -66,7 +114,7 @@
         //Уникальный идентификатор таблицы
         this.id = null;
         //Пользовательский идентификатор таблицы. Используется для организации пользовательского взаимодействия между разными таблицами
-        this.customId = config.id ? config.id : null;
+        this.customId = null;
         this.headers = {
             /**
              * Оригинальный порядок листовых заголовков
@@ -372,12 +420,21 @@
         };
 
         this.setConfig = function(config){
+            if (errors = this.validateConfig(config)) {
+                throw 'Incorrect config: ' + errors.join('; ');
+            }
+            config = {...config}
+             if (config.id) {
+                 this.customId = config.id
+                 delete config.id;
+             }
+
             for (let key in config) {
                 this.config[key] = config[key];
             }
 
-            this.config.treeMaxVisualDepth ||= this.getDefaultConfig().treeMaxVisualDepth;
-            this.config.treeLvlPadding ||= this.getDefaultConfig().treeLvlPadding;
+            this.config.treeMaxVisualDepth ||= FlexGrid.getDefaultConfig().treeMaxVisualDepth;
+            this.config.treeLvlPadding ||= FlexGrid.getDefaultConfig().treeLvlPadding;
             this.config.events ||= {};
             this.styles['.flex-grid-tree-cell'] = '--tree-lvl-padding: ' + this.config.treeLvlPadding + 'px;';
             for (let i = 1; i <= this.config.treeMaxVisualDepth; i++) {
@@ -881,15 +938,14 @@
         this.updatePreview = function (){
             this.visualizer.updatePreview();
         };
+
+        this.setConfig(config);
     };
 
     function pubFlexGrid(priv) {
 
         this.build = function(config){
-            if (errors = this.validateConfig(config)) {
-                throw 'Incorrect config: ' + errors.join('; ');
-            }
-            this.setConfig(config);
+
             this.init();
         }.bind(priv);
 
@@ -954,52 +1010,6 @@
 
 
     };
-
-    abstractFlexGrid.prototype = new (function(){
-        this.getDefaultConfig = function(){
-            return {
-                __headerFormat: {
-                    _id: 'Идентификатор заголовка',
-                    id: 'string',
-                    _title: 'Наименование заголовка',
-                    title: '?string',
-                    _type: 'Наименование пользовательского или предопределенного типа компонента(-ов)',
-                    type: 'string|object{entityClass : string}',
-                    _width: 'Ширина заголовка. Указывается только для листовых заголовков',
-                    width: 'int',
-                    _children: 'Дочерние заголовки',
-                    children: '?array',
-                    _isVirtual: 'Виртуальный заголовок. Используется для заполнения пустых ячеек в иерархических заголовках',
-                    isVirtual: '?bool',
-                    filterable: '?bool',
-                    sortable: '?bool',
-                    draggable: '?bool',
-                },
-                _headers: 'Иерархический набор заголовков FlexGrid',
-                headers: undefined,
-                _container: 'Контейнер для размещения flexGrid',
-                container: undefined,
-                _entityClassField: 'Наименование поля с указанием класса сущности',
-                entityClassField: 'entityClass',
-                _entityIdField: 'Наименование поля с указанием id сущности',
-                entityIdField: 'id',
-                _entityParentField: 'Наименование поля с указанием родителя сущности',
-                entityParentField: 'parent',
-                _treeMaxVisualDepth: 'Максимальная визуальная глубина дерева. Элементы с бОльшим уровнем вложенности не будут смещаться сильнее',
-                treeMaxVisualDepth: 5,
-                _treeLvlPadding: 'Отступ в пикселях на каждый уровень вложенности',
-                treeLvlPadding: 10,
-                _draggableColumns: 'Возможно перетаскивание колонок',
-                draggableColumns: false,
-                _draggableRows: 'Возможно перетаскивание строк',
-                draggableRows: false,
-                _numerable: 'Колонка с нумерацией строк',
-                numerable: true,
-                _filterable: 'Локальный фильтр данных',
-                filterable: true,
-            };
-        };
-    })();
 
     function TreeGrid(config){
 
@@ -1242,9 +1252,6 @@
         return pub;
     };
     //FlatGrid.prototype = new abstractFlexGrid();
-
-
-    window.FlexGrid.getDefaultConfig = abstractFlexGrid.prototype.getDefaultConfig;
 
     function abstractDataSet(privGrid){
         let priv = this;

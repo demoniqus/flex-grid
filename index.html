@@ -456,15 +456,12 @@
                 console.log('element ' + acceptorItem.id + ' accept element ' + draggedItem.id)
             }
         };
+        config.id = {
+            gridClass: 'TestGrid',
+                    id: 1,
+        };
 
-        var fg = new FlexGrid.TreeGrid(
-                {
-                    id: {
-                        gridClass: 'TestGrid',
-                        id: 1,
-                    }
-                }
-        );
+        var fg = new FlexGrid.TreeGrid(config);
         fg.addVisualizationComponent(
             'budgetNameVisualizer',
             (function(){
@@ -572,7 +569,7 @@
             componentsDict.resetButton.classList.add('filter');
         }
         let n = (new Date).getTime();
-        fg.build(config);
+        fg.build();
 
         console.log('time building ', (new Date()).getTime() - n);
         (function(){

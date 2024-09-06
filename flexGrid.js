@@ -2,35 +2,14 @@
 
 import './dragger.js';
 import { DefaultVisualizer } from "./flexGridVisualizer.js";
+import {FlatDataSet, TreeDataSet} from './dataSet.js'
+import * as standardVisualComponents from './visualComponents.js'
+import * as filter from './filter.js'
+import {GridElement} from "./gridElement.js";
 
 
 let pluginIds = {};
 
-let StringFilterModesModel = Object.defineProperties(
-    Object.create(null),
-    {
-        StartWith: {
-            get: () =>  'startWith',
-            configurable: false,
-            enumerable: false,
-        },
-        EndWith: {
-            get: () => 'endWith',
-            configurable: false,
-            enumerable: false
-        },
-        Contains: {
-            get: () => 'contains',
-            configurable: false,
-            enumerable: false
-        },
-        Equals: {
-            get: () => 'equals',
-            configurable: false,
-            enumerable: false
-        },
-    }
-);
 
 function FlexGridDefaultConfig()
 {
@@ -145,7 +124,7 @@ function abstractFlexGrid (config){
 
     this.pub = undefined;
 
-    this.filter = new Filter(this);
+    this.filter = new filter.Filter(this);
     //DataSet'ы
     this.data = {
         //Плоский упорядоченный набор GridElement'ов - начальное состояние данных
@@ -669,7 +648,7 @@ function abstractFlexGrid (config){
                 return this.dataVisualizationComponents[header.type];
             }.bind(this);
         }
-        else if (header.type instanceof FlexGridDataVisualizationComponentInterface) {
+        else if (header.type instanceof standardVisualComponents.FlexGridDataVisualizationComponentInterface) {
             // Экземпляр визуализатора данных
             header.getVisualizer = function(){
                 return header.type;
@@ -694,7 +673,7 @@ function abstractFlexGrid (config){
                 return this.dataFilterComponents[header.filter];
             }.bind(this);
         }
-        else if (header.filter instanceof FlexGridDataFilterComponentInterface) {
+        else if (header.filter instanceof filter.FlexGridDataFilterComponentInterface) {
             // Экземпляр фильтра данных
             header.getFilter = function(){
                 return header.filter;
@@ -955,17 +934,17 @@ function pubFlexGrid(priv) {
         this.init();
     }.bind(priv);
 
-    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {FlexGridDataVisualizationComponentInterface} */component){
-        if (!(component instanceof FlexGridDataVisualizationComponentInterface)) {
+    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
+        if (!(component instanceof standardVisualComponents.FlexGridDataVisualizationComponentInterface)) {
             throw 'Data visualization component must be instance of FlexGridDataVisualizationComponentInterface';
         }
 
         this.dataVisualizationComponents[alias] = component;
     }.bind(priv);
 
-    this.addFilterComponent = function(/** @type {string} */alias, /** @type {FlexGridDataFilterComponentInterface} */component){
-        if (!(component instanceof FlexGridDataFilterComponentInterface)) {
-            throw 'Data visualization component must be instance of FlexGridDataFilterComponentInterface';
+    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
+        if (!(component instanceof filter.FlexGridDataFilterComponentInterface)) {
+            throw 'Data visualization component must be instance of filter.FlexGridDataFilterComponentInterface';
         }
 
         this.dataFilterComponents[alias] = component;
@@ -1003,16 +982,16 @@ function pubFlexGrid(priv) {
     }.bind(priv)
 
 
-    this.addVisualizationComponent('tree', new TreeVisualizationComponent());
-    this.addVisualizationComponent('empty', new EmptyVisualizationComponent());
-    this.addVisualizationComponent('text', new TextVisualizationComponent());
-    this.addVisualizationComponent('string', new StringVisualizationComponent());
-    this.addVisualizationComponent('money', new MoneyVisualizationComponent());
-    this.addVisualizationComponent('boolean', new BooleanVisualizationComponent());
-    this.addVisualizationComponent('numerable', new NumerableVisualizationComponent());
+    this.addVisualizationComponent('tree', new standardVisualComponents.TreeVisualizationComponent());
+    this.addVisualizationComponent('empty', new standardVisualComponents.EmptyVisualizationComponent());
+    this.addVisualizationComponent('text', new standardVisualComponents.TextVisualizationComponent());
+    this.addVisualizationComponent('string', new standardVisualComponents.StringVisualizationComponent());
+    this.addVisualizationComponent('money', new standardVisualComponents.MoneyVisualizationComponent());
+    this.addVisualizationComponent('boolean', new standardVisualComponents.BooleanVisualizationComponent());
+    this.addVisualizationComponent('numerable', new standardVisualComponents.NumerableVisualizationComponent());
 
 
-    this.addFilterComponent('string', new StringFilterComponent());
+    this.addFilterComponent('string', new filter.StringFilterComponent());
 
 
 };
@@ -1257,1051 +1236,53 @@ function FlatGrid(config) {
 
     return pub;
 };
-//FlatGrid.prototype = new abstractFlexGrid();
-
-function abstractDataSet(privGrid){
-    let priv = this;
-    this.id = undefined;
-    this.data = {
-        //Базовая структура данных для DataSet. Из нее могут формироваться дополнительные структуры
-        data: [],
-    };
-    this.createId = function(){
-        let r;
-        while ((r = 'dataSet' + (Math.ceil(Math.random() * 1000000) + 1)) in pluginIds) {}
-        this.id = r;
-        pluginIds[r] = true;// true instead of this to avoid memory leak
-    };
-
-    // this.configureItems = function(item){
-    //     this.data.data.map(this.configureItem);
-    // };
-    // this.configureItem = function(gridElement, index){
-    //     !(priv.id in gridElement) && (gridElement[priv.id] = {});
-    //     gridElement[priv.id].index = index;
-    //     //TODO При обновлении после вставки/удаления элементов в/из набора надо пересчитывать их индексы и обновлять, если есть колонка с нумерацией
-    // };
-
-    this.getFullData = function(){
-        /**
-         * Полные данные dataSet'a
-         * Например, у дерева не отображаются потомки свернутых узлов. Поэтому для тех же фильтров надо брать полные
-         * данные
-         */
-        throw 'Method \'getFullData\' is not implemented'
-    };
-    this.setFullData = function(data){
-        throw 'Method \'setFullData\' is not implemented'
-    };
-
-    this.getVisibleData = function(){
-        /**
-         * Отображаемые данные dataSet'а
-         */
-        throw 'Method \'getVisibleData\' is not implemented'
-    };
-    this.setVisibleData = function(data){
-        throw 'Method \'setVisibleData\' is not implemented'
-    };
-
-    this.reserveCurrentData = function(){
-        this.data.reserve  = this.getVisibleData();
-    };
-
-    this.restoreFromReserve = function() {
-        this.setVisibleData(this.data.reserve);
-        privGrid.updatePreview();
-    };
-
-    this.privGrid = privGrid;
-};
-
-function pubDataSet(priv){
-    this.initData = function(/**@type {[GridElement]}*/data){
-        priv.setFullData(data);
-        priv.setVisibleData(data);
-        // this.configureItems();
-    }.bind(priv);
-
-    this.add = function(/**@type {GridElement}*/data){
-        this.getFullData().push(data);
-        this.getVisibleData().push(data);
-        // this.configureItem(data, this.getVisibleData().length);
-    }.bind(priv);
-
-    /**
-     * Возможно этот метод должен называться не insert, а showChildren, т.к. вызывается он только при разворачивании
-     * узла дерева.
-     * Вставка данных - это совсем другое действие. Хотя вообще данные могли измениться и отображаемые потомки реально
-     * могли переместиться в нового родителя, а потому операция их отображения требует изменения данных. Но это измменений,
-     * вероятно, следует производить не в DataSet'е, а снаружи.
-     */
-    this.insertAfter = function(/**@type {GridElement}*/parentGridElement, /**@type {GridElement}|{[GridElement]}*/children){
-        if (!Array.isArray(children)) {
-            children = [children];
-        }
-        /**
-         * TODO Возможно следует использовать WeakMap для определения наличия объекта в коллекции и ее позиции
-         */
-        /**
-         * Проверим, имеются ли добавляемые элементы в коллекциях. Если имеются, эти позиции поставим в null, чтобы
-         * переместить из них элементы в новые позиции. А потом вообще удалим из массива эти позиции.
-         */
-        let i = 0, l = children.length, needFiltrate = false, iof;
-        //let minConfiguredIndex = index;
-
-        while (i < l) {
-            let dataItem = children[i++];
-            iof = this.getFullData().indexOf(dataItem);
-            if (iof > -1) {
-                this.getFullData()[iof] = null;
-                needFiltrate = true;
-                //_i < minConfiguredIndex && (minConfiguredIndex = _i);
-            }
-        }
-        needFiltrate && (this.setFullData(this.getFullData().filter((dataItem) => dataItem !== null)));
-
-        /**
-         * Вставляем children после указанного родителя в FullData
-         */
-        iof = this.getFullData().indexOf(parentGridElement) + 1;
-        this.getFullData().splice(iof, 0, ...children);
-
-        /**
-         * Разбираем VisibleData
-         */
-        needFiltrate = false;
-        i = 0;
-        // let minConfiguredIndex = this.getVisibleData().length;
-
-        while (i < l) {
-            let dataItem = children[i++];
-            iof = this.getVisibleData().indexOf(dataItem);
-            if (iof > -1) {
-                this.getVisibleData()[iof] = null;
-                needFiltrate = true;
-                // iof < minConfiguredIndex && (minConfiguredIndex = iof);
-            }
-        }
-        needFiltrate && (this.setVisibleData(this.getVisibleData().filter((dataItem) => dataItem !== null)));
-
-        /**
-         * Вставляем children после указанного родителя в VisibleData
-         */
-        iof = this.getVisibleData().indexOf(parentGridElement) + 1;
-        this.getVisibleData().splice(iof, 0, ...children);
-
-        // iof < minConfiguredIndex && (minConfiguredIndex = iof);
-        //
-        //
-        //
-        // while (minConfiguredIndex < this.getVisibleData().length) {
-        //     this.configureItem(this.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
-        //     minConfiguredIndex++;
-        // }
-    }.bind(priv);
-    this.insert_new = function(/**@type {int}*/index, /**@type {GridElement}|{[GridElement]}*/data){
-        if (!Array.isArray(data)) {
-            data = [data];
-        }
-        /**
-         * TODO Возможно следует использовать WeakMap для определения наличия объекта в коллекции и ее позиции
-         */
-        /**
-         * Проверим, имеются ли добавляемые элементы в коллекциях. Если имеются, эти позиции поставим в null, чтобы
-         * переместить из них элементы в новые позиции. А потом вообще удалим из массива эти позиции.
-         *
-         * Также найдем минимальную позицию, с которой следует пересчитать нумерацию GridElement'ов
-         */
-        let i = 0, l = data.length;
-        let minConfiguredIndex = index;
-        while (i < l) {
-            let dataItem = data[i++];
-            let _i = this.getFullData().indexOf(dataItem);
-            if (_i > -1) {
-                this.getFullData()[_i] = null;
-                _i < minConfiguredIndex && (minConfiguredIndex = _i);
-            }
-        }
-        this.getFullData().push(...data);
-        this.getVisibleData().splice(index, 0, ...data);
-
-        this.setFullData(this.getFullData().filter((dataItem) => dataItem !== null))
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
-            index++;
-        }
-    }.bind(priv);
-    this.insert = function(/**@type {int}*/index, /**@type {GridElement}|{[GridElement]}*/data){
-
-        /**
-         * TODO Здесь надо учитывать возможность, что пользователь будет вставлять уже имеющийся в наборе объект
-         * Использовать Weakmap для создания словаря объектов и поиска вхождения
-         * МОжно сделать свой объект, похожий на массив (метоыд push, insert, includes и пр.), реализованный в частности
-         */
-        !this.getFullData().includes(data) && this.getFullData().push(data);
-        if (Array.isArray(data)) {
-            this.getVisibleData().splice(index, 0, ...data);
-        }
-        else  {
-            this.getVisibleData().splice(index, 0, data);
-        }
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
-            index++;
-        }
-    }.bind(priv);
-
-    this.hide = function(/**@type {GridElement}|{[GridElement]}*/elements){
-        /**
-         * Здесь удаляем только из набора отображаемых данных, т.к. этот метод пока вызывается только при сворачивании
-         * узлов дерева, которое по идее не влияет на основной набор данных
-         */
-        if (!Array.isArray(elements)) {
-            elements = [elements];
-        }
-        let dict = new Map();
-        elements.map((element) => dict.set(element, true));
-
-        let tmp = [], i = 0, l = this.getVisibleData().length;//, minConfiguredIndex = null;
-
-        while (i < l)  {
-            let dataItem = this.getVisibleData()[i];
-            if (!dict.has(dataItem)) {
-                tmp.push(dataItem);
-            }
-            // else if (minConfiguredIndex === null) {
-            //     minConfiguredIndex = i;
-            // }
-            i++;
-        }
-        this.setVisibleData(tmp);
-        // while (minConfiguredIndex < this.getVisibleData().length) {
-        //     /**
-        //      * Вероятно, такая переконфигурация не нужна, т.к. даже в рамках DataSet GridElement может имерь разные индексы -
-        //      * либо в полных базовых данных, либо в отображаемых
-        //      */
-        //     this.configureItem(this.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
-        //     minConfiguredIndex++;
-        // }
-    }.bind(priv)
-
-    this.remove = function(/**@type {int}|{[int]}*/index){
-        //TODO Удалить и getFullData
-        if (Array.isArray(index)) {
-            let dict = {};
-            let res = [];
-            index.map(function(i){dict[i] = true;})
-            this.getVisibleData().map(function(gridElement, i){
-                if (!(i in dict)) {
-                    res.push(gridElement);
-                }
-            });
-            this.setVisibleData(res);
-            index = 0;
-        }
-        else  {
-
-            this.data.data.splice(index, 1);
-        }
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
-            index++;
-        }
-    }.bind(priv)
-
-    this.clear = function(){
-        //TODO baseData && currentData
-        this.data.data.map(function(gridElement){delete gridElement[priv.id];})
-        this.data.data = [];
-    }.bind(priv);
-
-    this.get = function(/**@type {int}*/key, baseData = false) {
-        return baseData ? this.getFullData()[key] : this.getVisibleData()[key] || undefined;
-    }.bind(priv);
-
-    this.getData = function(baseData = false){return baseData ? this.getFullData() : this.getVisibleData();}.bind(priv);
-    this.setData = function(data, baseData = false){
-        baseData ?
-            this.setFullData(data) :
-            this.setVisibleData(data);
-    }.bind(priv);
-
-    Object.defineProperties(
-        this,
-        {
-            length: {
-                configurable: true,
-                enumerable: false,
-                get: function(){return this.getVisibleData().length;}.bind(priv),
-            },
-            id: {
-                configurable: false,
-                enumerable: false,
-                get: function(){return this.id;}.bind(priv),
-            },
-        }
-    );
-
-}
-
-function FlatDataSet(privFlexGrid){
-    let priv = new abstractDataSet(privFlexGrid);
-
-    priv.getFullData = function(){
-        return this.data.flat;
-    };
-    priv.setFullData = function(data){
-        this.data.flat = data;
-    };
-
-    priv.getVisibleData = function(){
-        return this.data.data;
-    };
-    priv.setVisibleData = function(data){
-        this.data.data = data;
-    };
-
-    let pub = new pubDataSet(priv);
-
-
-
-    priv.createId();
-    return pub;
-
-};
-
-function TreeDataSet(privFlexGrid){
-    let priv = new abstractDataSet(privFlexGrid);
-
-    priv.getFullData = function(){
-        return this.data.flat;
-    };
-    priv.setFullData = function(data){
-        this.data.flat = data;
-    };
-
-    priv.getVisibleData = function(){
-        return this.data.data;
-    };
-    priv.setVisibleData = function(data){
-        this.data.data = data;
-    };
-
-    let pub = new pubDataSet(priv);
-
-    pub.initData = function(data){
-        this.setFullData(data);
-        let treeDataSetData = [];
-        let l = data.length, i = 0;
-        while (i < l) {
-            if (!data[i].parent) {
-                treeDataSetData.push(data[i]);
-            }
-            i++;
-        }
-        this.setVisibleData(treeDataSetData);
-
-        // this.configureItems();
-    }.bind(priv);
-
-    Object.defineProperties(
-        this,
-        {
-            lengthTotal: {
-                configurable: true,
-                enumerable: false,
-                get: function(){return this.getFullData().length;}.bind(priv),
-            },
-            id: {
-                configurable: false,
-                enumerable: false,
-                get: function(){return this.id;}.bind(priv),
-            },
-        }
-
-    );
-
-
-    //Здесь как минимум два набора данных - видимые строки и общий набор, по которому можно вычислить количество строк для компонента "Количество строк / перейти к строке"
-
-    priv.createId();
-    return pub;
-};
-
-// function FilteredDataSet(privFlexGrid){
-//     let priv = new abstractDataSet(privFlexGrid);
-//     let pub = new pubDataSet(priv);
-//
-//     Object.defineProperties(
-//         pub,
-//         {
-//             length: {
-//                 configurable: true,
-//                 enumerable: false,
-//                 get: function(){return this.data.current.length;}.bind(priv),
-//             },
-//         }
-//
-//     );
-//
-//     priv.createId();
-//     return pub;
-// };
-
-function Filter(privFlexGrid){
-    let priv = {
-        privFlexGrid: privFlexGrid,
-        components: {},
-        dataSet: undefined,//Tree || Flat??,
-        mode: 'onenter',
-        layers: {
-            /**
-             * Сохраняя в слоях фильтра отфильтрованные наборы данных и подкладывая их в grid.dataset, мы избегаем того,
-             * что пользователь нажмет expand и эти раскрытые/свернутые строки испортят отфильтрованный набор данных
-             */
-            /**
-             * @type {FilterLayer[]}
-             */
-            dict: {},
-            /**
-             * @type {FilterLayer[]}
-             */
-            list: []
-        },
-        filters: [
-
-        ],
-        filtersDict: {
-
-        },
-        filtrate: function(){
-            /**
-             * @type {GridElement[]}
-             */
-            let data =
-                priv.privFlexGrid.data.flat.getData(true);
-
-            for (let i = 0; i < this.filters.length; i++) {
-                let filter = this.filters[i];
-                data = filter.filterComponent.filtrate(
-                    filter.fieldName,
-                    filter.filterValue,
-                    data
-                );
-
-            }
-
-
-            //В grid.dataset устанавливаем копию отфильтрованных данных, т.к. пользователь может разворачивать
-            //строки и портить тем самым результат фильтрации
-            let copy = [...data];
-            priv.privFlexGrid.data.current.setData(copy);
-            /**
-             * expanded просто так менять нельзя на true.
-             * Во-первых, отфильтрованные элементы сами показываются в гриде, но при этом пользователь их еще не раскрывал.
-             * Во-вторых, могут отфильтроваться предок и один/несколько (но не все) его потомки. В этом случае
-             * по идее флаг дерева должен принять вид "Открыто частично"
-             */
-            // if (priv.privFlexGrid.data.current instanceof TreeDataSet) {
-            //     let i = 0, l = data.length;
-            //     while (i < l) {
-            //         data[i].expand(true);
-            //     }
-            // }
-
-            priv.privFlexGrid.updatePreview();
-        }
-    };
-    let pub = {
-        addComponent: function(key, component){
-            priv.components[key] = component;
-        }.bind(priv),
-        setFilter: function(
-            /** @type {string} */fieldName,
-            filterValue,
-            /** @type {FlexGridDataFilterComponentInterface} */ filterComponent
-        ){
-            if (fieldName in this.filtersDict && filterComponent.getId() in this.filtersDict[fieldName]) {
-                let filter = this.filtersDict[fieldName][filterComponent.getId()];
-                filter.filterValue = filterValue;
-            }
-            else {
-                let filter = {
-                    fieldName: fieldName,
-                    filterValue: filterValue,
-                    filterComponent: filterComponent
-                };
-                if (!(fieldName in this.filtersDict)) {
-                    this.filtersDict[fieldName] = {};
-                }
-                this.filtersDict[fieldName][filterComponent.getId()] = filter;
-                this.filters.push(filter);
-            }
-            this.filtrate();
-
-        }.bind(priv),
-        clearFilter: function(
-            /** @type {string} */fieldName,
-            /** @type {FlexGridDataFilterComponentInterface} */ filterComponent
-        ){
-            if (fieldName in this.filtersDict && filterComponent.getId() in this.filtersDict[fieldName]) {
-                let filter = this.filtersDict[fieldName][filterComponent.getId()];
-                delete this.filtersDict[fieldName];
-                let i = this.filters.length;
-                while (i--) {
-                    if (this.filters[i] === filter) {
-                        this.filters.splice(i, 1);
-                        this.filtrate();
-                        break;
-                    }
-                }
-            }
-
-        }.bind(priv),
-    };
-
-
-    return pub;
-}
-
-function FilterLayer(){
-    let priv = {
-        data: null,
-        prevLayer: null,
-        nextLayer: null,
-    };
-
-    let pub = {
-        setData: (data) => priv.data = data,
-        getData: () => priv.data,
-    };
-
-    return pub;
-}
-
-function GridElement(config, privFlexGrid, pubFlexGrid){
-    let priv = {
-        DOM: {
-            row: undefined,
-            cells: {},
-        },
-        data: undefined,
-        expanded: {},
-        parent: null,
-        children: [],
-        childrenDict: {},
-        config: {
-            entityClassField: config.entityClassField,
-            entityIdField: config.entityIdField,
-            entityParentField: config.entityParentField,
-        },
-        //priv
-        privFlexGrid: privFlexGrid,
-        pubFlexGrid: pubFlexGrid,
-    };
-    let pub = {
-        initData: function(/**@type {object}*/data){
-            this.data = data;
-        }.bind(priv),
-        setData: function(/**@type {string}*/key, data){
-            this.data[key] = data;
-        }.bind(priv),
-        get: function(/**@type {string}*/key) {
-            return key in this.data ? this.data[key]: undefined;
-        }.bind(priv),
-        getData: function(){return this.data;}.bind(priv),
-        expand: function(dataSetId, /**@type {boolean}*/ expanded){
-            this.expanded[dataSetId] = !!expanded;
-        }.bind(priv),
-        expanded: function(dataSetId){
-            !!dataSetId && (dataSetId = priv.privFlexGrid.data.current.id)
-            return !!this.expanded[dataSetId];
-        }.bind(priv),
-        setParent: function(/** @type {GridElement} */parent){
-            if (this.parent && this.parent !== parent) {
-                //Удаляем из коллекции дочерних элементов старого родителя
-                this.parent.removeChild(this);
-            }
-
-            this.parent = parent;
-
-            if (this.parent) {
-                //Добавляем в коллекцию дочерних элементов к новому родителю
-                parent.addChild(pub);
-            }
-        }.bind(priv),
-        removeChild: function(/** @type {GridElement} */child){
-            let iof = priv.children.indexOf(child);
-            if (iof > -1) {
-                priv.children.splice(iof, 1)
-            }
-            // let c = priv.children.length;
-            // let res = [];
-            // for (let i = 0; i < c; i++) {
-            //     if (priv.children[i] !== child) {
-            //         res.push(priv.children[i]);
-            //     }
-            // }
-            // priv.children = res;
-        }.bind(priv),
-        addChild: function(/** @type {GridElement} */child){
-            if (!priv.children.includes(child)) {
-                priv.children.push(child);
-            }
-        }.bind(priv),
-
-        updateCell: function(propName){
-            let header = this.privFlexGrid.headers.dict[propName];
-            //аргументы могут быть использованы при пользовательской функции, определяющей конкретный visualizer
-            let visualizer = header.getVisualizer(propName, item, header);
-
-            visualizer && visualizer.buildReadForm(
-                this.DOM.cells[headerId],
-                headerId,
-                this,
-                header,
-                //index
-            );
-        }.bind(priv),
-
-        getGrid: function(){
-            return this.pubFlexGrid
-        }.bind(priv)
-    };
-
-    Object.defineProperties(
-        pub,
-        {
-            parent: {
-                configurable: false,
-                enumerable: false,
-                get: function(){return this.parent;}.bind(priv),
-            },
-            children: {
-                configurable: false,
-                enumerable: false,
-                get: function(){return this.children;}.bind(priv),
-            },
-            DOM: {
-                configurable: false,
-                enumerable: false,
-                get: function(){return this.DOM;}.bind(priv),
-            },
-        }
-
-    );
-
-    return pub;
-};
-function FlexGridDataVisualizationComponentInterface (){
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        throw 'Method \'buildReadForm\' is not implemented';
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        throw 'Method \'buildEditForm\' is not implemented';
-    };
-
-};
-
-
-
-function EmptyVisualizationComponent(){
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = '';
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = '';
-    };
-
-};
-EmptyVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-function StringVisualizationComponent(){
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = gridElement.get(fieldName);
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = '';
-        let textBox = document.createElement('input');
-        textBox.type = 'text';
-        textBox.name = fieldName;
-        textBox.classList.add('form-edit-textbox');
-        textBox.value  = gridElement.get(fieldName);
-        DOMContainer.appendChild(textBox);
-    };
-
-};
-StringVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-
-function TextVisualizationComponent(){
-    this.resizable = false;
-    this.maxWidth = 100;
-    this.maxHeight = 100;
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = gridElement.get(fieldName);
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = '';
-        let textBox = document.createElement('textarea');
-        textBox.name = fieldName;
-        textBox.classList.add('form-edit-textarea');
-        textBox.value  = gridElement.get(fieldName);
-        textBox.style.resize = this.resizable ? 'enabled' : 'none';
-
-        DOMContainer.appendChild(textBox);
-    };
-
-};
-TextVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-function MoneyVisualizationComponent(){
-    let locale = 'ru';
-    this.currency = 'RUR';
-    this.minimumFractionDigits = 0;
-    this.maximumFractionDigits = 2;
-    this.useGrouping = true;
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        let options = {
-            style: 'currency',
-            currency: this.currency,
-            minimumFractionDigits: this.minimumFractionDigits,
-            maximumFractionDigits: this.maximumFractionDigits,
-            useGrouping: this.useGrouping,
-        };
-        DOMContainer.innerHTML = '<span style="">' + new Intl.NumberFormat(locale, options).format(gridElement.get(fieldName) || 0);
-        DOMContainer.classList.add('money-format');
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        DOMContainer.innerHTML = '';
-        let textBox = document.createElement('input');
-        textBox.type = 'text';
-        textBox.name = fieldName;
-        textBox.classList.add('form-edit-textbox');
-        textBox.value  = gridElement.get(fieldName) || 0;
-        textBox.style.resize = this.resizable ? 'enabled' : 'none';
-
-        DOMContainer.appendChild(textBox);
-        DOMContainer.classList.add('money-format');
-    };
-
-};
-MoneyVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-function BooleanVisualizationComponent(){
-    this.trueVisualization = function(){
-        return '+';
-    };
-    this.falseVisualization = function(){
-        return '-';
-    };
-    this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-
-        let visualization = gridElement.get(fieldName) ? this.trueVisualization() : this.falseVisualization();
-        typeof visualization === typeof 'aaa' ?
-            DOMContainer.innerHTML = visualization :
-            (DOMContainer.innerHTML = '', DOMContainer.appendChild(visualization));
-
-
-    };
-    this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-        return '<div style="color: red; font-weight: bold; font-size: 2em;">need implement checkbox edit form</div>';
-    };
-
-};
-BooleanVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-
-function TreeVisualizationComponent(){
-    this.expandedNode = '&#x25BC;';
-    this.collapsedNode = '&#x25BA;';
-    let f = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-
-        DOMContainer.innerHTML = gridElement.expanded() ?
-            this.expandedNode :
-            this.collapsedNode;
-    };
-
-    this.buildReadForm = f;
-    this.buildEditForm = f;
-
-};
-TreeVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-
-function NumerableVisualizationComponent(){
-    let f = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData, /** @type {int} */ indexRow){
-        DOMContainer.innerHTML = indexRow + 1;
-    };
-
-    this.buildReadForm = f;
-    this.buildEditForm = f;
-
-};
-NumerableVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
-
-
-function FlexGridDataFilterComponentInterface (){
-    this.buildFilterForm = function (
-        /** @type {Element}*/DOMContainer,
-        /** @type {string}*/fieldName,
-        /** @type {object}*/headerData,
-    ){
-        throw 'Method \'buildReadForm\' is not implemented';
-    };
-
-    this.buildBaseForm = function(/** @type {Element}*/DOMContainer,){
-        while (DOMContainer.lastChild) {
-            DOMContainer.removeChild(DOMContainer.firstChild);
-        }
-        DOMContainer.classList.add('flex-grid-panel');
-        DOMContainer.classList.add('flex-grid-filter-panel');
-        DOMContainer.classList.add('flex-grid-nowrapped-panel');
-        DOMContainer.classList.add('flex-grid-horizontal-panel');
-        let componentContainer = document.createElement('div');
-        let componentOptionsContainer = document.createElement('div');
-        componentContainer.classList.add('flex-grid-filter-component-container');
-        componentOptionsContainer.classList.add('flex-grid-filter-component-options-container');
-
-        return {
-            componentContainer: componentContainer,
-            componentOptionsContainer: componentOptionsContainer
-        }
-
-    };
-
-    this.filtrate = function(
-        fieldName,
-        filterValue,
-        gridElements
-    ){
-        throw 'Method \'filtrate\' of filter component is not implemented'
-    };
-
-    this.getId = function(
-    ){
-        throw 'Method \'getId\' of filter component is not implemented'
-    };
-
-
-
-    this.buildResetOption = function(){
-        let container = document.createElement('div');
-        container.classList.add('flex-grid-filter-option');
-        let button = document.createElement('button');
-        button.classList.add('filter-reset-button');
-        button.innerHTML = 'X';
-
-        container.appendChild(button);
-        return {
-            container: container,
-            button: button
-        };
-    };
-
-    this.customizeComponents = function(componentsDict){
-
-    };
-    // this.buildResetOption = function(){
-    //     let option = document.createElement('div');
-    //     option.classList.add('flex-grid-filter-option');
-    //     option.innerHTML = 'X';
-    //     return option;
-    // };
-    // this.buildEditForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {GridElement}*/gridElement, /** @type {object}*/headerData){
-    //     throw 'Method \'buildEditForm\' is not implemented';
-    // };
-
-    //TODO Для числовых полей и дат в качестве опций можно добавить "Вне диапазона", "В диапазоне", "Точное значение", "Содержит..."
-    // Для диапазонов - можно указывать одну из границ - тогда ищем либо больше, либо меньше, либо >=, либо <=
-
-}
-
-function abstractFilterComponent(){
-    this.DOM = {};
-    this.mode = StringFilterModesModel.StartWith
-    this.id = null;
-    this.createId = function(){
-        let r;
-        while ((r = 'filter-component_' + (Math.ceil(Math.random() * 1000000) + 1)) in pluginIds) {}
-        this.id = r;
-        pluginIds[r] = true;// true instead of this to avoid memory leak
-    };
-    this.init = function(){
-        this.createId();
-    };
-
-    this.init();
-}
-
-function StringFilterComponent(){
-    let priv = new abstractFilterComponent();
-
-    this.buildFilterForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/headerData){
-        let Filter = this.Filter;
-        let filterComponent = this;
-        let forms = this.buildBaseForm(DOMContainer);
-
-        //events: onchange (minlength >= 0), onenter,
-
-        let div = document.createElement('div');
-        let input = document.createElement('input');
-        div.classList.add('flex-grid-filter-field');
-        div.appendChild(input);
-        let resetOption = this.buildResetOption(filterComponent);
-        // console.log(this.Filter); //(pubFilter)
-
-        forms.componentContainer.appendChild(div);
-        forms.componentContainer.appendChild(resetOption.container);
-
-        resetOption.button.addEventListener(
-            'click',
-            function(e){
-                e.cancelBubble = true;
-                e.preventDefault();
-                input.value = '';
-                Filter.clearFilter(fieldName, filterComponent);
-            }
-        );
-
-        DOMContainer.appendChild(forms.componentContainer);
-        DOMContainer.appendChild(forms.componentOptionsContainer);
-        input.addEventListener(
-            'keyup',
-            function(e){
-                if (e.keyCode !== 13) {
-                    return;
-                }
-                this.value.trim() ?
-                    Filter.setFilter(fieldName, this.value, filterComponent) :
-                    Filter.clearFilter(fieldName, filterComponent);
-            }
-        );
-
-        let btnGroupContainer = document.createElement('div');
-        btnGroupContainer.classList.add('btn-group');
-        btnGroupContainer.setAttribute('role', 'group');
-
-        let modeComponents = {};
-        modeComponents[StringFilterModesModel.StartWith] = {title: 'Начинается с ...', caption: '^*'};
-        modeComponents[StringFilterModesModel.EndWith] = {title: 'Заканчивается на ...', caption: '*$'};
-        modeComponents[StringFilterModesModel.Contains] = {title: 'Содержит ...', caption: '%%'};
-        modeComponents[StringFilterModesModel.Equals] = {title: 'Точное совпадение ...', caption: '**'};
-
-        for (let modeName in modeComponents) {
-            let modeParams = modeComponents[modeName];
-            let radio = document.createElement('input');
-            radio.type = 'radio';
-            radio.classList.add('btn-check');
-            radio.name = 'string-filter-component-mode-' + fieldName + '-' + priv.id;
-            radio.id = 'string-filter-component-mode-' + modeName + '-' + fieldName + '-' + priv.id;
-            radio.dataset.mode = modeName;
-            radio.autocomplete = 'off';
-            let label = document.createElement('label');
-            label.classList.add('btn');
-            label.classList.add('btn-outline-primary');
-            label.classList.add('string-filter-option');
-            label.setAttribute('for', radio.id)
-            label.textContent = modeParams.caption;
-            label.title = modeParams.title;
-            btnGroupContainer.appendChild(radio);
-            btnGroupContainer.appendChild(label);
-            radio.onchange = function(){
-                priv.mode = this.dataset.mode;
-            };
-
-        }
-
-        //TODO Компонент может также содержать опции учета регистра, а также инверсии результатов поиска
-        // Отдельно продумать поиск пустые / непустые и т.п. - возможно, для компонента надо делать отдельное вспылвающее окошко с расширенными настройками
-
-        forms.componentOptionsContainer.appendChild(btnGroupContainer);
-
-
-
-
-        this.customizeComponents(
-            {
-                inputField: input,
-                resetButton: resetOption.button
-            }
-        );
-    };
-
-    this.filtrate = function(
-        fieldName,
-        filterValue,
-        /** @type {GridElement[]} */gridElements
-    ){
-        let filterCallbacks = {};
-        filterCallbacks[StringFilterModesModel.StartWith] = function(gridElement, index){
-            return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) === 0;
-        };
-        filterCallbacks[StringFilterModesModel.EndWith] = function(gridElement, index){
-
-            return (gridElement.get(fieldName) ?? '').toString().endsWith(filterValue);
-        };
-
-        filterCallbacks[StringFilterModesModel.Contains] = function(gridElement, index){
-            return (gridElement.get(fieldName) ?? '').toString().indexOf(filterValue) > -1;
-        };
-        filterCallbacks[StringFilterModesModel.Equals] = function(gridElement, index){
-            return (gridElement.get(fieldName) ?? '').toString() === filterValue;
-        };
-
-        return gridElements.filter(
-            filterCallbacks[priv.mode ?? StringFilterModesModel.StartWith]
-        );
-    };
-
-    this.getId = function(){
-        return this.id;
-    }.bind(priv);
-
-};
-StringFilterComponent.prototype = new FlexGridDataFilterComponentInterface();
 
 
 Object.defineProperties(
     FlexGrid,
     {
         FlexGridDataVisualizationComponentInterface: {
-            get: () => FlexGridDataVisualizationComponentInterface,
+            get: () => standardVisualComponents.FlexGridDataVisualizationComponentInterface,
             configurable: false,
             enumerable: false,
         },
         FlexGridDataFilterComponentInterface: {
-            get: () => FlexGridDataFilterComponentInterface,
+            get: () => filter.FlexGridDataFilterComponentInterface,
             configurable: false,
             enumerable: false,
         },
         StringVisualizationComponent: {
-            get: () => StringVisualizationComponent,
+            get: () => standardVisualComponents.StringVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         TextVisualizationComponent: {
-            get: () => TextVisualizationComponent,
+            get: () => standardVisualComponents.TextVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         EmptyVisualizationComponent: {
-            get: () => EmptyVisualizationComponent,
+            get: () => standardVisualComponents.EmptyVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         MoneyVisualizationComponent: {
-            get: () => MoneyVisualizationComponent,
+            get: () => standardVisualComponents.MoneyVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         TreeVisualizationComponent: {
-            get: () => TreeVisualizationComponent,
+            get: () => standardVisualComponents.TreeVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         BooleanVisualizationComponent: {
-            get: () => BooleanVisualizationComponent,
+            get: () => standardVisualComponents.BooleanVisualizationComponent,
             configurable: false,
             enumerable: false,
         },
         StringFilterComponent: {
-            get: () => StringFilterComponent,
+            get: () => filter.StringFilterComponent,
             configurable: false,
             enumerable: false,
         },

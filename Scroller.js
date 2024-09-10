@@ -160,6 +160,7 @@ function ScrollerDefaultConfig()
 Object.defineProperties(
     Scroller,
     {
+        //именно getDefaultConfig, а не DefaultConfig, т.к. каждый раз возвращается НОВЫЙ объект, а не один и тот же
         getDefaultConfig :
             {
                 get: () => ScrollerDefaultConfig,

@@ -9,7 +9,7 @@ export {FlexPanel} from "./FlexPanel.js";
 
 let pluginIds = {};
 
-export let ClassModel = Object.defineProperties(
+let ClassModel = Object.defineProperties(
     Object.create(null),
     {
         FlexGridPanel: {
@@ -76,7 +76,7 @@ export let ClassModel = Object.defineProperties(
 );
 
 
-export function VisualizerInterface(){
+function VisualizerInterface(){
     this.init = function(){throw 'Define init method'};
     this.setHeaders = function(headers){throw 'Define setHeaders method';}
     this.setContainer = function(container){throw 'Define setContainer method';}
@@ -974,7 +974,6 @@ export function DefaultVisualizer(){
         nodalHeaders.reverse();
         this.headers.nodes = nodalHeaders;
 
-
     }.bind(priv);
 
     pub.setContainer = function(container){
@@ -1038,6 +1037,11 @@ Object.defineProperties(
             get: () => ClassModel,
             configurable: false,
             enumerable: false,
-        }
+        },
+        VisualizerInterface: {
+            get: () => VisualizerInterface,
+            configurable: false,
+            enumerable: false,
+        },
     }
 )

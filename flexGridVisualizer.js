@@ -3,9 +3,13 @@ import './dragger.js';
 import {Scroller} from './Scroller.js';
 import {FlexPanel} from "./FlexPanel.js";
 
+export {FlexPanel} from "./FlexPanel.js";
+
+
+
 let pluginIds = {};
 
-let ClassModel = Object.defineProperties(
+export let ClassModel = Object.defineProperties(
     Object.create(null),
     {
         FlexGridPanel: {
@@ -72,7 +76,7 @@ let ClassModel = Object.defineProperties(
 );
 
 
-window.VisualizerInterface = function(){
+export function VisualizerInterface(){
     this.init = function(){throw 'Define init method'};
     this.setHeaders = function(headers){throw 'Define setHeaders method';}
     this.setContainer = function(container){throw 'Define setContainer method';}

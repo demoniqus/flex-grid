@@ -47,8 +47,6 @@ function FlexGridDefaultConfig()
         },
         _id: 'Пользовательский идентификатор FlexGrid\'а для организации взаимодействия между таблицами',
         id: null,
-        _headers: 'Иерархический набор заголовков FlexGrid',
-        headers: undefined,
         _container: 'Контейнер для размещения flexGrid',
         container: undefined,
         _entityClassField: 'Наименование поля с указанием класса сущности',
@@ -71,6 +69,8 @@ function FlexGridDefaultConfig()
         filterable: true,
         _visualizer: 'Пользовательский компонент визуализации данных. Должен реализовывать интерфейс DefaultVisualizer.VisualizerInterface',
         visualizer: null,
+        _dataProcessor: 'Пользовательский компонент загрузки данных. Должен реализовывать интерфейс FlexGrid.DataLoaderInterface',
+        dataProcessor: null,
     };
 }
 
@@ -118,7 +118,7 @@ function abstractFlexGrid (config){
          */
         orderedNodalHeaders: null,
     };
-
+    /**@type {pubFlexGrid} */
     this.pub = undefined;
 
     this.filter = new filter.Filter(this);
@@ -372,18 +372,27 @@ function abstractFlexGrid (config){
         ) {
             return ['empty config'];
         }
+
+        if (
+            config.visualizer &&
+            !(config.visualizer instanceof DefaultVisualizer.VisualizerInterface)
+        ) {
+            errors.push('Visualizer must be instance of DefaultVisualizer.VisualizerInterface');
+        }
+
         if (
             !config.container ||
-            //Селектор
-            typeof config.container !== typeof 'aaa' &&
-            //DOM-элемент
-            (
-                typeof config.container !== typeof {} ||
-                config.container.nodeType !== Node.ELEMENT_NODE
-            )
+            typeof config.container === typeof 'aaa' && !config.container.trim() ||
+
+            typeof config.container === typeof {} && config.container.nodeType !== Node.ELEMENT_NODE
         ) {
-            //TODO Более точное определение контейнера для размещения грида
-            errors.push('incorrect grid container');
+            errors.push('Incorrect grid container');
+        }
+        if (
+            !config.dataProcessor ||
+            !(config.dataProcessor instanceof FlexGrid.DataProcessorInterface)
+        ) {
+            errors.push('Incorrect data processor');
         }
 
         errors = errors.splice(0, 0, ...this.specificConfigValidation(config));
@@ -402,53 +411,45 @@ function abstractFlexGrid (config){
             delete config.id;
         }
 
-        if (config.visualizer) {
-            if (!(config.visualizer instanceof DefaultVisualizer.VisualizerInterface)) {
-                throw 'Visualizer must be instance of DefaultVisualizer.VisualizerInterface';
-            }
-        }
 
         if (typeof config.container === typeof 'aaa') {
             let collection;
             config.container = document.getElementById(config.container) || ((collection = document.getElementsByClassName(config.container)) ? collection[0] : null) || document.querySelector(config.container);
-        }
-        else if (!(config.container && typeof config.container === typeof {} && config.container.nodeType === Node.ELEMENT_NODE)) {
-            throw 'Incorrect main container';
-        }
-
-        this.visualizer = config.visualizer || new DefaultVisualizer();
-
-        for (let key in config) {
-            this.config[key] = config[key];
+            if (!config.container) {
+                throw 'Incorrect grid container';
+            }
         }
 
-        this.config.treeMaxVisualDepth ||= FlexGrid.getDefaultConfig().treeMaxVisualDepth;
-        this.config.treeLvlPadding ||= FlexGrid.getDefaultConfig().treeLvlPadding;
-        this.config.events ||= {};
-        this.styles['.flex-grid-tree-cell'] = '--tree-lvl-padding: ' + this.config.treeLvlPadding + 'px;';
-        for (let i = 1; i <= this.config.treeMaxVisualDepth; i++) {
+
+
+        config.treeMaxVisualDepth ||= FlexGrid.getDefaultConfig().treeMaxVisualDepth;
+        config.treeLvlPadding ||= FlexGrid.getDefaultConfig().treeLvlPadding;
+        config.events ||= {};
+        this.styles['.flex-grid-tree-cell'] = '--tree-lvl-padding: ' + config.treeLvlPadding + 'px;';
+        for (let i = 1; i <= config.treeMaxVisualDepth; i++) {
             this.styles['.flex-grid-tree-cell.enclosure-' + i] = 'padding-left: calc(var(--tree-lvl-padding) * ' + i + ');';
         }
-        this.styles['.flex-grid-tree-cell.enclosure-exceed'] = 'padding-left: calc(var(--tree-lvl-padding) * ' + this.config.treeMaxVisualDepth + ');';
+        this.styles['.flex-grid-tree-cell.enclosure-exceed'] = 'padding-left: calc(var(--tree-lvl-padding) * ' + config.treeMaxVisualDepth + ');';
 
-        this.config.filterMode && this.filter.setMode(this.config.filterMode);
+        config.filterMode && this.filter.setMode(config.filterMode);
+
+        this.visualizer = config.visualizer || new DefaultVisualizer();
+        this.visualizer.setContainer(config.container);
+        this.visualizer.setCallbacks(
+            {
+                getItemsCount: this.visualizerCallbacks.getItemsCount.bind(this),
+                getElement: this.visualizerCallbacks.getElement.bind(this),
+            }
+        );
+
+        delete config.visualizer;
+
+        this.dataProcessor = config.dataProcessor;
+        delete config.dataProcessor;
+
+        this.config = config;
     };
 
-    this.initData = function(){
-        if (typeof this.config.data === typeof 'aaa') {
-            /**
-             * Загрузка данных с сервера
-             */
-            this.loadData(this.config.data);
-            return
-        }
-        if (Array.isArray(this.config.data)) {
-            /**
-             * Это плоский массив данных
-             */
-            this.prepareData(this.config.data);
-        }
-    };
 
     this.loadData = function(source){
         throw 'Method \'loadData\' is not implemented for specific flexGrid';
@@ -469,29 +470,53 @@ function abstractFlexGrid (config){
          */
         this.createId();
         this.createStyleElement();
-        this.createHeaders();
         this.updateStyleElement();
+        //TODO async await
+        let headersProcessingPromise = new Promise(
+            function(resolve, reject){
+                let headersAcceptor = function(headers){
+                    this.createHeaders(headers);
+                    resolve();
+                }.bind(this);
+                this.dataProcessor.getHeaders(headersAcceptor);
+            }.bind(this)
+        );
+        let dataProcessingPromise = new Promise(
+            function(resolve, reject){
+                let dataAcceptor = function(data){
+                    this.prepareData(data);
+                    resolve();
+                }.bind(this);
+                this.dataProcessor.getData(dataAcceptor);
+            }.bind(this)
+        );
+
+        Promise.all(
+            [
+                headersProcessingPromise,
+                dataProcessingPromise
+            ]
+        ).then(
+            function(){
+                this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
+
+                this.visualizer.init(
+                    {
+                        scrollSensitivity: this.config.scrollSensitivity ?? Scroller.getDefaultConfig().scrollSensitivity,
+                        scrollStepSize: this.config.scrollStepSize ?? Scroller.getDefaultConfig().scrollStepSize,
+                    }
+                );
+            }.bind(this)
+        )
+
+
+
 
         //TODO
         // анимация CSS https://doka.guide/css/animation/
         // реализовать promises - загрузка заголовков и данных, инициализация визуализатора
 
-        this.initData();
         //TODO В случае загрузки с сервера нужно запускать визуализацию данных только после получения данных
-        this.visualizer.setContainer(this.config.container);
-        this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
-        this.visualizer.setCallbacks(
-            {
-                getItemsCount: this.visualizerCallbacks.getItemsCount.bind(this),
-                getElement: this.visualizerCallbacks.getElement.bind(this),
-            }
-        );
-        this.visualizer.init(
-            {
-                scrollSensitivity: this.config.scrollSensitivity ?? Scroller.getDefaultConfig().scrollSensitivity,
-                scrollStepSize: this.config.scrollStepSize ?? Scroller.getDefaultConfig().scrollStepSize,
-            }
-        );
 
 
 
@@ -667,7 +692,7 @@ function abstractFlexGrid (config){
             header.getVisualizer = header.type.bind(this.pub);
         }
         else {
-            throw 'Incorrect data vizualization component';
+            throw 'Incorrect data visualization component';
         }
     };
     this.setHeaderFilter = function(header){
@@ -817,7 +842,7 @@ function abstractFlexGrid (config){
     };
 
 
-    this.createHeaders = function(){
+    this.createHeaders = function(headers){
         let leafHeaders = [];
         let headersDict = {};
         let nodalHeaders = [];
@@ -828,7 +853,7 @@ function abstractFlexGrid (config){
         let leafTreeHeader = undefined;
         let nodalTreeHeader = undefined;
         let config = this.config;
-        let headers = this.extendsHeaders(this.config.headers);
+        headers = this.extendsHeaders(headers);
         headers = this.normalizeHeadersStructure(headers);
 
 
@@ -931,6 +956,7 @@ function abstractFlexGrid (config){
     this.updatePreview = function (){
         this.visualizer.updatePreview();
     };
+    //Методы установлены, начинаем конфигурирование
 
     this.setConfig(config);
 };
@@ -1312,10 +1338,18 @@ export let FlexGrid = Object.defineProperties(
             get: () => ClassModel,
             configurable: false,
             enumerable: false,
+        },
+        DataProcessorInterface: {
+            get: () => function(){
+                this.getData = function(/**@type {function} */dataAcceptor){throw 'Method getData not implemented'};
+                this.getHeaders = function(/**@type {function} */headersAcceptor){throw 'Method getData not implemented'};
+                this.getEntity = function(/**@type {function} */headersAcceptor, /**@type {string}*/entityId,/**@type {string}*/entityClass){throw 'Method getData not implemented'};
+
+            },
+            configurable: false,
+            enumerable: false,
         }
-
     }
+);
 
-
-)
 

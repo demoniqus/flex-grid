@@ -441,6 +441,7 @@ function abstractFlexGrid (config){
                 getElement: this.visualizerCallbacks.getElement.bind(this),
             }
         );
+        this.visualizer.init();
 
         delete config.visualizer;
 
@@ -494,45 +495,41 @@ function abstractFlexGrid (config){
         Promise.all(
             [
                 headersProcessingPromise,
-                dataProcessingPromise
+                dataProcessingPromise,
+                //TODO get metaData (table name and other meta data)
+
             ]
         ).then(
             function(){
+                // return;
                 this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
 
-                this.visualizer.init(
+                this.visualizer.showData(
                     {
                         scrollSensitivity: this.config.scrollSensitivity ?? Scroller.getDefaultConfig().scrollSensitivity,
                         scrollStepSize: this.config.scrollStepSize ?? Scroller.getDefaultConfig().scrollStepSize,
                     }
                 );
+
+                let tableHeader = document.createElement('div');
+                tableHeader.innerHTML = 'Test Tree Flex Grid';
+                tableHeader.style.textAlign = 'center';
+                tableHeader.style.width = '100%';
+                tableHeader.style.marginBottom = '10px';
+                this.visualizer.TopPanel.addItem(
+                    'tHeader',
+                    tableHeader
+
+                )
+
+                this.initOptionPanels();
             }.bind(this)
         )
 
 
 
 
-        //TODO
-        // анимация CSS https://doka.guide/css/animation/
-        // реализовать promises - загрузка заголовков и данных, инициализация визуализатора
 
-        //TODO В случае загрузки с сервера нужно запускать визуализацию данных только после получения данных
-
-
-
-
-        let tableHeader = document.createElement('div');
-        tableHeader.innerHTML = 'Test Tree Flex Grid';
-        tableHeader.style.textAlign = 'center';
-        tableHeader.style.width = '100%';
-        tableHeader.style.marginBottom = '10px';
-        this.visualizer.TopPanel.addItem(
-            'tHeader',
-            tableHeader
-
-        )
-
-        this.initOptionPanels();
 
 
         // this.setReactiveData();
@@ -842,7 +839,7 @@ function abstractFlexGrid (config){
     };
 
 
-    this.createHeaders = function(headers){
+    this.createHeaders = function(/**@type {Object[]} */headers){
         let leafHeaders = [];
         let headersDict = {};
         let nodalHeaders = [];
@@ -954,6 +951,7 @@ function abstractFlexGrid (config){
     };
 
     this.updatePreview = function (){
+        //return;
         this.visualizer.updatePreview();
     };
     //Методы установлены, начинаем конфигурирование
@@ -1036,6 +1034,7 @@ function TreeGrid(config){
     let pub = new pubFlexGrid(priv);
     priv.pub = pub;
 
+    // Выполняем дополнительную настройку приватной части
     let setGridElementHtmlHandlers = priv.setGridElementHtmlHandlers.bind(priv);
     priv.setGridElementHtmlHandlers = function(/** @type {GridElement} */ gridElement){
         gridElement.DOM.cells['flexGrid.treeHeader'].addEventListener('click', function(e){

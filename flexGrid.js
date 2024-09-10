@@ -1,14 +1,14 @@
 "use strict";
 
 import './dragger.js';
-import * as GridVisualizer from "./flexGridVisualizer.js";
+import { DefaultVisualizer } from "./flexGridVisualizer.js";
 
 import {FlatDataSet, TreeDataSet} from './dataSet.js'
 import * as standardVisualComponents from './visualComponents.js'
 import * as filter from './filter.js'
 import {GridElement} from "./gridElement.js";
 
-export { DefaultVisualizer, VisualizerInterface, ClassModel as DefaultVisualizerClassModel } from "./flexGridVisualizer.js";
+export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";
 
 
 let pluginIds = {};
@@ -69,7 +69,7 @@ function FlexGridDefaultConfig()
         numerable: true,
         _filterable: 'Локальный фильтр данных',
         filterable: true,
-        _visualizer: 'Пользовательский компонент визуализации данных. Должен реализовывать интерфейс GridVisualizer.VisualizerInterface',
+        _visualizer: 'Пользовательский компонент визуализации данных. Должен реализовывать интерфейс DefaultVisualizer.VisualizerInterface',
         visualizer: null,
     };
 }
@@ -420,8 +420,8 @@ function abstractFlexGrid (config){
         }
 
         if (config.visualizer) {
-            if (!(config.visualizer instanceof GridVisualizer.VisualizerInterface)) {
-                throw 'Visualizer must be instance of GridVisualizer.VisualizerInterface';
+            if (!(config.visualizer instanceof DefaultVisualizer.VisualizerInterface)) {
+                throw 'Visualizer must be instance of DefaultVisualizer.VisualizerInterface';
             }
         }
 
@@ -433,7 +433,7 @@ function abstractFlexGrid (config){
             throw 'Incorrect main container';
         }
 
-        this.visualizer = config.visualizer || new GridVisualizer.DefaultVisualizer();
+        this.visualizer = config.visualizer || new DefaultVisualizer();
 
         for (let key in config) {
             this.config[key] = config[key];
@@ -488,6 +488,10 @@ function abstractFlexGrid (config){
         this.createStyleElement();
         this.createHeaders();
         this.updateStyleElement();
+
+        //TODO
+        // анимация CSS https://doka.guide/css/animation/
+        // реализовать promises - загрузка заголовков и данных, инициализация визуализатора
 
         this.initData();
         //TODO В случае загрузки с сервера нужно запускать визуализацию данных только после получения данных

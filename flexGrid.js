@@ -73,26 +73,7 @@ function FlexGridDefaultConfig()
         visualizer: null,
     };
 }
-export let FlexGrid = Object.defineProperties(
-    Object.create(null),
-    {
-        TreeGrid: {
-            get: () => TreeGrid,
-            configurable: false,
-            enumerable: false,
-        },
-        FlatGrid: {
-            get: () =>  FlatGrid,
-            configurable: false,
-            enumerable: false,
-        },
-        getDefaultConfig: {
-            get: () => FlexGridDefaultConfig,
-            configurable: false,
-            enumerable: false,
-        }
-    }
-);
+
 function abstractFlexGrid (config){
     /**
      * TODO
@@ -1262,10 +1243,24 @@ function FlatGrid(config) {
     return pub;
 };
 
-
-Object.defineProperties(
-    FlexGrid,
+export let FlexGrid = Object.defineProperties(
+    Object.create(null),
     {
+        TreeGrid: {
+            get: () => TreeGrid,
+            configurable: false,
+            enumerable: false,
+        },
+        FlatGrid: {
+            get: () =>  FlatGrid,
+            configurable: false,
+            enumerable: false,
+        },
+        getDefaultConfig: {
+            get: () => FlexGridDefaultConfig,
+            configurable: false,
+            enumerable: false,
+        },
         FlexGridDataVisualizationComponentInterface: {
             get: () => standardVisualComponents.FlexGridDataVisualizationComponentInterface,
             configurable: false,

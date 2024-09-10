@@ -948,20 +948,20 @@ function abstractFlexGrid (config){
     this.setConfig(config);
 };
 
-function pubFlexGrid(priv) {
+function pubFlexGrid(/**@type {abstractFlexGrid} */priv) {
 
-    this.build = function(config){
+    this.build = function(){
 
-        this.init();
-    }.bind(priv);
+        priv.init();
+    };
 
     this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
         if (!(component instanceof standardVisualComponents.FlexGridDataVisualizationComponentInterface)) {
             throw 'Data visualization component must be instance of FlexGridDataVisualizationComponentInterface';
         }
 
-        this.dataVisualizationComponents[alias] = component;
-    }.bind(priv);
+        priv.dataVisualizationComponents[alias] = component;
+    };
 
     this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
         if (!(component instanceof filter.FlexGridDataFilterComponentInterface)) {
@@ -982,25 +982,25 @@ function pubFlexGrid(priv) {
     }.bind(priv);
 
     this.getVisualizationComponent = function(/** @type {string} */alias){
-        return this.dataVisualizationComponents[alias] || null;
-    }.bind(priv);
+        return priv.dataVisualizationComponents[alias] || null;
+    };
 
     this.getFilterComponent = function(/** @type {string} */alias){
-        return this.dataFilterComponents[alias] || null;
-    }.bind(priv);
+        return priv.dataFilterComponents[alias] || null;
+    };
 
     this.updatePreview = function(){
-        this.updatePreview();
-    }.bind(priv);
+        priv.updatePreview();
+    };
 
     this.destroy = function(){
         throw 'Method \'destroy\' is not implemented for flexGrid';
 
-    }.bind(priv);
+    };
 
     this.getId = function(){
-        return this.customId &&  typeof this.customId === typeof {} ? {...this.customId} : this.customId;
-    }.bind(priv)
+        return priv.customId &&  typeof priv.customId === typeof {} ? {...priv.customId} : priv.customId;
+    };
 
 
     this.addVisualizationComponent('tree', new standardVisualComponents.TreeVisualizationComponent());

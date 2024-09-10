@@ -241,32 +241,21 @@ function abstractFlexGrid (config){
                     }
                 );
 
-            gridElement.DOM.row.addEventListener(
-                'click',
-                function(e){
-                    //TODO запрашивать не от document, а от visualizer.DOM.dataPanel
-                    document.body.querySelectorAll('.flex-grid-data-row.selected').forEach(
-                        function(selectedRow){
-                            selectedRow.classList.remove('selected-row');
-                        }
-                    );
-                    this.classList.add('selected-row');
-                    grid.activeRow = this;
-                }
-            );
-
-
         }
+
+
         gridElement.DOM.row.addEventListener(
             'click',
             function(e){
-                //css :hover::after влияет на e.target - вместо ячейки может придти вся строка в том же FF!!
-                // console.log('activaterow ', this)
-                // console.log(e)
-                grid.activeRow && grid.activeRow.classList.remove('selected-row');
-                grid.activeRow = this;
-                this.classList.add('selected-row');
 
+                //TODO Можно допускать выделение нескольких ячеек по Ctlr или Shift, например, для удаления или перемещения
+                grid.config.container.querySelectorAll('.flex-grid-data-row.' + ClassModel.SelectedRow).forEach(
+                    function(selectedRow){
+                        selectedRow.classList.remove(ClassModel.SelectedRow);
+                    }
+                );
+                this.classList.add(ClassModel.SelectedRow);
+                // grid.activeRow = this;
             }
         );
     };

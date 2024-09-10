@@ -425,6 +425,14 @@ function abstractFlexGrid (config){
             }
         }
 
+        if (typeof config.container === typeof 'aaa') {
+            let collection;
+            config.container = document.getElementById(config.container) || ((collection = document.getElementsByClassName(config.container)) ? collection[0] : null) || document.querySelector(config.container);
+        }
+        else if (!(config.container && typeof config.container === typeof {} && config.container.nodeType === Node.ELEMENT_NODE)) {
+            throw 'Incorrect main container';
+        }
+
         this.visualizer = config.visualizer || new GridVisualizer.DefaultVisualizer();
 
         for (let key in config) {

@@ -13,6 +13,17 @@ export { DefaultVisualizer, VisualizerInterface, ClassModel as DefaultVisualizer
 
 let pluginIds = {};
 
+let ClassModel = Object.defineProperties(
+    Object.create(null),
+    {
+        SelectedRow: {
+            get: () => 'selected-row',
+            configurable: false,
+            enumerable: false,
+        }
+    }
+)
+
 
 function FlexGridDefaultConfig()
 {
@@ -1307,6 +1318,11 @@ Object.defineProperties(
             configurable: false,
             enumerable: false,
         },
+        ClassModel: {
+            get: () => ClassModel,
+            configurable: false,
+            enumerable: false,
+        }
 
     }
 

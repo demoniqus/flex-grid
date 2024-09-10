@@ -159,7 +159,16 @@ function abstractFlexGrid (config){
         // '.flex-grid-entity-data-cell:hover :after': 'transition-delay: 1s; position: absolute; content: &#128397; color: blue;',
     };
 
-    this.activeRow = undefined;
+    this.visualizer = undefined;
+
+    this.dataVisualizationComponents = {
+        // Набор визуализаторов данных
+    };
+    this.dataFilterComponents = {
+        // Набор фильтров данных
+    };
+
+    this.dataProcessor = undefined;
 
 
     this.createStyleElement = function(){
@@ -177,14 +186,7 @@ function abstractFlexGrid (config){
         this.styleContainer.textContent = styles;
     };
 
-    this.visualizer = undefined;
 
-    this.dataVisualizationComponents = {
-        // Набор визуализаторов данных
-    };
-    this.dataFilterComponents = {
-        // Набор фильтров данных
-    };
     this.setGridElementHtmlHandlers = function(/** @type {GridElement} */ gridElement){
         let grid = this;
 

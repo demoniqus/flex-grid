@@ -1,7 +1,7 @@
 "use strict";
 
 import './dragger.js';
-import { DefaultVisualizer } from "./flexGridVisualizer.js";
+import { DefaultVisualizer, Scroller } from "./flexGridVisualizer.js";
 
 import {FlatDataSet, TreeDataSet} from './dataSet.js'
 import * as standardVisualComponents from './visualComponents.js'

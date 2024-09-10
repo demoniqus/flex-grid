@@ -4,6 +4,7 @@ import {Scroller} from './Scroller.js';
 import {FlexPanel} from "./FlexPanel.js";
 
 export {FlexPanel} from "./FlexPanel.js";
+export {Scroller} from './Scroller.js';
 
 
 

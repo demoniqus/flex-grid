@@ -505,8 +505,8 @@ function abstractFlexGrid (config){
         );
         this.visualizer.init(
             {
-                scrollSensitivity: this.config.scrollSensitivity ?? 40, //TODO Протянуть дефолтный размер из Scroller'а
-                scrollStepSize: this.config.scrollStepSize ?? 1,
+                scrollSensitivity: this.config.scrollSensitivity ?? Scroller.getDefaultConfig().scrollSensitivity,
+                scrollStepSize: this.config.scrollStepSize ?? Scroller.getDefaultConfig().scrollStepSize,
             }
         );
 

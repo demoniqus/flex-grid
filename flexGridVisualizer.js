@@ -81,6 +81,8 @@ function VisualizerInterface(){
     this.init = function(){throw 'Define init method'};
     this.setHeaders = function(headers){throw 'Define setHeaders method';}
     this.setContainer = function(container){throw 'Define setContainer method';}
+    this.setCallbacks = function(callbacks){throw 'Define setCallbacks method';}
+
     return this;
 };
 
@@ -938,7 +940,7 @@ export function DefaultVisualizer(){
         this.createHeaders();
         this.createFilters();
         this.createScroller(config);
-        this.panels.leftPanel.setScrollable();
+        //this.panels.leftPanel.setScrollable();
 
 
     }.bind(priv);

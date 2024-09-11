@@ -81,17 +81,23 @@ function VisualizerInterface(){
     this.init = () => {
         throw 'Define init method';
     };
-    this.setHeaders = (headers) => {
+    this.setHeaders = (/**@type {Object[]} */headers) => {
         throw 'Define setHeaders method';
     };
-    this.setContainer = (container) => {
+    this.setContainer = (/**@type {DOMElement|string} */container) => {
         throw 'Define setContainer method';
     };
-    this.setCallbacks = (callbacks) => {
+    this.setCallbacks = (/**@type {callable{}}  */callbacks) => {
         throw 'Define setCallbacks method';
     };
     this.updatePreview = () => {
         throw 'Define updatePreview method';
+    };
+    this.updateColumnsWidth = function(/**@type {Object[]|string[]|null} */columns){
+        throw 'Define updateColumnsWidth method';
+    };
+    this.setColumnWidth = function(/**@type {Object|string} */column, /**@type {int} */width){
+        throw 'Define setColumnWidth method';
     };
 
     return this;
@@ -837,8 +843,6 @@ function abstractVisualizer()
             iRow--;
         }
 
-        let widths = {};
-
         iRow = 0;
         while (iRow < this.headers.nodes.length) {
             let headersRow = document.createElement('div');
@@ -877,7 +881,6 @@ function abstractVisualizer()
                 cell.innerHTML = headerData.title;
                 cell.name = 'flex-grid-header-' + headerData.id;
                 headersRow.appendChild(cell);
-                widths[headerData.id] = 0;
                 headerData.DOM = {
                     cell: cell,
                     row: headersRow,
@@ -888,15 +891,12 @@ function abstractVisualizer()
             iRow++;
         }
 
-
-
         let headersRow = document.createElement('div');
         headersRow.id = 'flex-grid-leafs-headers-row-' + this.id;
         headersRow.classList.add('flex-grid-row');
         headersRow.classList.add('flex-grid-headers-row');
         headersRow.classList.add('flex-grid-leafs-headers-row');
 
-        let totalWidth = 0;
         let iCell = 0;
         while (iCell < this.headers.leafs.length) {
             let headerData = this.headers.leafs[iCell];
@@ -917,20 +917,80 @@ function abstractVisualizer()
             cell.innerHTML = headerData.title;
             cell.name = 'flex-grid-header-' + headerData.id;
             headersRow.appendChild(cell);
-            let width = typeof headerData.width === typeof function(){} ?
-                +headerData.width() :
-                +headerData.width;
-            this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + width + this.widthUnit;
-            totalWidth += width;
-            let h = headerData;
-            while (h.parent) {
-                widths[h.parent.id] += width;
-                h = h.parent;
-            }
+
             headerData.DOM = {
                 cell: cell,
                 row: headersRow,
             };
+            iCell++;
+
+        }
+
+        this.DOM.headerPanel.appendChild(headersRow);
+        this.updateColumnsWidth();
+        this.updateOrderStyleElement();
+        this.setHeadersHandlers();
+    };
+    this.updateColumnsWidth = function (/**@type {Object[]|string[]|null} */columns){
+        let totalWidth = 0;
+        let iCell = 0;
+        let widths = {};
+        let leafHeadersWidth = {};
+
+        columns = columns || this.headers.leafs;
+        while (iCell < columns.length) {
+            let headerData = columns[iCell];
+            typeof headerData === typeof 'aaa' && (headerData = this.headers.dict[headerData]);
+            if (!headerData.leaf) {
+                //Изменить ширину можно только для листового заголовка. Ширина узловых заголовков определяется как сумма дочерних
+                throw 'Header must be leaf';
+            }
+            let width = typeof headerData.width === typeof function(){} ?
+                +headerData.width() :
+                +headerData.width;
+
+            let idClass = headerData.id.replaceAll('.', '_');
+            this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + width + this.widthUnit;
+            iCell++;
+
+        }
+
+        //пересчитываем ширину родительских заголовков и общую ширину строки и таблицы
+        this.headers.leafs.forEach(
+            (leafHeader) => {
+                leafHeadersWidth[leafHeader.id] = typeof leafHeader.width === typeof function () {} ?
+                    +leafHeader.width() :
+                    +leafHeader.width;
+                totalWidth += leafHeadersWidth[leafHeader.id];
+            }
+        );
+
+        iCell = 0;
+        let reduce = (header) => {
+            return header.leaf ?
+                leafHeadersWidth[header.id] :
+                (
+                    (!(header.id in widths)) && (widths[header.id] = header.children.reduce((accum, child) => accum + reduce(child), 0)),
+                    widths[header.id]
+                )
+        };
+        while (iCell < columns.length) {
+
+            let h = columns[iCell];
+            while (h.parent) {
+                if (h.parent.id in widths) {
+                    //Ширина этого заголовка уже посчитана. А значит посчитана и ширина его родителей
+                    break;
+                }
+
+
+                widths[h.parent.id] = h.parent.children.reduce(
+                    (accum, child) => accum + (child.leaf ? leafHeadersWidth[child.id] : reduce(child)),
+                    0
+                )
+
+                h = h.parent;
+            }
             iCell++;
 
         }
@@ -942,16 +1002,27 @@ function abstractVisualizer()
                 this.sizeStyles['.flex-grid-nodal-header-cell.' + headerName.replaceAll('.', '_')] = 'width: ' + widths[headerName] + this.widthUnit;
             }
         }
+        //Полная ширина строки и таблицы
         let tw = totalWidth + this.widthUnit;
-        this.sizeStyles['.flex-grid-row'] = 'width: ' + tw;
+        this.sizeStyles['.flex-grid-row'] = 'width: ' + tw + ';';
         this.sizeStyles['.flex-grid-content-panel>.flex-grid-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
         this.sizeStyles['.flex-grid-content-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
 
-        this.DOM.headerPanel.appendChild(headersRow);
         this.updateSizesStyleElement();
-        this.updateOrderStyleElement();
-        this.setHeadersHandlers();
     };
+
+    this.setColumnWidth = function(header, width){
+        header = typeof header === typeof 'aaa' ?this.headers.dict[header] : header;
+        if (!header.leaf) {
+            throw 'Header must be leaf'
+        }
+        if (typeof function(){} === typeof header.width) {
+            throw 'Header \'' + header.id + '\' has dynamically width. Its width can be updated but  can\'t be set'
+        }
+        header.width = width;
+        this.updateColumnsWidth([header]);
+    };
+
     this.createScroller = function(config){
         let scroller = new Scroller(
             {
@@ -1040,6 +1111,12 @@ export function DefaultVisualizer(){
         priv.createFilters();
 
     };
+
+    pub.setColumnWidth = function(columnId, width){
+        priv.setColumnWidth(columnId, width);
+    };
+
+    pub.updateColumnsWidth = (columns) => priv.updateColumnsWidth(columns)
 
     pub.setContainer = function(container){
         if (typeof container === typeof 'aaa') {

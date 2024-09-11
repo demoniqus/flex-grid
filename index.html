@@ -670,13 +670,13 @@
 
         // config.headers = headers;
         // config.data = data;
-        config.dataProcessor = (function(){
+        config.dataTransmitter = (function(){
             //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
             let loader = function(){
                 this.getData = (dataAcceptor) => dataAcceptor(data);
                 this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
             };
-            loader.prototype = new FlexGridPlugin.FlexGrid.DataProcessorInterface;
+            loader.prototype = new FlexGridPlugin.FlexGrid.DataTransmitterInterface;
 
             return new loader();
         })()

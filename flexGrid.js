@@ -69,8 +69,8 @@ function FlexGridDefaultConfig()
         filterable: true,
         _visualizer: 'Пользовательский компонент визуализации данных. Должен реализовывать интерфейс DefaultVisualizer.VisualizerInterface',
         visualizer: null,
-        _dataProcessor: 'Пользовательский компонент загрузки данных. Должен реализовывать интерфейс FlexGrid.DataLoaderInterface',
-        dataProcessor: null,
+        _dataTransmitter: 'Пользовательский компонент передачи данных. Должен реализовывать интерфейс FlexGrid.DataTransmitterInterface',
+        dataTransmitter: null,
     };
 }
 
@@ -168,7 +168,7 @@ function abstractFlexGrid (config){
         // Набор фильтров данных
     };
 
-    this.dataProcessor = undefined;
+    this.dataTransmitter = undefined;
 
 
     this.createStyleElement = function(){
@@ -389,8 +389,8 @@ function abstractFlexGrid (config){
             errors.push('Incorrect grid container');
         }
         if (
-            !config.dataProcessor ||
-            !(config.dataProcessor instanceof FlexGrid.DataProcessorInterface)
+            !config.dataTransmitter ||
+            !(config.dataTransmitter instanceof FlexGrid.DataTransmitterInterface)
         ) {
             errors.push('Incorrect data processor');
         }
@@ -445,8 +445,8 @@ function abstractFlexGrid (config){
 
         delete config.visualizer;
 
-        this.dataProcessor = config.dataProcessor;
-        delete config.dataProcessor;
+        this.dataTransmitter = config.dataTransmitter;
+        delete config.dataTransmitter;
 
         this.config = config;
     };
@@ -473,36 +473,44 @@ function abstractFlexGrid (config){
         this.createStyleElement();
         this.updateStyleElement();
         //TODO async await
-        let headersProcessingPromise = new Promise(
+        let headersLoadingPromise = new Promise(
             function(resolve, reject){
                 let headersAcceptor = function(headers){
-                    this.createHeaders(headers);
-                    resolve();
+                    resolve(headers);
                 }.bind(this);
-                this.dataProcessor.getHeaders(headersAcceptor);
+                this.dataTransmitter.getHeaders(headersAcceptor);
             }.bind(this)
-        );
-        let dataProcessingPromise = new Promise(
+        )
+        .then(function(headers){
+            this.createHeaders(headers);
+            return this.headers.orderedLeafHeaders;
+        }.bind(this))
+        .then(function(orderedLeafHeaders){
+            this.visualizer.setHeaders(orderedLeafHeaders);
+        }.bind(this))
+
+        ;
+        let dataLoadingPromise = new Promise(
             function(resolve, reject){
                 let dataAcceptor = function(data){
                     this.prepareData(data);
                     resolve();
                 }.bind(this);
-                this.dataProcessor.getData(dataAcceptor);
+                this.dataTransmitter.getData(dataAcceptor);
             }.bind(this)
         );
 
         Promise.all(
             [
-                headersProcessingPromise,
-                dataProcessingPromise,
+                headersLoadingPromise,
+                dataLoadingPromise,
                 //TODO get metaData (table name and other meta data)
 
             ]
         ).then(
             function(){
                 // return;
-                this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
+                // this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
 
                 this.visualizer.showData(
                     {
@@ -1160,7 +1168,6 @@ function TreeGrid(config){
                 let entityClass = entityData[ecf];
                 let entityId = entityData[eif];
                 let parentEntityData = entityData[epf];
-                let gridElement = gridElementsDict[entityClass][entityId];
                 let parentEntityClass = parentEntityData[ecf];
                 let parentEntityId = parentEntityData[eif];
                 let parentEntity = objectsDict[parentEntityClass][parentEntityId];
@@ -1180,7 +1187,6 @@ function TreeGrid(config){
                 parentEntity.children.push(entityData);
                 gridElement.setParent(parentGridElement);
             }
-
         }
         /**
          * Базовое древовидное представление данных для грида
@@ -1338,7 +1344,7 @@ export let FlexGrid = Object.defineProperties(
             configurable: false,
             enumerable: false,
         },
-        DataProcessorInterface: {
+        DataTransmitterInterface: {
             get: () => function(){
                 this.getData = function(/**@type {function} */dataAcceptor){throw 'Method getData not implemented'};
                 this.getHeaders = function(/**@type {function} */headersAcceptor){throw 'Method getData not implemented'};

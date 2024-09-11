@@ -509,8 +509,8 @@ function abstractFlexGrid (config){
             ]
         ).then(
             function(){
-                // return;
-                // this.visualizer.setHeaders(this.headers.orderedLeafHeaders);
+                //Получены данные. Теперь понятно, сколько у нас строк и какую ширину должна иметь колонка с нумерацией
+                this.visualizer.updateColumnsWidth(['flexGrid.numerableHeader'])
 
                 this.visualizer.showData(
                     {
@@ -833,7 +833,7 @@ function abstractFlexGrid (config){
                 type: 'numerable',
                 width: function(){
                     //Размер колонки зависит от количества элементов в гриде
-                    return (this.data.flat.length + '').length * parseFloat(getComputedStyle(document.documentElement).fontSize);
+                    return this.getEnumerableColumnSize() * parseFloat(getComputedStyle(document.documentElement).fontSize);
                 }.bind(this),
                 isVirtual: false,
                 filterable: false,
@@ -844,6 +844,10 @@ function abstractFlexGrid (config){
             });
         }
         return headers;
+    };
+
+    this.getEnumerableColumnSize = function(){
+        return this.data.flat ? (this.data.flat.length + '').length : 1;
     };
 
 

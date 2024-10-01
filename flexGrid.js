@@ -1171,6 +1171,12 @@ function TreeGrid(config){
             if (entityData[epf]) {
                 let entityClass = entityData[ecf];
                 let entityId = entityData[eif];
+                let gridElement = gridElementsDict[entityClass][entityId];
+                /**
+                 * @type {Object}
+                 * Указатель на родителя - объект, содержащий в себе класс и идентификатор родительской сущности.
+                 * Также не запрещено передавать другие поля
+                 */
                 let parentEntityData = entityData[epf];
                 let parentEntityClass = parentEntityData[ecf];
                 let parentEntityId = parentEntityData[eif];

@@ -316,7 +316,7 @@ function abstractFlexGrid (config){
 
             for (let headerId in cells) {
                 let header = this.headers.dict[headerId];
-                let visualizer = header.getVisualizer(headerId, item, header);
+                let visualizer = header.getVisualizer(headerId, item, header, this.config);
                 visualizer && visualizer.buildReadForm(
                     cells[headerId],
                     headerId,

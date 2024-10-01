@@ -74,7 +74,7 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
         updateCell: function(propName){
             let header = this.privFlexGrid.headers.dict[propName];
             //аргументы могут быть использованы при пользовательской функции, определяющей конкретный visualizer
-            let visualizer = header.getVisualizer(propName, item, header);
+            let visualizer = header.getVisualizer(propName, item, header, privFlexGrid.config);
 
             visualizer && visualizer.buildReadForm(
                 this.DOM.cells[headerId],

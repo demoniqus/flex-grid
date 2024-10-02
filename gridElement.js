@@ -9,11 +9,7 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
             cells: {},
         },
         data: undefined,
-        //TODO Такие параметры, как expanded, должны храниться, скорее всего непосредственно в конкретном dataSet. Тогда при удалении всего dataSet эта информация
-        // и ссылки на этот dataSet удалятся автоматически.
-        // При привязывании gridElement в dataSet должен создаваться dataSetElement с prototype (__proto__) = gridElement и собственными свойствами типа expanded.
-        // DataSetElement - это представление gridElement в конкретном dataSet
-        // Также посмотреть в сторону WeakMap для управления памятью и избегания утечек памяти на хранение ссылок на объекты, к которым уже не будет возврата
+        // TODO Также посмотреть в сторону WeakMap для управления памятью и избегания утечек памяти на хранение ссылок на объекты, к которым уже не будет возврата
         expanded: {},
         parent: null,
         children: [],

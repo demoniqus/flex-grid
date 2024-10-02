@@ -1,5 +1,7 @@
 "use strict";
 
+import {DataSetInterface} from "./dataSet.js";
+
 export function GridElement(config, privFlexGrid, pubFlexGrid){
     let priv = {
         DOM: {
@@ -7,6 +9,11 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
             cells: {},
         },
         data: undefined,
+        //TODO Такие параметры, как expanded, должны храниться, скорее всего непосредственно в конкретном dataSet. Тогда при удалении всего dataSet эта информация
+        // и ссылки на этот dataSet удалятся автоматически.
+        // При привязывании gridElement в dataSet должен создаваться dataSetElement с prototype (__proto__) = gridElement и собственными свойствами типа expanded.
+        // DataSetElement - это представление gridElement в конкретном dataSet
+        // Также посмотреть в сторону WeakMap для управления памятью и избегания утечек памяти на хранение ссылок на объекты, к которым уже не будет возврата
         expanded: {},
         parent: null,
         children: [],
@@ -16,10 +23,10 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
             entityIdField: config.entityIdField,
             entityParentField: config.entityParentField,
         },
-        //priv
         privFlexGrid: privFlexGrid,
         pubFlexGrid: pubFlexGrid,
     };
+
     let pub = {
         initData: function(/**@type {object}*/data){
             this.data = data;
@@ -31,13 +38,18 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
             return key in this.data ? this.data[key]: undefined;
         }.bind(priv),
         getData: function(){return this.data;}.bind(priv),
-        expand: function(dataSetId, /**@type {boolean}*/ expanded){
-            this.expanded[dataSetId] = !!expanded;
-        }.bind(priv),
-        expanded: function(dataSetId){
-            !!dataSetId && (dataSetId = priv.privFlexGrid.data.current.id)
-            return !!this.expanded[dataSetId];
-        }.bind(priv),
+        expand: function(/**@type {DataSetInterface} */dataSet, /**@type {boolean}*/ expanded){
+            !dataSet && (dataSet = priv.privFlexGrid.data.current);
+            dataSet.expand(this, !!expanded);
+        },
+        expanded: function(/**@type {DataSetInterface} */dataSet){
+            !dataSet && (dataSet = priv.privFlexGrid.data.current);
+            return dataSet.expanded(this);
+        },
+        inverseExpanded: function(/**@type {DataSetInterface} */dataSet){
+            !dataSet && (dataSet = priv.privFlexGrid.data.current);
+            return dataSet.inverseExpanded(this);
+        },
         setParent: function(/** @type {GridElement} */parent){
             if (this.parent && this.parent !== parent) {
                 //Удаляем из коллекции дочерних элементов старого родителя

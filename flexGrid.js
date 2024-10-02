@@ -3,7 +3,7 @@
 import './dragger.js';
 import { DefaultVisualizer, Scroller } from "./flexGridVisualizer.js";
 
-import {FlatDataSet, TreeDataSet} from './dataSet.js'
+import {DataSetInterface, DataSetManager} from './dataSet.js'
 import * as standardVisualComponents from './visualComponents.js'
 import * as filter from './filter.js'
 import {GridElement} from "./gridElement.js";
@@ -126,7 +126,7 @@ function abstractFlexGrid (config){
     this.data = {
         //Плоский упорядоченный набор GridElement'ов - начальное состояние данных
         /**
-         * @type TreeDataSet|FlatDataSet
+         * @type DataSetInterface
          */
         flat: undefined,
         // //Словарь объектов
@@ -134,13 +134,16 @@ function abstractFlexGrid (config){
         //Дерево
         //tree: undefined,
         //Пользовательская сортировка данных
+        /**
+         * @type DataSetInterface
+         */
         sorted: undefined,
         /**
          * Use this.setDataSet() to assigning dataSet !!!!
          */
         //Визуализируемый набор данных
         /**
-         * @type TreeDataSet|FlatDataSet
+         * @type DataSetInterface
          */
         current: undefined
     };
@@ -1055,8 +1058,8 @@ function TreeGrid(config){
             }
             e.preventDefault();
             e.cancelBubble = true;
-            gridElement.expand(priv.data.current.id, !gridElement.expanded(priv.data.current.id));
-            if (gridElement.expanded(priv.data.current.id)) {
+            let state = gridElement.inverseExpanded(priv.data.current);
+            if (state === true) {
                 //Индекс получаем из атрибута строки, т.к. теоретически позиция строки в наборе может измениться, например в результате сортировки или т.п.
                 // +1 - вставляем в следующую за текущим элементом позицию
                 //По идее все открываемые потомки уже должны быть в fullData, однако может получиться такая ситуация,
@@ -1073,11 +1076,10 @@ function TreeGrid(config){
                 let collapsedItems = [];
                 let i = 0;
                 let childGridElement = undefined;
-                while (childGridElement = stack[i]) {
-                    i++;
-                    if(childGridElement.expanded(priv.data.current.id)) {
+                while (childGridElement = stack[i++]) {
+                    if(childGridElement.expanded(priv.data.current)) {
                         childGridElement.children.map((childChildGridElement) => stack.push(childChildGridElement));
-                        childGridElement.expand(priv.data.current.id, !childGridElement.expanded(priv.data.current.id));
+                        childGridElement.expand(priv.data.current, false);
                     }
                     collapsedItems.push(childGridElement);
                 }
@@ -1167,6 +1169,7 @@ function TreeGrid(config){
          * Устанавливаем parent-child связи
          */
         for (let i = 0; i < c; i++) {
+            /**@type {Object} */
             let entityData = data[i];
             if (entityData[epf]) {
                 let entityClass = entityData[ecf];
@@ -1190,7 +1193,7 @@ function TreeGrid(config){
                     parentEntity[key] = parentEntityData[key];
                 }
                 /**
-                 * устанавливаем связь с реальным объектом-родителем
+                 * устанавливаем связь с реальным объектом-родителем вместо указателя
                  */
                 entityData[epf] = parentEntity;
                 parentEntity.children = parentEntity.children || [];
@@ -1202,13 +1205,13 @@ function TreeGrid(config){
          * Базовое древовидное представление данных для грида
          * @type {pubDataSet}
          */
-        this.data.current = new TreeDataSet(priv);
+        this.data.current = DataSetManager.createTreeDataSet(priv);
         this.data.current.initData(gridElements);
         /**
          * Все данные грида
          * @type {pubDataSet}
          */
-        this.data.flat = new FlatDataSet(priv);
+        this.data.flat = DataSetManager.createFlatDataSet(priv);
         this.data.flat.initData(gridElements);
 
     };
@@ -1278,7 +1281,7 @@ function FlatGrid(config) {
         }
 
 
-        this.data.flat = this.data.current = new FlatDataSet(priv);
+        this.data.flat = this.data.current = DataSetManager.createFlatDataSet(priv);
         this.data.flat.initData(gridElements);
 
     };

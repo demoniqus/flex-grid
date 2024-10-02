@@ -1,5 +1,7 @@
 "use strict";
 
+import {GridElement} from "./gridElement.js";
+
 let pluginIds = {};
 
 function abstractDataSet(privGrid){
@@ -8,6 +10,7 @@ function abstractDataSet(privGrid){
     this.data = {
         //Базовая структура данных для DataSet. Из нее могут формироваться дополнительные структуры
         data: [],
+        dataSetElements: {},
     };
     this.createId = function(){
         let r;
@@ -15,6 +18,8 @@ function abstractDataSet(privGrid){
         this.id = r;
         pluginIds[r] = true;// true instead of this to avoid memory leak
     };
+
+    this.dataSetElementIndex = 0;
 
     // this.configureItems = function(item){
     //     this.data.data.map(this.configureItem);
@@ -57,20 +62,108 @@ function abstractDataSet(privGrid){
     };
 
     this.privGrid = privGrid;
+    /**
+     * Метод может использоваться в качестве lambda без this. Поэтому
+     * используем priv вместо this
+     * @param gridElement
+     */
+    this.convertGridElementToDataSetElement = function(/**@type {GridElement}*/ gridElement) {
+        !('_ds' in gridElement) && (gridElement._ds = {});
+        if (!(priv.id in gridElement._ds))
+        {
+            let dataSetElement = new DataSetElement({id: priv.dataSetElementIndex++});
+            priv.data.dataSetElements[dataSetElement.Id] = dataSetElement;
+            gridElement._ds[priv.id] = dataSetElement.Id;
+        }
+    };
+
+    this.getDataSetElement = function(/**@type {GridElement}*/ gridElement) {
+        if (
+            !('_ds' in gridElement) ||
+            !(this.id in gridElement._ds) ||
+            !this.data.dataSetElements[gridElement._ds[this.id]]
+        )
+        {
+            return null;
+        }
+        return this.data.dataSetElements[gridElement._ds[this.id]];
+    }
 };
+
+export function DataSetInterface()
+{
+    this.initData = function(/**@type {[GridElement]}*/data){
+        throw 'Method \'initData\' is not implemented';
+    };
+
+    this.add = function(/**@type {GridElement}*/data){
+        throw 'Method \'add\' is not implemented';
+    };
+
+    /**
+     * Возможно этот метод должен называться не insert, а showChildren, т.к. вызывается он только при разворачивании
+     * узла дерева.
+     * Вставка данных - это совсем другое действие. Хотя вообще данные могли измениться и отображаемые потомки реально
+     * могли переместиться в нового родителя, а потому операция их отображения требует изменения данных. Но это измменений,
+     * вероятно, следует производить не в DataSet'е, а снаружи.
+     */
+    this.insertAfter = function(/**@type {GridElement}*/parentGridElement, /**@type {GridElement}|{[GridElement]}*/children){
+        throw 'Method \'insertAfter\' is not implemented';
+    };
+
+    this.insert = function(/**@type {int}*/index, /**@type {GridElement}|{[GridElement]}*/data){
+        throw 'Method \'insert\' is not implemented';
+    };
+
+    this.hide = function(/**@type {GridElement}|{[GridElement]}*/elements){
+        throw 'Method \'hide\' is not implemented';
+    };
+
+    this.remove = function(/**@type {int}|{[int]}*/index){
+        throw 'Method \'remove\' is not implemented';
+    };
+
+    this.clear = function(){
+        throw 'Method \'clear\' is not implemented';
+    };
+
+    this.get = function(/**@type {int}*/key, baseData = false) {
+        throw 'Method \'get\' is not implemented';
+    };
+
+    this.getData = function(baseData = false){
+        throw 'Method \'getData\' is not implemented';
+    };
+    this.setData = function(data, baseData = false){
+        throw 'Method \'setData\' is not implemented';
+    };
+    this.expand = function(/**@type {GridElement} */gridElement, /**@type {boolean}*/ expanded){
+        throw 'Method \'expand\' is not implemented';
+    };
+    this.expanded = function(/**@type {GridElement} */gridElement){
+        throw 'Method \'expanded\' is not implemented';
+    };
+    this.inverseExpanded = function(/**@type {GridElement} */gridElement){
+        throw 'Method \'inverseExpanded\' is not implemented';
+    };
+
+
+}
 
 function pubDataSet(priv){
     this.initData = function(/**@type {[GridElement]}*/data){
+        data.forEach(priv.convertGridElementToDataSetElement);
         priv.setFullData(data);
         priv.setVisibleData(data);
-        // this.configureItems();
-    }.bind(priv);
+        // priv.configureItems();
+    };
 
     this.add = function(/**@type {GridElement}*/data){
-        this.getFullData().push(data);
-        this.getVisibleData().push(data);
-        // this.configureItem(data, this.getVisibleData().length);
-    }.bind(priv);
+        priv.convertGridElementToDataSetElement(data);
+        priv.getFullData().push(data);
+        priv.getVisibleData().push(data);
+        // priv.configureItem(data, priv.getVisibleData().length);
+    };
 
     /**
      * Возможно этот метод должен называться не insert, а showChildren, т.к. вызывается он только при разворачивании
@@ -83,6 +176,7 @@ function pubDataSet(priv){
         if (!Array.isArray(children)) {
             children = [children];
         }
+        children.forEach(priv.convertGridElementToDataSetElement);
         /**
          * TODO Возможно следует использовать WeakMap для определения наличия объекта в коллекции и ее позиции
          */
@@ -95,58 +189,60 @@ function pubDataSet(priv){
 
         while (i < l) {
             let dataItem = children[i++];
-            iof = this.getFullData().indexOf(dataItem);
+            iof = priv.getFullData().indexOf(dataItem);
             if (iof > -1) {
-                this.getFullData()[iof] = null;
+                priv.getFullData()[iof] = null;
                 needFiltrate = true;
                 //_i < minConfiguredIndex && (minConfiguredIndex = _i);
             }
         }
-        needFiltrate && (this.setFullData(this.getFullData().filter((dataItem) => dataItem !== null)));
+        needFiltrate && (priv.setFullData(priv.getFullData().filter((dataItem) => dataItem !== null)));
 
         /**
          * Вставляем children после указанного родителя в FullData
          */
-        iof = this.getFullData().indexOf(parentGridElement) + 1;
-        this.getFullData().splice(iof, 0, ...children);
+        iof = priv.getFullData().indexOf(parentGridElement) + 1;
+        priv.getFullData().splice(iof, 0, ...children);
 
         /**
          * Разбираем VisibleData
          */
         needFiltrate = false;
         i = 0;
-        // let minConfiguredIndex = this.getVisibleData().length;
+        // let minConfiguredIndex = priv.getVisibleData().length;
 
         while (i < l) {
             let dataItem = children[i++];
-            iof = this.getVisibleData().indexOf(dataItem);
+            iof = priv.getVisibleData().indexOf(dataItem);
             if (iof > -1) {
-                this.getVisibleData()[iof] = null;
+                priv.getVisibleData()[iof] = null;
                 needFiltrate = true;
                 // iof < minConfiguredIndex && (minConfiguredIndex = iof);
             }
         }
-        needFiltrate && (this.setVisibleData(this.getVisibleData().filter((dataItem) => dataItem !== null)));
+        needFiltrate && (priv.setVisibleData(priv.getVisibleData().filter((dataItem) => dataItem !== null)));
 
         /**
          * Вставляем children после указанного родителя в VisibleData
          */
-        iof = this.getVisibleData().indexOf(parentGridElement) + 1;
-        this.getVisibleData().splice(iof, 0, ...children);
+        iof = priv.getVisibleData().indexOf(parentGridElement) + 1;
+        priv.getVisibleData().splice(iof, 0, ...children);
 
         // iof < minConfiguredIndex && (minConfiguredIndex = iof);
         //
         //
         //
-        // while (minConfiguredIndex < this.getVisibleData().length) {
-        //     this.configureItem(this.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
+        // while (minConfiguredIndex < priv.getVisibleData().length) {
+        //     priv.configureItem(priv.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
         //     minConfiguredIndex++;
         // }
-    }.bind(priv);
+    };
+
     this.insert_new = function(/**@type {int}*/index, /**@type {GridElement}|{[GridElement]}*/data){
         if (!Array.isArray(data)) {
             data = [data];
         }
+        data.forEach(priv.convertGridElementToDataSetElement)
         /**
          * TODO Возможно следует использовать WeakMap для определения наличия объекта в коллекции и ее позиции
          */
@@ -160,40 +256,47 @@ function pubDataSet(priv){
         let minConfiguredIndex = index;
         while (i < l) {
             let dataItem = data[i++];
-            let _i = this.getFullData().indexOf(dataItem);
+            let _i = priv.getFullData().indexOf(dataItem);
             if (_i > -1) {
-                this.getFullData()[_i] = null;
+                priv.getFullData()[_i] = null;
                 _i < minConfiguredIndex && (minConfiguredIndex = _i);
             }
         }
-        this.getFullData().push(...data);
-        this.getVisibleData().splice(index, 0, ...data);
+        priv.getFullData().push(...data);
+        priv.getVisibleData().splice(index, 0, ...data);
 
-        this.setFullData(this.getFullData().filter((dataItem) => dataItem !== null))
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
+        priv.setFullData(priv.getFullData().filter((dataItem) => dataItem !== null))
+        while (index < priv.getVisibleData().length) {
+            // priv.configureItem(priv.getVisibleData()[index], index);
             index++;
         }
-    }.bind(priv);
+    };
+
     this.insert = function(/**@type {int}*/index, /**@type {GridElement}|{[GridElement]}*/data){
+        if (Array.isArray(data)) {
+            data.forEach(priv.convertGridElementToDataSetElement)
+        }
+        else {
+            priv.convertGridElementToDataSetElement(data);
+        }
 
         /**
          * TODO Здесь надо учитывать возможность, что пользователь будет вставлять уже имеющийся в наборе объект
          * Использовать Weakmap для создания словаря объектов и поиска вхождения
          * МОжно сделать свой объект, похожий на массив (метоыд push, insert, includes и пр.), реализованный в частности
          */
-        !this.getFullData().includes(data) && this.getFullData().push(data);
+        !priv.getFullData().includes(data) && priv.getFullData().push(data);
         if (Array.isArray(data)) {
-            this.getVisibleData().splice(index, 0, ...data);
+            priv.getVisibleData().splice(index, 0, ...data);
         }
         else  {
-            this.getVisibleData().splice(index, 0, data);
+            priv.getVisibleData().splice(index, 0, data);
         }
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
+        while (index < priv.getVisibleData().length) {
+            // priv.configureItem(priv.getVisibleData()[index], index);
             index++;
         }
-    }.bind(priv);
+    };
 
     this.hide = function(/**@type {GridElement}|{[GridElement]}*/elements){
         /**
@@ -206,10 +309,10 @@ function pubDataSet(priv){
         let dict = new Map();
         elements.map((element) => dict.set(element, true));
 
-        let tmp = [], i = 0, l = this.getVisibleData().length;//, minConfiguredIndex = null;
+        let tmp = [], i = 0, l = priv.getVisibleData().length;//, minConfiguredIndex = null;
 
         while (i < l)  {
-            let dataItem = this.getVisibleData()[i];
+            let dataItem = priv.getVisibleData()[i];
             if (!dict.has(dataItem)) {
                 tmp.push(dataItem);
             }
@@ -218,16 +321,16 @@ function pubDataSet(priv){
             // }
             i++;
         }
-        this.setVisibleData(tmp);
-        // while (minConfiguredIndex < this.getVisibleData().length) {
+        priv.setVisibleData(tmp);
+        // while (minConfiguredIndex < priv.getVisibleData().length) {
         //     /**
         //      * Вероятно, такая переконфигурация не нужна, т.к. даже в рамках DataSet GridElement может имерь разные индексы -
         //      * либо в полных базовых данных, либо в отображаемых
         //      */
-        //     this.configureItem(this.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
+        //     priv.configureItem(priv.getVisibleData()[minConfiguredIndex], minConfiguredIndex);
         //     minConfiguredIndex++;
         // }
-    }.bind(priv)
+    };
 
     this.remove = function(/**@type {int}|{[int]}*/index){
         //TODO Удалить и getFullData
@@ -235,40 +338,69 @@ function pubDataSet(priv){
             let dict = {};
             let res = [];
             index.map(function(i){dict[i] = true;})
-            this.getVisibleData().map(function(gridElement, i){
+            priv.getVisibleData().map(function(gridElement, i){
                 if (!(i in dict)) {
                     res.push(gridElement);
                 }
             });
-            this.setVisibleData(res);
+            priv.setVisibleData(res);
             index = 0;
         }
         else  {
 
-            this.data.data.splice(index, 1);
+            priv.data.data.splice(index, 1);
         }
-        while (index < this.getVisibleData().length) {
-            // this.configureItem(this.getVisibleData()[index], index);
+        while (index < priv.getVisibleData().length) {
+            // priv.configureItem(priv.getVisibleData()[index], index);
             index++;
         }
-    }.bind(priv)
+    };
 
     this.clear = function(){
         //TODO baseData && currentData
-        this.data.data.map(function(gridElement){delete gridElement[priv.id];})
-        this.data.data = [];
-    }.bind(priv);
+        priv.data.data.map(function(gridElement){delete gridElement[priv.id];})
+        priv.data.data = [];
+        priv.data.dataSetElements = {};
+        priv.dataSetElementIndex = 0;
+    };
 
     this.get = function(/**@type {int}*/key, baseData = false) {
-        return baseData ? this.getFullData()[key] : this.getVisibleData()[key] || undefined;
-    }.bind(priv);
+        return baseData ? priv.getFullData()[key] : priv.getVisibleData()[key] || undefined;
+    };
 
-    this.getData = function(baseData = false){return baseData ? this.getFullData() : this.getVisibleData();}.bind(priv);
+    this.getData = function(baseData = false){return baseData ? priv.getFullData() : priv.getVisibleData();};
+
     this.setData = function(data, baseData = false){
+        Array.isArray(data) ?
+            data.forEach(priv.convertGridElementToDataSetElement) :
+            priv.convertGridElementToDataSetElement(data);
         baseData ?
-            this.setFullData(data) :
-            this.setVisibleData(data);
-    }.bind(priv);
+            priv.setFullData(data) :
+            priv.setVisibleData(data);
+    };
+
+    this.expand = function(/**@type {GridElement} */gridElement, /**@type {boolean}*/ expanded){
+        let dataSetElement = priv.getDataSetElement(gridElement);
+        if (dataSetElement) {
+            dataSetElement.Expanded = expanded;
+        }
+    };
+
+    this.expanded = function(/**@type {GridElement} */gridElement){
+        let dataSetElement = priv.getDataSetElement(gridElement);
+        return dataSetElement ?
+            dataSetElement.Expanded :
+            undefined;
+    };
+
+    this.inverseExpanded = function(/**@type {GridElement} */gridElement){
+        let dataSetElement = priv.getDataSetElement(gridElement);
+        if (dataSetElement) {
+            dataSetElement.Expanded = !dataSetElement.Expanded;
+            return dataSetElement.Expanded;
+        }
+        return undefined;
+    };
 
     Object.defineProperties(
         this,
@@ -276,98 +408,127 @@ function pubDataSet(priv){
             length: {
                 configurable: true,
                 enumerable: false,
-                get: function(){return this.getVisibleData().length;}.bind(priv),
+                get: function(){return priv.getVisibleData().length;},
             },
             id: {
                 configurable: false,
                 enumerable: false,
-                get: function(){return this.id;}.bind(priv),
+                get: function(){return priv.id;},
             },
         }
     );
 
 }
 
-export function FlatDataSet(privFlexGrid){
-    let priv = new abstractDataSet(privFlexGrid);
+pubDataSet.prototype = new DataSetInterface();
+export const DataSetManager = {
+    createFlatDataSet: function(privFlexGrid){
+        let priv = new abstractDataSet(privFlexGrid);
 
-    priv.getFullData = function(){
-        return this.data.flat;
-    };
-    priv.setFullData = function(data){
-        this.data.flat = data;
-    };
+        priv.getFullData = function(){
+            return this.data.flat;
+        };
+        priv.setFullData = function(data){
+            this.data.flat = data;
+        };
 
-    priv.getVisibleData = function(){
-        return this.data.data;
-    };
-    priv.setVisibleData = function(data){
-        this.data.data = data;
-    };
+        priv.getVisibleData = function(){
+            return this.data.data;
+        };
+        priv.setVisibleData = function(data){
+            this.data.data = data;
+        };
 
-    let pub = new pubDataSet(priv);
+        let pub = new pubDataSet(priv);
 
 
 
-    priv.createId();
-    return pub;
+        priv.createId();
+        return pub;
 
+    },
+    createTreeDataSet: function(privFlexGrid){
+        let priv = new abstractDataSet(privFlexGrid);
+
+        priv.getFullData = function(){
+            return this.data.flat;
+        };
+        priv.setFullData = function(data){
+            this.data.flat = data;
+        };
+
+        priv.getVisibleData = function(){
+            return this.data.data;
+        };
+        priv.setVisibleData = function(data){
+            this.data.data = data;
+        };
+
+        let pub = new pubDataSet(priv);
+
+        pub.initData = function(data){
+            data.forEach(priv.convertGridElementToDataSetElement);
+            this.setFullData(data);
+            let treeDataSetData = [];
+            let l = data.length, i = 0;
+            while (i < l) {
+                if (!data[i].parent) {
+                    treeDataSetData.push(data[i]);
+                }
+                i++;
+            }
+            this.setVisibleData(treeDataSetData);
+
+            // this.configureItems();
+        }.bind(priv);
+
+        Object.defineProperties(
+            this,
+            {
+                lengthTotal: {
+                    configurable: true,
+                    enumerable: false,
+                    get: function(){return this.getFullData().length;}.bind(priv),
+                },
+                id: {
+                    configurable: false,
+                    enumerable: false,
+                    get: function(){return this.id;}.bind(priv),
+                },
+            }
+
+        );
+
+
+        //Здесь как минимум два набора данных - видимые строки и общий набор, по которому можно вычислить количество строк для компонента "Количество строк / перейти к строке"
+
+        priv.createId();
+        return pub;
+    }
 };
 
-export function TreeDataSet(privFlexGrid){
-    let priv = new abstractDataSet(privFlexGrid);
 
-    priv.getFullData = function(){
-        return this.data.flat;
+function DataSetElement(config)
+{
+    let priv = {
+        expanded: false,
+        config: config,
+
     };
-    priv.setFullData = function(data){
-        this.data.flat = data;
-    };
-
-    priv.getVisibleData = function(){
-        return this.data.data;
-    };
-    priv.setVisibleData = function(data){
-        this.data.data = data;
-    };
-
-    let pub = new pubDataSet(priv);
-
-    pub.initData = function(data){
-        this.setFullData(data);
-        let treeDataSetData = [];
-        let l = data.length, i = 0;
-        while (i < l) {
-            if (!data[i].parent) {
-                treeDataSetData.push(data[i]);
-            }
-            i++;
-        }
-        this.setVisibleData(treeDataSetData);
-
-        // this.configureItems();
-    }.bind(priv);
 
     Object.defineProperties(
         this,
         {
-            lengthTotal: {
-                configurable: true,
-                enumerable: false,
-                get: function(){return this.getFullData().length;}.bind(priv),
-            },
-            id: {
+            Id: {
+                get: () => priv.config.id,
                 configurable: false,
                 enumerable: false,
-                get: function(){return this.id;}.bind(priv),
             },
+            Expanded: {
+                get: () => priv.expanded,
+                set: (value) => priv.expanded = value,
+                enumerable: false
+            }
         }
-
-    );
-
-
-    //Здесь как минимум два набора данных - видимые строки и общий набор, по которому можно вычислить количество строк для компонента "Количество строк / перейти к строке"
-
-    priv.createId();
-    return pub;
-};
+    )
+}

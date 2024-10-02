@@ -180,14 +180,25 @@
                                 if (gridElement.children.length) {
                                     if (gridElement.expanded()) {
 
-                                        DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+                                        // DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+                                        DOMContainer.innerHTML = '<img src="img/folder-fill-opened.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
                                     }
                                     else {
-                                        DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
+                                        DOMContainer.innerHTML = '<img src="img/folder-fill-closed.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
+                                        // DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
                                     }
                                 }
                                 else {
-                                    DOMContainer.innerHTML = '<span style="color: red;">&#128447;</span>'
+                                    // DOMContainer.innerHTML = '<span style="color: red;">&#128447;</span>'
+                                    if (gridElement.expanded()) {
+
+                                        // DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+                                        DOMContainer.innerHTML = '<img src="img/folder-empty-opened.png" style=" max-width: 25px; max-height: 25px;" />'
+                                    }
+                                    else {
+                                        DOMContainer.innerHTML = '<img src="img/folder-empty-closed.png" style=" max-width: 25px; max-height: 25px;" />'
+                                        // DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
+                                    }
                                 }
                             } else{
                                 if (gridElement.children.length) {

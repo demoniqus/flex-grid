@@ -642,7 +642,7 @@ function abstractScroller (){
     this.resize = function(){
         this.updateScrollbarHeight();
         if (this.items.first) {
-            this.initPage(this.items.first.bgetIndex());
+            this.initPage(this.items.first.getIndex());
         }
     };
 

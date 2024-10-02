@@ -527,6 +527,30 @@ function abstractVisualizer()
         }
         this.setSpinners();
     };
+    /**
+     * TODO Стилизация сортированных заголовков
+     *   .flex-grid-cell.flex-grid-header-cell.flex-grid-leaf-header-cell::before {
+            content: '';
+            position: absolute;
+            background-image: url(https://storage.googleapis.com/multi-static-content/thumbs/artage-io-thumb-dbe8894….png);
+            background-size: 100%;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            width: 20px;
+            height: 20px;
+            max-width: 20px;
+            max-height: 20px;
+             //min-width: 100%;
+             //min-height: 100%;
+            display: inline-block;
+            opacity: .4;
+        }
+     */
+
+    /** TODO На ячейках таблицы можно для визуального эффекта поиграться с небольшим (3-5px) скруглением углов ячеек
+     *
+     */
 
     this.setSpinners = function(){
         let div;

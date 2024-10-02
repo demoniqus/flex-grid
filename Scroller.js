@@ -133,7 +133,7 @@ export function Scroller(/** @type Object */ config){
         priv.destroy();
     };
 
-    pub.reload = function(){this.reload();}.bind(priv);
+    pub.reload = function(){priv.reload();};
 
     return pub;
 }

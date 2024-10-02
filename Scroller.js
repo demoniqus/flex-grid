@@ -285,7 +285,7 @@ function abstractScroller (){
         this.updateStyleElement();
         this.wrap();
         this.updateScrollbarHeight();
-        this.initPage(this.config.firstIndex ||  0);
+        this.loadItemsFromIndex(this.config.firstIndex ||  0);
         this.initSrollbarSizes();
 
         this.setHandlers();
@@ -466,7 +466,7 @@ function abstractScroller (){
     this.scroll = function(){
         let firstItemIndex = Math.floor(this.DOM.scrollbarContainer.scrollTop / this.config.scrollSensitivity);
         firstItemIndex = firstItemIndex >= this.config.itemsCount ? this.config.itemsCount - 1 : (firstItemIndex < 0 ? 0 : firstItemIndex);
-        this.initPage(firstItemIndex);
+        this.loadItemsFromIndex(firstItemIndex);
     };
 
     this.initSrollbarSizes = function(){
@@ -484,7 +484,7 @@ function abstractScroller (){
     /**
      * Инициация страницы при первой загрузке
      */
-    this.initPage = function(/** @type {number} */ firstItemIndex){
+    this.loadItemsFromIndex = function(/** @type {number} */ firstItemIndex){
         let requestIndex = firstItemIndex;
         let elementInfo = undefined;
         let h = 0;
@@ -642,7 +642,7 @@ function abstractScroller (){
     this.resize = function(){
         this.updateScrollbarHeight();
         if (this.items.first) {
-            this.initPage(this.items.first.getIndex());
+            this.loadItemsFromIndex(this.items.first.getIndex());
         }
     };
 

@@ -160,7 +160,11 @@ function ScrollerDefaultConfig()
         _scrollStepSize: 'Количество прокручиваемых колесом мыши за один раз строк',
         scrollStepSize: 1,
         _noScrollbar: 'Не показывать полосу прокрутки',
-        noScrollbar: false
+        noScrollbar: false,
+        _alwaysFillContainer: 'При прокрутке всегда стараться максимально заполнять контейнер данными. При false возможен вариант, когда в контейнере будет отображаться только последний элемент несмотря на наличие свободного места для вывода и предыдущих элементов',
+        alwaysFillContainer: false,
+        _minExpectedRowHeight: 'Для строк с данными есть минимальная ожидаемая высота. Вряд ли можно разместить данные в строке с высотой к примеру в 1-2 px. Поэтому , если в контейнере свободного места осталось меньше, нет смысла пытаться туда загрузить еще одну строку и тратить на это время  Данный параметр устанавливает минимально возможную ожидаемую высоту строк.',
+        minExpectedRowHeight: 15,
         // _minIndex: 'Минимально возможный индекс в наборе. При загрузке компонента Scroller не с первого элемента возникает ситуация, что под предыдущие элементы не выделяется никакого места и становится невозможно выполнить прокрутку вверх. Поэтому необходимо выделять место под "виртуальные" элементы, которые еще ни разу не были загружены в Scroller',
         // minIndex: 0, //TODO А нужен ли? Или всегда считать, что минимальный индекс равен нулю, т.к. индексы всегда числовые и всегда должны быть упорядоченными
 
@@ -280,9 +284,13 @@ function ScrollerFlags() {
 function abstractScroller (){
     /**
      * Список загруженных элементов
-     * @type {ScrolledElement[]}
      */
-    this.items = [];
+    this.items = {
+        /** Словарь загруженных элементов */
+        dict: {},
+        /** Список загруженных элементов */
+        list: []
+    };
 
     this.init = function(){
         this.createId();
@@ -497,7 +505,27 @@ function abstractScroller (){
          */
         let elementInfo = undefined;
         let h = 0;
+/* TODO
+        Пока возникает проблема с firstItemIndex - в зависимости от интенсивности прокрутки каждый раз он может быть разным:
+        - например, при плавной прокрутке он не успеет приблизиться к концу на момент запроса последнего элемента, а при резкой прокрутке
+        он может оставить на экране половину незаполненного свободного пространства контейнера
+        if (
+            (firstItemIndex in this.items.dict) &&
+            this.items.list[this.items.list.length - 1].getIndex() >= this.config.itemsCount - 1
+        ) {
+            /!**
+             * Если мы уже загрузили последний элемент, а полученный firstItemIndex входит в число уже загруженных, то
+             * по идее ничего не надо перезагружать
+             *!/
+            return;
 
+        }*/
+        /**
+         * Начинаем загружать элементы заново. Поэтому очищаем список загруженных элементов.
+         * @type {*[]}
+         */
+        this.items.list = [];
+        this.items.dict = {};
 
         while (this.DOM.scrolledItemsContainer.firstElementChild) {
             /** TODO теоретически можно не удалять все строки, а потом заново отрисовывать, а запрашивать по инедксам и по какому-нибудь признаку,
@@ -514,7 +542,10 @@ function abstractScroller (){
 
         this.DOM.wrapper.classList.add(ClassModel.ModeScroll);
 
-        while (h < this.DOM.scrolledItemsContainer.offsetHeight && (elementInfo = this.loadNextElement(requestIndex))) {
+        let controlHeight = this.DOM.scrolledItemsContainer.offsetHeight;
+        controlHeight -= this.config.minExpectedRowHeight;
+
+        while (h < controlHeight && (elementInfo = this.loadNextElement(requestIndex))) {
             /** Индекс первого элемента передали, после этого нужно позволить алгоритму самому инкрементировать индексные номера следующих загружаемых элементов набора, сбросив firstItemIndex в undefined */
             requestIndex = elementInfo.getIndex() + 1;
 
@@ -527,12 +558,44 @@ function abstractScroller (){
          * Если не нашли ни одного элемента, двигаясь вперед, двинемся назад и найдем хотя бы один элемент для отображения.
          */
 
-        if (!this.items.length) {
-
-            if (elementInfo = this.loadPrevElement(firstItemIndex - 1)) {
+        if (!this.items.list.length) {
+            elementInfo = this.loadPrevElement(firstItemIndex - 1)
+            if (elementInfo) {
                 elementInfo.getElement().classList.add(ClassModel.Transparent);
                 this.appendOnViewportEnd(elementInfo.getElement());
                 elementInfo.getElement().classList.remove(ClassModel.Transparent);
+            }
+        }
+        /**
+         * Если у нас есть флаг максимального заполнения контейнера данными, будем запрашивать элементы из начала до тех пор,
+         * пока они либо не закончатся, либо не заполнят область просмотра
+         */
+        if (
+            this.config.alwaysFillContainer &&
+            h < controlHeight
+        ) {
+            requestIndex = this.items.list[0].getIndex() - 1;
+            while (h < controlHeight && (elementInfo = this.loadPrevElement(requestIndex))) {
+                /** Индекс первого элемента передали, после этого нужно позволить алгоритму самому инкрементировать индексные номера следующих загружаемых элементов набора, сбросив firstItemIndex в undefined */
+                requestIndex = elementInfo.getIndex() - 1;
+
+                elementInfo.getElement().classList.add(ClassModel.Transparent);
+                this.appendOnViewportBegin(elementInfo.getElement());
+                h += elementInfo.getOffsetHeight();
+                /**
+                 * Здесь выполняем сравнение именно с высотой контейнера, а не с controlHeight, т.к. элемент вполне может поместиться
+                 * в контейнер, оставив разницу менее minExpectedRowHeight
+                 */
+                if (h >= this.DOM.scrolledItemsContainer.offsetHeight) {
+                    //С этим элементом контейнер уже переполнен - удалим его его
+                    this.DOM.scrolledItemsContainer.removeChild(elementInfo.getElement());
+                    delete this.items.dict[elementInfo.getIndex()];
+                    this.items.list.shift();
+                    break;
+                }
+                else {
+                    elementInfo.getElement().classList.remove(ClassModel.Transparent);
+                }
             }
         }
 
@@ -589,11 +652,16 @@ function abstractScroller (){
         ) {
             throw 'Element must be a HTML node!';
         }
+        /**
+         * @type {ScrolledElement}
+         */
         elementInfo = this.createLoadedElementInfoStorageItem(elementIndex, element);
 
         incrementValue > 0 ?
-            this.items.push(elementInfo):
-            this.items.unshift(elementInfo);
+            this.items.list.push(elementInfo):
+            this.items.list.unshift(elementInfo);
+
+        this.items.dict[elementInfo.getIndex()] = elementInfo;
 
         elementInfo.getElement().classList.add('scrolled-item');
 
@@ -640,8 +708,8 @@ function abstractScroller (){
 
     this.resize = function(){
         this.updateScrollbarHeight();
-        if (this.items.length) {
-            this.loadItemsFromIndex(this.items[0].getIndex());
+        if (this.items.list.length) {
+            this.loadItemsFromIndex(this.items.list[0].getIndex());
         }
     };
 
@@ -700,9 +768,7 @@ function standardScroller(p){
         '.root-scrolled-container.no-scrollbar .scroller-scrollbar-container': 'width: 1px; opacity: 0; scrollbar-width: none;/**TODO position: absolute; heaight: 100%; opacity: 0;*/'
     };
 
-    this.items = {
-        items: {}, //Загруженные в настоящий момент элементы по индексам - пока не используется. Возможно, может обновляться асинхронно, но функции обновления должны работать в порядке очередности
-    };
+
     this.DOM = {
         wrapper: undefined,
         dataContainer: undefined,

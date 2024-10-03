@@ -295,20 +295,20 @@ function abstractVisualizer()
                 orientation: FlexPanel.OrientationModel.Vertical,
             }
         );
-        let c = 40;
-        let options = [];
-        let i = 0;
-        while (i < c) {
-            let optionWrapper = document.createElement('div');
-            let option = document.createElement('div');
-            optionWrapper.appendChild(option)
-            optionWrapper.classList.add('button-wrapper');
-            option.classList.add('button');
-            option.innerHTML = i;
-            i++;
-            this.panels.leftPanel.addItem('option-' + i, optionWrapper);
-            options.push(option)
-        }
+        // let c = 40;
+        // let options = [];
+        // let i = 0;
+        // while (i < c) {
+        //     let optionWrapper = document.createElement('div');
+        //     let option = document.createElement('div');
+        //     optionWrapper.appendChild(option)
+        //     optionWrapper.classList.add('button-wrapper');
+        //     option.classList.add('button');
+        //     option.innerHTML = i;
+        //     i++;
+        //     this.panels.leftPanel.addItem('option-' + i, optionWrapper);
+        //     options.push(option)
+        // }
     };
     this.createRightPanel = function(){
         this.DOM.rightPanel = document.createElement('div');

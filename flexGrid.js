@@ -531,13 +531,15 @@ function abstractFlexGrid (config){
                     'tHeader',
                     tableHeader
 
-                )
+                );
 
-                this.initOptionPanels();
+                //Данные получены. Можно сделать доступными кнопки для работы с данными
+                // this.initOptionPanels();//
             }.bind(this)
         )
 
-
+        //Данные получены. Можно создать кнопки для работы с данными
+        this.initOptionPanels();//
 
 
 
@@ -675,6 +677,55 @@ function abstractFlexGrid (config){
         collapseBtn.style.minWidth = '32px';
         collapseBtn.style.minHeight = '32px';
         this.visualizer.RightPanel.addItem('collapseBtn', collapseBtn);
+
+        let gridOptionsButton = document.createElement('div');
+        gridOptionsButton.style.cursor = 'pointer';
+        gridOptionsButton.classList.add('button');
+        gridOptionsButton.classList.add('grid-options-button');
+        gridOptionsButton.style.backgroundImage = 'url("img/icon-gears.png")';
+        gridOptionsButton.style.backgroundSize = '32px';
+        gridOptionsButton.style.width = '32px';
+        gridOptionsButton.style.height = '32px';
+        gridOptionsButton.style.maxWidth = '32px';
+        gridOptionsButton.style.maxHeight = '32px';
+        gridOptionsButton.style.minWidth = '32px';
+        gridOptionsButton.style.minHeight = '32px';
+        gridOptionsButton.title = 'Настройки таблицы и ее компонентов';
+        this.visualizer.LeftPanel.addItem('gridOptionsBtn', gridOptionsButton);
+        gridOptionsButton.addEventListener(
+            'click',
+            function(){
+                // alert('Окно настроек грида и его компонентов')
+                //Компонент PopupWindow - всплывающее окно с возможностью стать модальным, с возможностью перемещения
+                let popupWindow = document.createElement('div');
+                popupWindow.classList.add('popup-window');
+                // popupWindow.classList.add('modal');
+
+                let closeWindowBtn = document.createElement('div');
+                closeWindowBtn.classList.add('popup-window-close-button');
+                closeWindowBtn.innerHTML = 'X';
+                popupWindow.appendChild(closeWindowBtn);
+                closeWindowBtn.addEventListener(
+                    'click',
+                    function(){
+                        popupWindow.parentElement.removeChild(popupWindow);
+                    }
+                );
+
+
+                let windowCover = document.createElement('div');
+                windowCover.classList.add('popup-window-cover');
+                popupWindow.appendChild(windowCover);
+
+                let windowSpace = document.createElement('div');
+                windowSpace.classList.add('popup-window-workspace');
+                popupWindow.appendChild(windowSpace);
+
+                document.body.appendChild(popupWindow);
+
+
+            }
+        );
 
 
 

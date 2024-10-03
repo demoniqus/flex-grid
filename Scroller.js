@@ -278,6 +278,11 @@ function ScrollerFlags() {
 }
 
 function abstractScroller (){
+    /**
+     * Список загруженных элементов
+     * @type {ScrolledElement[]}
+     */
+    this.items = [];
 
     this.init = function(){
         this.createId();
@@ -486,13 +491,13 @@ function abstractScroller (){
      */
     this.loadItemsFromIndex = function(/** @type {number} */ firstItemIndex){
         let requestIndex = firstItemIndex;
+        /**
+         *
+         * @type {ScrolledElement}|{undefined}
+         */
         let elementInfo = undefined;
         let h = 0;
-        let loadedItems = false;
 
-        this.items = {
-            items: {},
-        };
 
         while (this.DOM.scrolledItemsContainer.firstElementChild) {
             /** TODO теоретически можно не удалять все строки, а потом заново отрисовывать, а запрашивать по инедксам и по какому-нибудь признаку,
@@ -521,14 +526,14 @@ function abstractScroller (){
         /**
          * Если не нашли ни одного элемента, двигаясь вперед, двинемся назад и найдем хотя бы один элемент для отображения.
          */
-        for (let key in this.items.items) {
-            loadedItems = true;
-            break;
-        }
-        while (!loadedItems &&  (elementInfo = this.loadPrevElement(firstItemIndex - 1))) {
-            elementInfo.getElement().classList.add(ClassModel.Transparent);
-            this.appendOnViewportEnd(elementInfo.getElement());
-            elementInfo.getElement().classList.remove(ClassModel.Transparent);
+
+        if (!this.items.length) {
+
+            if (elementInfo = this.loadPrevElement(firstItemIndex - 1)) {
+                elementInfo.getElement().classList.add(ClassModel.Transparent);
+                this.appendOnViewportEnd(elementInfo.getElement());
+                elementInfo.getElement().classList.remove(ClassModel.Transparent);
+            }
         }
 
         /**
@@ -545,11 +550,7 @@ function abstractScroller (){
      * @returns {boolean|ScrolledElement}
      */
     this.loadNextElement = function(/** @type {number} */ nextItemIndex = undefined){
-        return this.loadItem(
-            1,
-            nextItemIndex !== undefined ? nextItemIndex : (this.items.last || this.items.first),
-            false
-        );
+        return this.loadItem(1, nextItemIndex, false);
     };
     /**
      * Метод обеспечивает загрузку предыдущего элемента набора
@@ -557,12 +558,7 @@ function abstractScroller (){
      * @returns {boolean|ScrolledElement}
      */
     this.loadPrevElement = function(/**@type {number} */prevItemIndex = undefined){
-        return this.loadItem(
-            -1,
-            prevItemIndex !== undefined ? prevItemIndex : this.items.first,
-            true
-        );
-
+        return this.loadItem(-1, prevItemIndex , true);
     };
 
     this.loadItem = function(/** @type {number} */incrementValue, /** @type ScrolledElement|{number} */ refElement, /** @type {boolean} */ isToBegin){
@@ -595,7 +591,10 @@ function abstractScroller (){
         }
         elementInfo = this.createLoadedElementInfoStorageItem(elementIndex, element);
 
-        this.items.items[elementIndex] = elementInfo;
+        incrementValue > 0 ?
+            this.items.push(elementInfo):
+            this.items.unshift(elementInfo);
+
         elementInfo.getElement().classList.add('scrolled-item');
 
         return elementInfo;
@@ -634,15 +633,15 @@ function abstractScroller (){
     this.destroy = function(){
         if (this.callbacks.resize && this.callbacks.resize.window) {
             this.callbacks.resize.window.map(function(){
-                thos.object.removeEventListener(this.type, this.callback);
+                this.object.removeEventListener(this.type, this.callback);
             })
         }
     };
 
     this.resize = function(){
         this.updateScrollbarHeight();
-        if (this.items.first) {
-            this.loadItemsFromIndex(this.items.first.getIndex());
+        if (this.items.length) {
+            this.loadItemsFromIndex(this.items[0].getIndex());
         }
     };
 
@@ -653,14 +652,14 @@ function abstractScroller (){
      * Метод возвращает список загруженных индексов
      * @returns {[]}
      */
-    this.getLoadedIndexes = function(){
-        let res = [];
-        for (let index in this.items.items) {
-            res.push(index);
-        }
-
-        return res;
-    };
+    // this.getLoadedIndexes = function(){
+    //     let res = [];
+    //     for (let index in this.items.items) {
+    //         res.push(index);
+    //     }
+    //
+    //     return res;
+    // };//Пока не используется нигде.
 };
 
 

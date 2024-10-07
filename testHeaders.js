@@ -26,6 +26,13 @@ const testHeaders = [
 		width: 300,
 	},
 	{
+		id: 'number2',
+		title: 'Номер 2',
+		type: 'string',
+		filter: 'string',
+		width: 300,
+	},
+	{
 		id: 'estimateItem',
 		title: 'Смета',
 		type: function(fieldName, itemData, headerData, config){
@@ -258,6 +265,307 @@ const testHeaders = [
 						],
 					},
 				]
+			},
+
+		]
+	},
+	{
+		id: 'estCustDelivery',
+		title: 'Сметы ЗАК',
+		children: [
+			{
+				id: 'sumsEstCustDelivery',
+				title: 'Суммы',
+				children: [
+					{
+						id: 'baseSumsEstCustDelivery',
+						title: 'БЦ',
+						children: [
+							{
+								id: 'baseTotalSumEstCustDelivery',
+								title: 'БЦ Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseEquipmentSumEstCustDelivery',
+								title: 'БЦ ОБ',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseServiceSumEstCustDelivery',
+								title: 'БЦ Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseMaterialSumEstCustDelivery',
+								title: 'БЦ Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+					{
+						id: 'factSumsEstCustDelivery',
+						title: 'ТЦ',
+						children: [
+							{
+								id: 'sumWoNdsEstCustDelivery',
+								title: 'Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'equipmentSumEstCustDelivery',
+								title: 'Оборудование',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'serviceSumEstCustDelivery',
+								title: 'Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'materialSumEstCustDelivery',
+								title: 'Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+
+				],
+			},
+		]
+	},
+	{
+		id: 'estContrDelivery',
+		title: 'Сметы ПО',
+		children: [
+			{
+				id: 'sumsEstContrDelivery',
+				title: 'Суммы',
+				children: [
+					{
+						id: 'baseSumsEstContrDelivery',
+						title: 'БЦ',
+						children: [
+							{
+								id: 'baseTotalSumEstContrDelivery',
+								title: 'БЦ Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseEquipmentSumEstContrDelivery',
+								title: 'БЦ ОБ',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseServiceSumEstContrDelivery',
+								title: 'БЦ Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseMaterialSumEstContrDelivery',
+								title: 'БЦ Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+					{
+						id: 'factSumsEstContrDelivery',
+						title: 'ТЦ',
+						children: [
+							{
+								id: 'sumWoNdsEstContrDelivery',
+								title: 'Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'equipmentSumEstContrDelivery',
+								title: 'Оборудование',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'serviceSumEstContrDelivery',
+								title: 'Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'materialSumEstContrDelivery',
+								title: 'Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+
+				],
+			},
+		]
+	},
+	{
+		id: 'bdrCustDelivery',
+		title: 'Выполнение ЗАК',
+		children: [
+			{
+				id: 'sumsBdrCustDelivery',
+				title: 'Суммы',
+				children: [
+					{
+						id: 'baseSumsBdrCustDelivery',
+						title: 'БЦ',
+						children: [
+							{
+								id: 'baseTotalSumBdrCustDelivery',
+								title: 'БЦ Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseEquipmentSumBdrCustDelivery',
+								title: 'БЦ ОБ',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseServiceSumBdrCustDelivery',
+								title: 'БЦ Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseMaterialSumBdrCustDelivery',
+								title: 'БЦ Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+					{
+						id: 'factSumsBdrCustDelivery',
+						title: 'ТЦ',
+						children: [
+							{
+								id: 'sumWoNdsBdrCustDelivery',
+								title: 'Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'equipmentSumBdrCustDelivery',
+								title: 'Оборудование',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'serviceSumBdrCustDelivery',
+								title: 'Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'materialSumBdrCustDelivery',
+								title: 'Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+
+				],
+			},
+		]
+	},
+	{
+		id: 'bdrContrDelivery',
+		title: 'Выполнение ПО',
+		children: [
+			{
+				id: 'sumsBdrContrDelivery',
+				title: 'Суммы',
+				children: [
+					{
+						id: 'baseSumsBdrContrDelivery',
+						title: 'БЦ',
+						children: [
+							{
+								id: 'baseTotalSumBdrContrDelivery',
+								title: 'БЦ Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseEquipmentSumBdrContrDelivery',
+								title: 'БЦ ОБ',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseServiceSumBdrContrDelivery',
+								title: 'БЦ Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'baseMaterialSumBdrContrDelivery',
+								title: 'БЦ Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+					{
+						id: 'factSumsBdrContrDelivery',
+						title: 'ТЦ',
+						children: [
+							{
+								id: 'sumWoNdsBdrContrDelivery',
+								title: 'Итого',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'equipmentSumBdrContrDelivery',
+								title: 'Оборудование',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'serviceSumBdrContrDelivery',
+								title: 'Услуги',
+								type: 'money',
+								width: 100,
+							},
+							{
+								id: 'materialSumBdrContrDelivery',
+								title: 'Материалы',
+								type: 'money',
+								width: 100,
+							},
+
+						],
+					},
+
+				],
 			},
 		]
 	},

@@ -134,6 +134,7 @@ function abstractVisualizer()
     this.callbacks = {
         getItemsCount: function(){return 0;},
         getElement: function(){return document.createElement('div');},
+        getElements: function(){return [document.createElement('div')];},
     };
     this.styleContainer = null;
     this.sizesStyleContainer = null;
@@ -1058,7 +1059,8 @@ function abstractVisualizer()
                 },
                 getElement: this.callbacks.getElement,
                 scrollSensitivity: config.scrollSensitivity,
-                scrollStepSize: config.scrollStepSize
+                scrollStepSize: config.scrollStepSize,
+                getElements: this.callbacks.getElements
             }
         );
         //window.scrollerInstance = scroller;

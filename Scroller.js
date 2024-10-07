@@ -145,8 +145,12 @@ function ScrollerDefaultConfig()
      * получить базовый конфиг для компонента, на который сверху можно наложить конфиг пользователя
      */
     return {
-        _getElement: 'Метод, возвращающий DOM-объект для отображения пользователю',
+        _getElement: 'Метод, возвращающий DOM-объект для отображения пользователю. Используется при построчной загрузке данных с неизвестной заранее высотой строки.',
         getElement: function(/** @type {number} */index, /** @type {string} */direction){
+
+        },
+        _getElements: 'Метод, возвращающий массив DOM-объектов для отображения пользователю. Используется при пакетной загрузке данных с предопределенной высотой строк, передаваемой через параметр predefinedRowHeight',
+        getElements: function(/** @type {number} */index, /** @type {number} */count){
 
         },
         // _direction: 'Способ прокрутки контейнера. По умолчанию - прокрутка в одном измерении, вертикальном',
@@ -165,6 +169,8 @@ function ScrollerDefaultConfig()
         alwaysFillContainer: false,
         _minExpectedRowHeight: 'Для строк с данными есть минимальная ожидаемая высота. Вряд ли можно разместить данные в строке с высотой к примеру в 1-2 px. Поэтому , если в контейнере свободного места осталось меньше, нет смысла пытаться туда загрузить еще одну строку и тратить на это время  Данный параметр устанавливает минимально возможную ожидаемую высоту строк.',
         minExpectedRowHeight: 15,
+        _predefinedRowHeight: 'Для строк таблицы задана предопределенная высота. В этом случае при прокрутке можно сразу определить, сколько строк поместятся в области просмотра',
+        predefinedRowHeight: 0,
         // _minIndex: 'Минимально возможный индекс в наборе. При загрузке компонента Scroller не с первого элемента возникает ситуация, что под предыдущие элементы не выделяется никакого места и становится невозможно выполнить прокрутку вверх. Поэтому необходимо выделять место под "виртуальные" элементы, которые еще ни разу не были загружены в Scroller',
         // minIndex: 0, //TODO А нужен ли? Или всегда считать, что минимальный индекс равен нулю, т.к. индексы всегда числовые и всегда должны быть упорядоченными
 
@@ -542,7 +548,39 @@ function abstractScroller (){
 
         this.DOM.wrapper.classList.add(ClassModel.ModeScroll);
 
+        this.config.predefinedRowHeight ?
+            this.loadPackageItems(requestIndex) :
+            this.loadItemsOneByOne(requestIndex);
+
+        /**
+         * Если не загрузили ни одного элемента, надо попробовать в обратную сторону
+         */
+
+        this.DOM.wrapper.classList.remove(ClassModel.ModeScroll);
+
+    };
+
+    this.loadPackageItems = function(/** @type {number} */ requestIndex){
         let controlHeight = this.DOM.scrolledItemsContainer.offsetHeight;
+        let elementsInfo = this.loadItems(requestIndex, Math.ceil(controlHeight / this.config.predefinedRowHeight));
+        let i = 0;
+        while (i < elementsInfo.length) {
+            let elementInfo = elementsInfo[i++];
+            elementInfo.getElement().classList.add(ClassModel.Transparent);
+            this.appendOnViewportEnd(elementInfo.getElement());
+
+            elementInfo.getElement().classList.remove(ClassModel.Transparent);
+        }
+    };
+    this.loadItemsOneByOne = function(/** @type {number} */ requestIndex){
+        let controlHeight = this.DOM.scrolledItemsContainer.offsetHeight;
+        /**
+         *
+         * @type {ScrolledElement}|{undefined}
+         */
+        let elementInfo = undefined;
+        let h = 0;
+
         controlHeight -= this.config.minExpectedRowHeight;
 
         while (h < controlHeight && (elementInfo = this.loadNextElement(requestIndex))) {
@@ -598,13 +636,6 @@ function abstractScroller (){
                 }
             }
         }
-
-        /**
-         * Если не загрузили ни одного элемента, надо попробовать в обратную сторону
-         */
-
-        this.DOM.wrapper.classList.remove(ClassModel.ModeScroll);
-
     };
 
     /**
@@ -666,23 +697,65 @@ function abstractScroller (){
         elementInfo.getElement().classList.add('scrolled-item');
 
         return elementInfo;
-    },
+    };
 
-        /**
-         * Метод вызывает сброс и новую загрузку данных в scroller
-         */
-        this.reload = function () {
-            this.scroll();
-            //TODO Если scrollTop уже равен 0, то надо как-то иначе вызывать событие прокрутки
-            // if (this.DOM.scrollbarContainer.scrollTop === 0) {
-            //     this.scroll();
-            // }
-            // else {
-            //
-            //     this.DOM.scrollbarContainer.scrollTop = 0;
-            // }
-            /** Загрузка новых элементов будет вызвана автоматически, т.к. сработает событие скроллинга... если элементов было достаточно  */
-        };
+    this.loadItems = function(/** @type ScrolledElement|{number} */ refElement, /** @type {number} */ count){
+        let element, elements, elementInfo, elementsInfo, elementIndex;
+        /** Ищем индекс для следующего элемента */
+        elementIndex = refElement instanceof ScrolledElement ? refElement.getIndex() : (refElement || 0);
+
+        elements = /*this.items.items[elementIndex] || */this.config.getElements.call(this, elementIndex, count);
+        if (elements === Scroller.getFlags().noElements) {
+            /** Больше нет элементов, которые можно загрузить */
+            return false;
+        }
+        if (elements === null || typeof elements === typeof undefined) {
+            /** Больше нет элементов, которые можно загрузить */
+            return false;
+        }
+        let i = 0;
+        elementsInfo = []
+        while (i < elements.length) {
+            let element = elements[i];
+            if (
+                typeof element !== typeof {} ||
+                element.nodeType !== Node.ELEMENT_NODE
+            ) {
+                throw 'Element must be a HTML node!';
+            }
+            /**
+             * @type {ScrolledElement}
+             */
+            elementInfo = this.createLoadedElementInfoStorageItem(elementIndex + i, element);
+
+            this.items.list.push(elementInfo);
+
+            this.items.dict[elementInfo.getIndex()] = elementInfo;
+
+            elementInfo.getElement().classList.add('scrolled-item');
+            i++;
+            elementsInfo.push(elementInfo);
+
+        }
+
+        return elementsInfo;
+    };
+
+    /**
+     * Метод вызывает сброс и новую загрузку данных в scroller
+     */
+    this.reload = function () {
+        this.scroll();
+        //TODO Если scrollTop уже равен 0, то надо как-то иначе вызывать событие прокрутки
+        // if (this.DOM.scrollbarContainer.scrollTop === 0) {
+        //     this.scroll();
+        // }
+        // else {
+        //
+        //     this.DOM.scrollbarContainer.scrollTop = 0;
+        // }
+        /** Загрузка новых элементов будет вызвана автоматически, т.к. сработает событие скроллинга... если элементов было достаточно  */
+    };
 
     this.reloadWith = function (/** @type {number} */indexWith) {
         this.DOM.scrollbarContainer.scrollTop = indexWith * (this.config.scrollSensitivity || this.scrollSensitivity);

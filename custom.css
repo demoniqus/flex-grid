@@ -278,7 +278,7 @@ body {
 }
 
 
-#container {
+#container, #container2 {
     resize: both;
     /*min-width: 2800px;
     max-width: 2800px;
@@ -295,7 +295,7 @@ body {
     /*height: 33%;
     min-height: 33%;
     max-height: 33%;*/
-    height: 65%;
+    height: 45%;
     /*min-height: 65%;
     max-height: 65%;*/
     /*height: 250px;*/

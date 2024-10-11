@@ -33,7 +33,7 @@ if (array_key_exists('index', $_GET)) {
     <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap-grid.css">
     <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap-reboot.css">
     <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap-utilities.css">
-<!--    <script type="text/javascript" src="./testdata2.js"></script>-->
+    <script type="text/javascript" src="./testdata.js"></script>
 
     <script type="module">
         import * as FlexGridPlugin from './flexGrid.js';
@@ -126,124 +126,119 @@ if (array_key_exists('index', $_GET)) {
             }
         };
         config.id = {
-            gridClass: 'TestGrid',
+            gridClass: 'TestFlatGrid',
             id: 1,
         };
 
+		let budgetNameVisualizer = (function(){
+			let v = function(){
+				this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+					let dataItem = gridElement.getData();
+					DOMContainer.innerHTML = '(' + dataItem.itemType + ') ' + dataItem.number;
+				};
+			};
+			v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
 
-        var fg = FlexGridPlugin.FlexGrid.GridManager.createFlatGrid(config);
-        fg.addVisualizationComponent(
-                'budgetNameVisualizer',
-                (function(){
-                    let v = function(){
-                        this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
-                            let dataItem = gridElement.getData();
-                            DOMContainer.innerHTML = '(' + dataItem.itemType + ') ' + dataItem.number;
-                        };
-                    };
-                    v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
+			return new v();
+		})();
 
-                    return new v();
-                })()
-        );
-        fg.addVisualizationComponent(
-                'budgetEstimateItemVisualizer',
-                (function(){
-                    let v = function(){
-                        this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
-                            let dataItem = gridElement.getData();
-                            DOMContainer.innerHTML = dataItem.estimate.number;
-                        };
-                    };
-                    v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
+		let budgetEstimateItemVisualizer = (function(){
+			let v = function(){
+				this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+					let dataItem = gridElement.getData();
+					DOMContainer.innerHTML = dataItem.estimate.number;
+				};
+			};
+			v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
 
-                    return new v();
-                })()
-        );
-        fg.addVisualizationComponent(
-                'budgetCCVisualizer',
-                (function(){
-                    let v = function(){
-                        this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
-                            let itemType = gridElement.get('itemType');
-                            DOMContainer.innerHTML = '';
-                            if (itemType in {estimate_cust: true, est_contr: true}) {
-                                let flag = !!gridElement.get(fieldName);
-                                let input = '<input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled" ' + (flag ? 'checked' : '') + ' disabled>';
-                                // let icon = '<img style="width: 20px; max-width: 20px; height: 20px; max-height: 20px;" src="img/' + (flag ? 'true' : 'false') + '-icon.png" />';
-                                DOMContainer.innerHTML = input;
-                                DOMContainer.style.textAlign = 'center'
-                            }
-                        };
-                    };
-                    v.prototype = new FlexGridPlugin.FlexGrid.BooleanVisualizationComponent();
+			return new v();
+		})();
 
-                    return new v();
-                })()
-        );
-        fg.addVisualizationComponent(
-                'tree',
-                (function(){
-                    let v = function(){
-                        //&#128447; - черная папка
-                        let f = function (
-                                /** @type {Element}*/DOMContainer,
-                                /** @type {string}*/fieldName,
-                                /** @type {object}*/gridElement,
-                                /** @type {object}*/headerData,
-                        ){
-                            let dataItem = gridElement.getData();
+		let budgetCCVisualizer = (function(){
+			let v = function(){
+				this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+					let itemType = gridElement.get('itemType');
+					DOMContainer.innerHTML = '';
+					if (itemType in {estimate_cust: true, est_contr: true}) {
+						let flag = !!gridElement.get(fieldName);
+						let input = '<input class="form-check-input" type="checkbox" value="" id="flexCheckCheckedDisabled" ' + (flag ? 'checked' : '') + ' disabled>';
+						// let icon = '<img style="width: 20px; max-width: 20px; height: 20px; max-height: 20px;" src="img/' + (flag ? 'true' : 'false') + '-icon.png" />';
+						DOMContainer.innerHTML = input;
+						DOMContainer.style.textAlign = 'center'
+					}
+				};
+			};
+			v.prototype = new FlexGridPlugin.FlexGrid.BooleanVisualizationComponent();
 
-                            if (dataItem.entityClass === "IncomeStageBundle\\Entity\\IncomeStage") {
-                                if (gridElement.children.length) {
-                                    if (gridElement.expanded()) {
+			return new v();
+		})();
 
-                                        // DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
-                                        DOMContainer.innerHTML = '<img src="img/folder-fill-opened.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
-                                    }
-                                    else {
-                                        DOMContainer.innerHTML = '<img src="img/folder-fill-closed.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
-                                        // DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
-                                    }
-                                }
-                                else {
-                                    // DOMContainer.innerHTML = '<span style="color: red;">&#128447;</span>'
-                                    if (gridElement.expanded()) {
+		let treeCustomVisualizer = (function(){
+			let v = function(){
+				//&#128447; - черная папка
+				let f = function (
+					/** @type {Element}*/DOMContainer,
+					/** @type {string}*/fieldName,
+					/** @type {object}*/gridElement,
+					/** @type {object}*/headerData,
+				){
+					let dataItem = gridElement.getData();
 
-                                        // DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
-                                        DOMContainer.innerHTML = '<img src="img/folder-empty-opened.png" style=" max-width: 25px; max-height: 25px;" />'
-                                    }
-                                    else {
-                                        DOMContainer.innerHTML = '<img src="img/folder-empty-closed.png" style=" max-width: 25px; max-height: 25px;" />'
-                                        // DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
-                                    }
-                                }
-                            } else{
-                                if (gridElement.children.length) {
-                                    if (gridElement.expanded()) {
+					if (dataItem.entityClass === "IncomeStageBundle\\Entity\\IncomeStage") {
+						if (gridElement.children.length) {
+							if (gridElement.expanded()) {
 
-                                        DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128459;</span>'
-                                    }
-                                    else {
-                                        DOMContainer.innerHTML = '<span style="color: green;">&#128464;</span>'
-                                    }
-                                }
-                                else {
-                                    DOMContainer.innerHTML = '<span style="color: red;">&#128464;</span>'
-                                }
-                            }
+								// DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+								DOMContainer.innerHTML = '<img src="img/folder-fill-opened.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
+							}
+							else {
+								DOMContainer.innerHTML = '<img src="img/folder-fill-closed.png" style="opacity: .5; max-width: 25px; max-height: 25px;" />'
+								// DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
+							}
+						}
+						else {
+							// DOMContainer.innerHTML = '<span style="color: red;">&#128447;</span>'
+							if (gridElement.expanded()) {
+
+								// DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128449;</span>'
+								DOMContainer.innerHTML = '<img src="img/folder-empty-opened.png" style=" max-width: 25px; max-height: 25px;" />'
+							}
+							else {
+								DOMContainer.innerHTML = '<img src="img/folder-empty-closed.png" style=" max-width: 25px; max-height: 25px;" />'
+								// DOMContainer.innerHTML = '<span style="color: green;">&#128447;</span>'
+							}
+						}
+					} else{
+						if (gridElement.children.length) {
+							if (gridElement.expanded()) {
+
+								DOMContainer.innerHTML = '<span style="color: blue; font-weight: bold;">&#128459;</span>'
+							}
+							else {
+								DOMContainer.innerHTML = '<span style="color: green;">&#128464;</span>'
+							}
+						}
+						else {
+							DOMContainer.innerHTML = '<span style="color: red;">&#128464;</span>'
+						}
+					}
 
 
-                        };
-                        this.buildReadForm = this.buildEditform = f;
-                    };
-                    v.prototype = new FlexGridPlugin.FlexGrid.TreeVisualizationComponent();
+				};
+				this.buildReadForm = this.buildEditform = f;
+			};
+			v.prototype = new FlexGridPlugin.FlexGrid.TreeVisualizationComponent();
 
-                    return new v();
-                })()
-        );
+			return new v();
+		})();
 
-        fg.getFilterComponent('string').customizeComponents = function(componentsDict){
+
+        var flatGrid = FlexGridPlugin.FlexGrid.GridManager.createFlatGrid(config);
+        flatGrid.addVisualizationComponent('budgetNameVisualizer', budgetNameVisualizer);
+        flatGrid.addVisualizationComponent('budgetEstimateItemVisualizer', budgetEstimateItemVisualizer);
+        flatGrid.addVisualizationComponent('budgetCCVisualizer', budgetCCVisualizer);
+
+        flatGrid.getFilterComponent('string').customizeComponents = function(componentsDict){
             componentsDict.inputField.classList.add('form-control');
             componentsDict.resetButton.classList.add('btn');
             componentsDict.resetButton.classList.add('btn-light');
@@ -251,8 +246,73 @@ if (array_key_exists('index', $_GET)) {
         }
         let n = (new Date).getTime();
         //Полностью сконфигурировали компоненты. Теперь можно начинать загрузку
-        fg.build();
-		window.FlatGridInstance = fg;
+        flatGrid.build();
+		window.FlatGridInstance = flatGrid;
+
+
+		//Иерархический грид
+
+
+		config.dataTransmitter = (function(){
+		    //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
+		    let loader = function(){
+		        this.getData =   (dataAcceptor) => setTimeout(function(){
+					dataAcceptor(data)
+				}, 3000);
+		        this.getHeaders =  (headersAcceptor) => setTimeout(function(){
+					/**
+					 * Из-за повторного использования надо клонировать заголовки
+					 */
+					let headers = [];
+					let i = 0;
+					let clone = function(header){
+						let res = Object.create(header);
+						if (header.children) {
+							let children = [];
+							let x = 0;
+							while (x < header.children.length) {
+								children.push(clone(header.children[x++]));
+							}
+						}
+						return res;
+					};
+					while (i < testHeaders.length) {
+						headers.push(clone(testHeaders[i++]));
+					}
+					headersAcceptor(headers)
+				}, 1000);
+		        // this.getData = (dataAcceptor) => dataAcceptor(data);
+		        // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
+		    };
+		    loader.prototype = new FlexGridPlugin.FlexGrid.DataTransmitterInterface;
+
+		    return new loader();
+		})()
+
+		config.id = {
+			gridClass: 'TestTreeGrid',
+			id: 1,
+		};
+
+		config.container = document.getElementById('container2');
+
+
+		var treeGrid = FlexGridPlugin.FlexGrid.GridManager.createTreeGrid(config);
+
+		treeGrid.addVisualizationComponent('budgetNameVisualizer', budgetNameVisualizer);
+		treeGrid.addVisualizationComponent('budgetEstimateItemVisualizer', budgetEstimateItemVisualizer);
+		treeGrid.addVisualizationComponent('budgetCCVisualizer', budgetCCVisualizer);
+		treeGrid.addVisualizationComponent('tree', treeCustomVisualizer);
+
+		treeGrid.getFilterComponent('string').customizeComponents = function(componentsDict){
+			componentsDict.inputField.classList.add('form-control');
+			componentsDict.resetButton.classList.add('btn');
+			componentsDict.resetButton.classList.add('btn-light');
+			componentsDict.resetButton.classList.add('filter');
+		}
+
+		treeGrid.build();
+		window.TreeGridInstance = treeGrid;
 
         console.log('time building ', (new Date()).getTime() - n);
         (function(){
@@ -262,7 +322,8 @@ if (array_key_exists('index', $_GET)) {
                 ro.timeout && clearTimeout(ro.timeout);
                 ro.timeout = setTimeout(
                     function(){
-                        fg.updatePreview();
+                        flatGrid.updatePreview();
+						treeGrid.updatePreview();
                     },
                     //100
                         7000

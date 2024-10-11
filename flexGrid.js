@@ -73,6 +73,55 @@ function FlexGridDefaultConfig()
         dataTransmitter: null,
     };
 }
+function FlexGridInterface()
+{
+    this.build = function(){
+
+        throw 'Method \'build\' is not implemented';
+    };
+
+    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
+        throw 'Method \'addVisualizationComponent\' is not implemented';
+    };
+
+    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
+        throw 'Method \'addFilterComponent\' is not implemented';
+    };
+
+    this.getVisualizationComponent = function(/** @type {string} */alias){
+        throw 'Method \'getVisualizationComponent\' is not implemented';
+    };
+
+    this.getFilterComponent = function(/** @type {string} */alias){
+        throw 'Method \'getFilterComponent\' is not implemented';
+    };
+
+    this.updatePreview = function(){
+        throw 'Method \'updatePreview\' is not implemented';
+    };
+
+    this.destroy = function(){
+        throw 'Method \'destroy\' is not implemented';
+
+    };
+
+    this.getId = function(){
+        throw 'Method \'getId\' is not implemented';
+    };
+}
+
+function FlatGridInterface()
+{
+
+}
+
+
+function TreeGridInterface()
+{
+
+}
+
+FlatGridInterface.prototype = TreeGridInterface.prototype = new FlexGridInterface();
 
 function abstractFlexGrid (config){
     /**
@@ -1020,9 +1069,65 @@ function abstractFlexGrid (config){
         //return;
         this.visualizer.updatePreview();
     };
+
+
+
+    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
+        if (!(component instanceof standardVisualComponents.FlexGridDataVisualizationComponentInterface)) {
+            throw 'Data visualization component must be instance of FlexGridDataVisualizationComponentInterface';
+        }
+
+        this.dataVisualizationComponents[alias] = component;
+    };
+
+    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
+        if (!(component instanceof filter.FlexGridDataFilterComponentInterface)) {
+            //TODO Подумать о множественном наследовании интерфейсов
+            throw 'Data visualization component must be instance of filter.FlexGridDataFilterComponentInterface';
+        }
+
+        this.dataFilterComponents[alias] = component;
+        Object.defineProperties(
+            component,
+            {
+                Filter: {
+                    get: function(){return this.filter;}.bind(this),
+                    configurable: false,
+                    enumerable: false,
+                }
+            }
+        );
+    };
+
+    this.getVisualizationComponent = function(/** @type {string} */alias){
+        return this.dataVisualizationComponents[alias] || null;
+    };
+
+    this.getFilterComponent = function(/** @type {string} */alias){
+        return this.dataFilterComponents[alias] || null;
+    };
+
+
+    this.getId = function(){
+        return this.customId &&  typeof this.customId === typeof {} ? {...this.customId} : this.customId;
+    };
+
     //Методы установлены, начинаем конфигурирование
 
     this.setConfig(config);
+
+    this.registerDefaultComponents = function(){
+        this.addVisualizationComponent('tree', new standardVisualComponents.TreeVisualizationComponent());
+        this.addVisualizationComponent('empty', new standardVisualComponents.EmptyVisualizationComponent());
+        this.addVisualizationComponent('text', new standardVisualComponents.TextVisualizationComponent());
+        this.addVisualizationComponent('string', new standardVisualComponents.StringVisualizationComponent());
+        this.addVisualizationComponent('money', new standardVisualComponents.MoneyVisualizationComponent());
+        this.addVisualizationComponent('boolean', new standardVisualComponents.BooleanVisualizationComponent());
+        this.addVisualizationComponent('numerable', new standardVisualComponents.NumerableVisualizationComponent());
+
+
+        this.addFilterComponent('string', new filter.StringFilterComponent());
+    };
 };
 
 function pubFlexGrid(/**@type {abstractFlexGrid} */priv) {
@@ -1094,11 +1199,12 @@ function pubFlexGrid(/**@type {abstractFlexGrid} */priv) {
 
 };
 
+
 function TreeGrid(config){
 
     let priv = new abstractFlexGrid(config);
-    let pub = new pubFlexGrid(priv);
-    priv.pub = pub;
+
+    priv.pub = this;
 
     // Выполняем дополнительную настройку приватной части
     let setGridElementHtmlHandlers = priv.setGridElementHtmlHandlers.bind(priv);
@@ -1267,14 +1373,42 @@ function TreeGrid(config){
 
     };
 
-    return pub;
+    this.build = function(){priv.init();};
+
+    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
+        priv.addVisualizationComponent(alias, component);
+    };
+
+    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
+        priv.addFilterComponent(alias, component);
+    };
+
+    this.getVisualizationComponent = function(/** @type {string} */alias){
+        return priv.getVisualizationComponent(alias);
+    };
+
+    this.getFilterComponent = function(/** @type {string} */alias){
+        return priv.getFilterComponent(alias)
+    };
+
+    this.updatePreview = function(){priv.updatePreview();};
+
+    this.destroy = function(){
+        throw 'Method \'destroy\' is not implemented for flexGrid';
+
+    };
+
+    this.getId = function(){return priv.getId();};
+
+    priv.registerDefaultComponents();
 };
+
+TreeGrid.prototype = new TreeGridInterface();
 
 
 function FlatGrid(config) {
     let priv = new abstractFlexGrid(config);
-    let pub = new pubFlexGrid(priv);
-    priv.pub = pub;
+    priv.pub = this;
 
     priv.initData = function(){
         throw 'Method \'initData\' is not implemented for FLAT flexGrid';
@@ -1337,19 +1471,48 @@ function FlatGrid(config) {
 
     };
 
-    return pub;
+    this.build = function(){priv.init();};
+
+    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
+        priv.addVisualizationComponent(alias, component);
+    };
+
+    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
+        priv.addFilterComponent(alias, component);
+    };
+
+    this.getVisualizationComponent = function(/** @type {string} */alias){
+        return priv.getVisualizationComponent(alias);
+    };
+
+    this.getFilterComponent = function(/** @type {string} */alias){
+        return priv.getFilterComponent(alias)
+    };
+
+    this.updatePreview = function(){priv.updatePreview();};
+
+    this.destroy = function(){
+        throw 'Method \'destroy\' is not implemented for flexGrid';
+
+    };
+
+    this.getId = function(){return priv.getId();};
+
+    priv.registerDefaultComponents();
+};
+
+FlatGrid.prototype = new FlatGridInterface();
+
+const GridManager = {
+    createFlatGrid: (config) => new FlatGrid(config),
+    createTreeGrid: (config) => new TreeGrid(config),
 };
 
 export let FlexGrid = Object.defineProperties(
     Object.create(null),
     {
-        TreeGrid: {
-            get: () => TreeGrid,
-            configurable: false,
-            enumerable: false,
-        },
-        FlatGrid: {
-            get: () =>  FlatGrid,
+        GridManager: {
+            get: () => GridManager,
             configurable: false,
             enumerable: false,
         },
@@ -1365,6 +1528,21 @@ export let FlexGrid = Object.defineProperties(
         },
         FlexGridDataFilterComponentInterface: {
             get: () => filter.FlexGridDataFilterComponentInterface,
+            configurable: false,
+            enumerable: false,
+        },
+        FlexGridInterface: {
+            get: () => FlexGridInterface,
+            configurable: false,
+            enumerable: false,
+        },
+        TreeGridInterface: {
+            get: () => TreeGridInterface,
+            configurable: false,
+            enumerable: false,
+        },
+        FlatGridInterface: {
+            get: () => FlatGridInterface,
             configurable: false,
             enumerable: false,
         },

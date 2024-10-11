@@ -131,7 +131,7 @@ if (array_key_exists('index', $_GET)) {
         };
 
 
-        var fg = new FlexGridPlugin.FlexGrid.FlatGrid(config);
+        var fg = FlexGridPlugin.FlexGrid.GridManager.createFlatGrid(config);
         fg.addVisualizationComponent(
                 'budgetNameVisualizer',
                 (function(){
@@ -252,6 +252,7 @@ if (array_key_exists('index', $_GET)) {
         let n = (new Date).getTime();
         //Полностью сконфигурировали компоненты. Теперь можно начинать загрузку
         fg.build();
+		window.FlatGridInstance = fg;
 
         console.log('time building ', (new Date()).getTime() - n);
         (function(){

@@ -1246,7 +1246,7 @@ function TreeGrid(config){
             !(entityClass in objectsDict) && (objectsDict[entityClass] = {}, gridElementsDict[entityClass] = {});
 
             objectsDict[entityClass][entityId] = entityData;
-            gridElement = new GridElement(this.config, this, pub);
+            gridElement = new GridElement(this.config, this, this.pub);
             gridElement.initData(entityData);
 
             gridElementsDict[entityClass][entityId] = gridElement;
@@ -1341,34 +1341,6 @@ function FlatGrid(config) {
     let priv = new abstractFlexGrid(config);
     priv.pub = this;
 
-    priv.initData = function(){
-        throw 'Method \'initData\' is not implemented for FLAT flexGrid';
-        if (typeof this.config.data === typeof 'aaa') {
-            /**
-             * Загрузка данных с сервера
-             */
-        }
-        else if (Array.isArray(this.config.data)) {
-            /**
-             * Это плоский массив данных
-             */
-            let data = [];
-
-            let i = 0;
-
-            while (i < this.config.data.length) {
-                let gridElement = new GridElement(this.config, this);
-                gridElement.initData(this.config.data[i]);
-                data.push(gridElement)
-                i++;
-            }
-            //this.config.data = data;
-            this.data.flat = data;
-
-
-        }
-    };
-
     priv.prepareData = function(data){
         let gridElement = undefined;
         let gridElements = [];
@@ -1389,7 +1361,7 @@ function FlatGrid(config) {
             !(entityClass in objectsDict) && (objectsDict[entityClass] = {}, gridElementsDict[entityClass] = {});
 
             objectsDict[entityClass][entityId] = entityData;
-            gridElement = new GridElement(this.config, this);
+            gridElement = new GridElement(this.config, this, this.pub);
             gridElement.initData(entityData);
 
             gridElementsDict[entityClass][entityId] = gridElement;

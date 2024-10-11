@@ -167,7 +167,7 @@ function abstractFlexGrid (config){
          */
         orderedNodalHeaders: null,
     };
-    /**@type {pubFlexGrid} */
+    /**@type {FlexGridInterface} */
     this.pub = undefined;
 
     this.filter = new filter.Filter(this);
@@ -1112,10 +1112,6 @@ function abstractFlexGrid (config){
         return this.customId &&  typeof this.customId === typeof {} ? {...this.customId} : this.customId;
     };
 
-    //Методы установлены, начинаем конфигурирование
-
-    this.setConfig(config);
-
     this.registerDefaultComponents = function(){
         this.addVisualizationComponent('tree', new standardVisualComponents.TreeVisualizationComponent());
         this.addVisualizationComponent('empty', new standardVisualComponents.EmptyVisualizationComponent());
@@ -1128,75 +1124,10 @@ function abstractFlexGrid (config){
 
         this.addFilterComponent('string', new filter.StringFilterComponent());
     };
-};
 
-function pubFlexGrid(/**@type {abstractFlexGrid} */priv) {
+    //Методы установлены, начинаем конфигурирование
 
-    this.build = function(){
-
-        priv.init();
-    };
-
-    this.addVisualizationComponent = function(/** @type {string} */alias, /** @type {standardVisualComponents.FlexGridDataVisualizationComponentInterface} */component){
-        if (!(component instanceof standardVisualComponents.FlexGridDataVisualizationComponentInterface)) {
-            throw 'Data visualization component must be instance of FlexGridDataVisualizationComponentInterface';
-        }
-
-        priv.dataVisualizationComponents[alias] = component;
-    };
-
-    this.addFilterComponent = function(/** @type {string} */alias, /** @type {filter.FlexGridDataFilterComponentInterface} */component){
-        if (!(component instanceof filter.FlexGridDataFilterComponentInterface)) {
-            throw 'Data visualization component must be instance of filter.FlexGridDataFilterComponentInterface';
-        }
-
-        this.dataFilterComponents[alias] = component;
-        Object.defineProperties(
-            component,
-            {
-                Filter: {
-                    get: function(){return this.filter;}.bind(priv),
-                    configurable: false,
-                    enumerable: false,
-                }
-            }
-        );
-    }.bind(priv);
-
-    this.getVisualizationComponent = function(/** @type {string} */alias){
-        return priv.dataVisualizationComponents[alias] || null;
-    };
-
-    this.getFilterComponent = function(/** @type {string} */alias){
-        return priv.dataFilterComponents[alias] || null;
-    };
-
-    this.updatePreview = function(){
-        priv.updatePreview();
-    };
-
-    this.destroy = function(){
-        throw 'Method \'destroy\' is not implemented for flexGrid';
-
-    };
-
-    this.getId = function(){
-        return priv.customId &&  typeof priv.customId === typeof {} ? {...priv.customId} : priv.customId;
-    };
-
-
-    this.addVisualizationComponent('tree', new standardVisualComponents.TreeVisualizationComponent());
-    this.addVisualizationComponent('empty', new standardVisualComponents.EmptyVisualizationComponent());
-    this.addVisualizationComponent('text', new standardVisualComponents.TextVisualizationComponent());
-    this.addVisualizationComponent('string', new standardVisualComponents.StringVisualizationComponent());
-    this.addVisualizationComponent('money', new standardVisualComponents.MoneyVisualizationComponent());
-    this.addVisualizationComponent('boolean', new standardVisualComponents.BooleanVisualizationComponent());
-    this.addVisualizationComponent('numerable', new standardVisualComponents.NumerableVisualizationComponent());
-
-
-    this.addFilterComponent('string', new filter.StringFilterComponent());
-
-
+    this.setConfig(config);
 };
 
 

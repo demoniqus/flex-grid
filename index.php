@@ -82,6 +82,9 @@ if (array_key_exists('index', $_GET)) {
 				// 	dataAcceptor(data);
 				// }, 0);
                 this.getHeaders =  (headersAcceptor) => setTimeout(function(){headersAcceptor(testHeaders)}, 3000);
+				this.getMetadata = (metadataAcceptor) => metadataAcceptor({
+					'tableName': 'Test Tree Grid'
+				})
                 // this.getData = (dataAcceptor) => dataAcceptor(data);
                 // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
             };
@@ -281,6 +284,9 @@ if (array_key_exists('index', $_GET)) {
 					}
 					headersAcceptor(headers)
 				}, 1000);
+				this.getMetadata = (metadataAcceptor) => metadataAcceptor({
+					'tableName': 'Test Flat Grid'
+				})
 		        // this.getData = (dataAcceptor) => dataAcceptor(data);
 		        // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
 		    };

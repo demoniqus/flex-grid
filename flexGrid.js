@@ -199,6 +199,8 @@ function abstractFlexGrid (config){
 
     this.config = {};
 
+    this.metadata = undefined;
+
     this.styleContainer = undefined;
     this.styles = {
         '.selected-row': 'background-color: rgba(200, 200, 200, .3);',
@@ -503,6 +505,12 @@ function abstractFlexGrid (config){
         this.config = config;
     };
 
+    this.createDefaultMetaada = function(){
+        return {
+            'tableName': 'Flex grid',
+        }
+    };
+
 
     this.loadData = function(source){
         throw 'Method \'loadData\' is not implemented for specific flexGrid';
@@ -524,11 +532,15 @@ function abstractFlexGrid (config){
         this.createId();
         this.createStyleElement();
         this.updateStyleElement();
+
         //TODO async await
         let headersLoadingPromise = new Promise(
             function(resolve, reject){
                 let headersAcceptor = function(headers){
-                    resolve(headers);
+                    // Заголовки не могут быть пустыми
+                    headers instanceof Array && headers.length ?
+                        resolve(headers):
+                        reject();
                 }.bind(this);
                 this.dataTransmitter.getHeaders(headersAcceptor);
             }.bind(this)
@@ -540,24 +552,53 @@ function abstractFlexGrid (config){
         .then(function(orderedLeafHeaders){
             this.visualizer.setHeaders(orderedLeafHeaders);
         }.bind(this))
-
         ;
+
         let dataLoadingPromise = new Promise(
             function(resolve, reject){
                 let dataAcceptor = function(data){
-                    this.prepareData(data);
-                    resolve();
+                    if (
+                        data instanceof Array ||
+                        data === null ||
+                        data === undefined
+                    ) {
+                        !data && (data = []);
+                        this.prepareData(data);
+                        resolve();
+                    }
+                    else {
+                        reject();
+                    }
                 }.bind(this);
                 this.dataTransmitter.getData(dataAcceptor);
             }.bind(this)
         );
 
+        let metadataLoadingPromise = new Promise(
+            function(resolve, reject){
+                let metadataAcceptor = function(metadata){
+                    if (
+                        typeof metadata === typeof {} ||
+                        metadata === null ||
+                        metadata === undefined
+                    ) {
+                        !metadata && (metadata = this.createDefaultMetaada());
+                        this.metadata = metadata;
+                        resolve();
+                    }
+                    else {
+                        reject();
+                    }
+                }.bind(this);
+                this.dataTransmitter.getMetadata(metadataAcceptor)
+            }.bind(this)
+        )
+
         Promise.all(
             [
                 headersLoadingPromise,
                 dataLoadingPromise,
-                //TODO get metaData (table name and other meta data)
-
+                metadataLoadingPromise,
             ]
         ).then(
             function(){
@@ -572,7 +613,10 @@ function abstractFlexGrid (config){
                 );
 
                 let tableHeader = document.createElement('div');
-                tableHeader.innerHTML = 'Test Tree Flex Grid';
+                let tableName = 'tableName' in this.metadata && this.metadata.tableName !== undefined && this.metadata.tableName !== null ?
+                    this.metadata.tableName:
+                    this.createDefaultMetaada().tableName;
+                tableHeader.innerHTML = tableName;
                 tableHeader.style.textAlign = 'center';
                 tableHeader.style.width = '100%';
                 tableHeader.style.marginBottom = '10px';

@@ -461,7 +461,7 @@ function abstractFlexGrid (config){
         }
         config = {...config}
         if (config.id) {
-            this.customId = config.id
+            this.customId = typeof config.id === typeof {} ? {...config.id} : config.id;
             delete config.id;
         }
 

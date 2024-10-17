@@ -110,6 +110,8 @@ export function GridElement(id, config, privFlexGrid, pubFlexGrid){
 
     this.hasVisualRepresent = () => !!priv.DOM.row;
 
+    this.isVisualized = () => !!priv.DOM.row && !!priv.DOM.row.parentElement
+
     Object.defineProperties(
         this,
         {

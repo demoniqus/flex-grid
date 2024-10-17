@@ -170,6 +170,8 @@ function abstractFlexGrid (config){
     /**@type {FlexGridInterface} */
     this.pub = undefined;
 
+    this.gridElementIndex = 0;
+
     this.filter = new filter.Filter(this);
     //DataSet'ы
     this.data = {

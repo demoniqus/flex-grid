@@ -523,6 +523,41 @@ function abstractFlexGrid (config){
         throw 'Method \'prepareData\' is not implemented for specific flexGrid';
     };
 
+    this.createGridElements = function (data)
+    {
+        let gridElement = undefined;
+        let gridElements = [];
+        let objectsDict = {};
+        let c = data.length;
+        let ecf = this.config.entityClassField;
+        let eif = this.config.entityIdField;
+        let epf = this.config.entityParentField;
+        /**
+         * Создаем GridElement'ы
+         */
+        for (let i = 0; i < c; i++) {
+            let entityData = data[i];
+            let entityClass = entityData[ecf];
+            let entityId = entityData[eif];
+
+            //TODO Возможно, следует сделать проход и собрать просто отдельно классы сущностей, а затем по полученному набору создать в словарях вложенные объекты
+            !(entityClass in objectsDict) && (objectsDict[entityClass] = {});
+
+            objectsDict[entityClass][entityId] = entityData;
+            gridElement = new GridElement(this.gridElementIndex++, this.config, this, this.pub);
+            gridElement.initData(entityData);
+
+            this.createGridStorageIntoObject(entityData);
+            this.connectDataItemWithGridElement(entityData, gridElement);
+            gridElements.push(gridElement);
+        }
+
+        return {
+            'gridElements': gridElements,
+            'objectsDict': objectsDict
+        };
+    };
+
     this.init = function(){
         /**
          * TODO
@@ -709,6 +744,21 @@ function abstractFlexGrid (config){
     //     console.log('reactiveData time ', ((new Date()).getTime() - t));
     //
     // };
+
+    this.connectDataItemWithGridElement = function (entityData, gridElement) {
+        // !entityData._fg && (entityData._fg = {});
+        //В текущем гриде элемент данных представлен элементом GridElement с указанным идентификатором
+        let storage = Storage.get(entityData);
+        storage.grids.get(this).gridElement = gridElement;
+        // o._gridElement = new WeakRef(gridElement);
+        // o.grid = this;
+        // o._grid = new WeakRef(this);
+        //
+        //
+        // console.log(o);
+        // console.log(o._gridElement);
+        // // this.gridElementsDict.set [gridElement.getId()] = gridElement;
+    };
 
     this.initOptionPanels = function(){
         let grid = this;
@@ -1171,6 +1221,36 @@ function abstractFlexGrid (config){
         this.addFilterComponent('string', new filter.StringFilterComponent());
     };
 
+    this.createGridStorageIntoObject = function(object){
+        let storage = Storage.create(object);
+        if (!('grids' in storage)) {
+            storage.grids = new WeakMap();
+        }
+        if (!storage.grids.has(this)) {
+            storage.grids.set(this, {})
+        }
+
+        // if (!('_fg' in object)) {
+        //     let storage = {};
+        //     Object.defineProperties(
+        //         object,
+        //         {
+        //             _fg: {
+        //                 get: () => storage,
+        //                 enumerable: false,
+        //                 configurable: false
+        //             }
+        //         }
+        //     )
+        // }
+        // if (!('grids' in object._fg)) {
+        //     object._fg.grids = new WeakMap();
+        // }
+        // if (!object._fg.grids.has(this)) {
+        //     object._fg.grids.set(this, {})
+        // }
+    };
+
     //Методы установлены, начинаем конфигурирование
 
     this.setConfig(config);
@@ -1272,32 +1352,12 @@ function TreeGrid(config){
 
 
     priv.prepareData = function(data){
-        let gridElement = undefined;
-        let gridElements = [];
-        let gridElementsDict = {};
-        let objectsDict = {};
+        let {gridElements, objectsDict} = this.createGridElements(data);
         let c = data.length;
         let ecf = this.config.entityClassField;
         let eif = this.config.entityIdField;
         let epf = this.config.entityParentField;
-        /**
-         * Создаем GridElement'ы
-         */
-        for (let i = 0; i < c; i++) {
-            let entityData = data[i];
-            let entityClass = entityData[ecf];
-            let entityId = entityData[eif];
 
-            //TODO Возможно, следует сделать проход и собрать просто отдельно классы сущностей, а затем по полученному набору создать в словарях вложенные объекты
-            !(entityClass in objectsDict) && (objectsDict[entityClass] = {}, gridElementsDict[entityClass] = {});
-
-            objectsDict[entityClass][entityId] = entityData;
-            gridElement = new GridElement(this.config, this, this.pub);
-            gridElement.initData(entityData);
-
-            gridElementsDict[entityClass][entityId] = gridElement;
-            gridElements.push(gridElement)
-        }
 
         /**
          * Устанавливаем parent-child связи
@@ -1388,32 +1448,7 @@ function FlatGrid(config) {
     priv.pub = this;
 
     priv.prepareData = function(data){
-        let gridElement = undefined;
-        let gridElements = [];
-        let gridElementsDict = {};
-        let objectsDict = {};
-        let c = data.length;
-        let ecf = this.config.entityClassField;
-        let eif = this.config.entityIdField;
-        /**
-         * Создаем GridElement'ы
-         */
-        for (let i = 0; i < c; i++) {
-            let entityData = data[i];
-            let entityClass = entityData[ecf];
-            let entityId = entityData[eif];
-
-            //TODO Возможно, следует сделать проход и собрать просто отдельно классы сущностей, а затем по полученному набору создать в словарях вложенные объекты
-            !(entityClass in objectsDict) && (objectsDict[entityClass] = {}, gridElementsDict[entityClass] = {});
-
-            objectsDict[entityClass][entityId] = entityData;
-            gridElement = new GridElement(this.config, this, this.pub);
-            gridElement.initData(entityData);
-
-            gridElementsDict[entityClass][entityId] = gridElement;
-            gridElements.push(gridElement)
-        }
-
+        let {gridElements, objectsDict} = this.createGridElements(data);
 
         this.data.flat = this.data.current = DataSetManager.createFlatDataSet(priv);
         this.data.flat.initData(gridElements);

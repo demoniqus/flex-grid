@@ -2,7 +2,7 @@
 
 import {DataSetInterface} from "./dataSet.js";
 
-export function GridElement(config, privFlexGrid, pubFlexGrid){
+export function GridElement(id, config, privFlexGrid, pubFlexGrid){
     let priv = {
         DOM: {
             row: undefined,
@@ -19,6 +19,7 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
             entityIdField: config.entityIdField,
             entityParentField: config.entityParentField,
         },
+        id: id,
         privFlexGrid: privFlexGrid,
         pubFlexGrid: pubFlexGrid,
     };
@@ -36,6 +37,8 @@ export function GridElement(config, privFlexGrid, pubFlexGrid){
     };
 
     this.getData = function(){return priv.data;};
+
+    this.getId = function(){return priv.id};
 
     this.expand = function(/**@type {DataSetInterface} */dataSet, /**@type {boolean}*/ expanded){
         !dataSet && (dataSet = priv.privFlexGrid.data.current);

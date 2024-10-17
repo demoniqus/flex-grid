@@ -11,6 +11,7 @@ import {Storage} from "./storage.js"
 import {EventManager} from "./eventManager.js";
 
 export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";
+//export {EventManager} from "./eventManager.js";
 
 
 let pluginIds = {};
@@ -26,6 +27,149 @@ let ClassModel = Object.defineProperties(
     }
 )
 
+function FlexGridEventsModel()
+{
+    return {
+        moveItem: function(acceptorItem, draggedItem, acceptorFlexGridCustomId, sourceFlexGridCustomId){
+
+            typeof this.config.events.moveItem === typeof function (){} &&
+            this.config.events.moveItem(...arguments);
+
+        },
+        dataAccepted: function(flexGridCustomId){
+            typeof this.config.events.dataAccepted === typeof function (){} &&
+            this.config.events.dataAccepted(...arguments);
+        },
+        headersCompleted: function(flexGridCustomId){
+            typeof this.config.events.headersCompleted === typeof function (){} &&
+            this.config.events.headersCompleted(...arguments);
+        },
+        completed: function(flexGridCustomId){
+            typeof this.config.events.completed === typeof function (){} &&
+            this.config.events.completed(...arguments);
+        },
+        // childItemChanged: function(eventObj){
+        //     typeof this.config.events.childItemChanged === typeof function (){} &&
+        //     this.config.events.childItemChanged(...arguments);
+        // },
+        beforeItemChange: function(eventObj){
+            let storage = Storage.get(eventObj.sourceObject);
+            eventObj.isGridElement = storage && storage.grids && storage.grids.has(this) && !!storage.grids.get(this).gridElement;
+            return typeof this.config.events.beforeItemChange === typeof function (){} ?
+                !!this.config.events.beforeItemChange(...arguments):
+                true;
+        },
+        beforeChildItemChange: function(eventObj){
+            return typeof this.config.events.beforeItemChange === typeof function (){} ?
+                !!this.config.events.beforeItemChange(...arguments):
+                true;
+        },
+        itemChanged: function(eventObj){
+            console.log(eventObj)
+            // if (eventObj.dataItem._fg[this.id])
+            // {
+            //     //Объект зарегистрирован в текущем гриде
+            //
+            // }
+
+            /*
+            {
+                            origValue: origValue,
+                            newValue: value,
+                            propertyName: propName,
+                            targetObject: this,
+                            parentObject: null,
+                            parentPropName: null,
+                            grid: priv.pub
+                        }
+             */
+            // let gridElement;
+            // let changedItem = eventObj.targetObject;
+            // let storage = Storage.get(changedItem);
+            // if (
+            //     storage &&
+            //     storage.grids.has(this) &&
+            //     (gridElement = storage.grids.get(this).gridElement)
+            // ) {
+            //     gridElement.updateCell(eventObj.propertyName);
+            // }
+
+            typeof this.config.events.itemChanged === typeof function (){} &&
+            this.config.events.itemChanged(...arguments);
+        },
+        childItemChanged: function(eventObj){
+            console.log(eventObj);
+            let gridElement;
+            let sourceEventParams  = eventObj.sourceEventParams;
+            let source = eventObj.sourceObject;
+            let sourceStorage = Storage.get(source);
+            if (
+                sourceStorage &&
+                sourceStorage.grids &&
+                sourceStorage.grids.has(this)
+            ) {
+                gridElement = sourceStorage.grids.get(this).gridElement;
+                if (gridElement) {
+                    let properties = sourceEventParams.properties || [];
+                    //TODO Выполнить асинхронно?
+                    //TODO Выполнить проверку, в каком режиме находится строка и как правильно обновлять ее визуальное представление (и надо ли вообще, чтобы не возникло рекурсии)
+                    properties.forEach(propName => gridElement.isVisualized() &&  gridElement.updateCell(propName));
+                }
+            }
+            // if (eventObj.dataItem._fg[this.id])
+            // {
+            //     //Объект зарегистрирован в текущем гриде
+            //
+            // }
+
+            /*
+            {
+                            origValue: origValue,
+                            newValue: value,
+                            propertyName: propName,
+                            targetObject: this,
+                            parentObject: null,
+                            parentPropName: null,
+                            grid: priv.pub
+                        }
+             */
+            // let gridElement;
+            // let changedItem = eventObj.targetObject;
+            // let storage = Storage.get(changedItem);
+            // if (
+            //     storage &&
+            //     storage.grids.has(this) &&
+            //     (gridElement = storage.grids.get(this).gridElement)
+            // ) {
+            //     gridElement.updateCell(eventObj.propertyName);
+            // }
+
+            typeof this.config.events.childItemChanged === typeof function (){} &&
+            this.config.events.childItemChanged(...arguments);
+
+            if (
+                !gridElement &&
+                sourceStorage.reactive &&
+                sourceStorage.reactive.parents instanceof Array
+            ) {
+                //parent является вложенным элементом. Поэтому событие нужно поднять выше, пока не наткнемся на gridElement
+                sourceStorage.reactive.parents.forEach(
+                    function(parentDefinition, index){
+                        let parent = parentDefinition.parent.deref();
+                        if (!parent) {
+                            sourceStorage.reactive.parents[index] = null;
+                            return;
+                        }
+                        let properties = Object.keys(parentDefinition.parentPropName);
+                        //{childItem: this,  parent, properties}
+                        EventManager.fire(parent, 'childItemChanged', {childItem: source, parent, properties})
+                    }
+                )
+                sourceStorage.reactive.parents = sourceStorage.reactive.parents.filter(definition => !!definition);
+            }
+        },
+    }
+}
 
 function FlexGridDefaultConfig()
 {
@@ -73,6 +217,133 @@ function FlexGridDefaultConfig()
         visualizer: null,
         _dataTransmitter: 'Пользовательский компонент передачи данных. Должен реализовывать интерфейс FlexGrid.DataTransmitterInterface',
         dataTransmitter: null,
+        _events: {
+            moveItem: function(acceptorItem, draggedItem, acceptorFlexGridCustomId, sourceFlexGridCustomId){
+                try {
+                    console.log(
+                        `
+                        Событие перетаскивания строки грида. На вход принимает аргументы:
+                        acceptorItem - принимающий объект данных,
+                        draggedItem - перемещаемый объект данных,
+                        acceptorFlexGridCustomId - пользовательский идентификатор принимающего грида,
+                        sourceFlexGridCustomId - пользовательский идентификатор грида-источника
+                         `
+                    )
+                } catch (e) {
+
+                }
+                if (
+                    acceptorFlexGridCustomId.gridClass !== sourceFlexGridCustomId.gridClass ||
+                    acceptorFlexGridCustomId.id !== sourceFlexGridCustomId.id
+                ) {
+                    // Из других grid'ов не принимаем строки
+                    return;
+                }
+                try {
+                    console.log('element ' + acceptorItem.id + ' accept element ' + draggedItem.id);
+                } catch (e) {
+
+                }
+
+            },
+            dataAccepted: function(flexGridCustomId){
+                try {
+                    console.log(
+                        `
+                        Событие получения всех необходимых для построения грида данных. На вход принимает аргументы:
+                        flexGridCustomId - пользовательский идентификатор грида
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            headersCompleted: function(flexGridCustomId){
+                try {
+                    console.log(
+                        `
+                        Событие отрисовки заголовков грида. На вход принимает аргументы:
+                        flexGridCustomId - пользовательский идентификатор грида
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            completed: function(flexGridCustomId){
+                try {
+                    console.log(
+                        `
+                        Событие полной загрузки грида. На вход принимает аргументы:
+                        flexGridCustomId - пользовательский идентификатор грида
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            childItemChanged: function(eventObj){
+                try {
+                    console.log(
+                        `
+                        Событие изменения дочернего элемента. На вход принимает аргументы:
+                        eventObj - параметры события
+                        this - текущий родительский элемент
+                        childElement - дочерний элемент - источник события
+                        flexGridId - грид, в котором произошло событие
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            beforeItemChange: function(eventObj){
+                try {
+                    console.log(
+                        `
+                        Событие перед изменением элемента данных. На вход принимает аргументы:
+                        eventObj - параметры события
+                        this - текущий родительский элемент
+                        childElement - дочерний элемент - источник события
+                        flexGridId - грид, в котором произошло событие
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            beforeChildItemChange: function(eventObj){
+                try {
+                    console.log(
+                        `
+                        Событие перед изменением дочернего элемента данных. На вход принимает аргументы:
+                        eventObj - параметры события
+                        this - текущий родительский элемент
+                        childElement - дочерний элемент - источник события
+                        flexGridId - грид, в котором произошло событие
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+            itemChanged: function(eventObj){
+                try {
+                    console.log(
+                        `
+                        Событие изменения элемента данных. На вход принимает аргументы:
+                        eventObj - параметры события
+                        this - текущий родительский элемент
+                        childElement - дочерний элемент - источник события
+                        flexGridId - грид, в котором произошло событие
+                         `
+                    )
+                } catch (e) {
+
+                }
+            },
+        },
+        events: null
     };
 }
 function FlexGridInterface()
@@ -200,6 +471,8 @@ function abstractFlexGrid (config){
          */
         current: undefined
     };
+
+    this.events = {};
 
     this.config = {};
 
@@ -408,7 +681,7 @@ function abstractFlexGrid (config){
         let r;
         while ((r = 'flexGrid_' + (Math.ceil(Math.random() * 1000000) + 1)) in pluginIds) {}
         this.id = r;
-        pluginIds[r] = true;// true instead of this to avoid memory leak
+        pluginIds[r] = this;
     };
 
     /**
@@ -509,6 +782,14 @@ function abstractFlexGrid (config){
         this.config = config;
     };
 
+    this.configureEvents = function(){
+        let gridEventsModel = new FlexGridEventsModel();
+        for (let eventName in gridEventsModel) {
+            //TODO Возможно, стоит события также через EventManager настроить
+            this.events[eventName] = gridEventsModel[eventName].bind(this);
+        }
+    };
+
     this.createDefaultMetaada = function(){
         return {
             'tableName': 'Flex grid',
@@ -585,11 +866,17 @@ function abstractFlexGrid (config){
             }.bind(this)
         )
         .then(function(headers){
+            // Переработаем полученные данные в заголовки
             this.createHeaders(headers);
             return this.headers.orderedLeafHeaders;
         }.bind(this))
         .then(function(orderedLeafHeaders){
+            // Отрисуем заголовки
             this.visualizer.setHeaders(orderedLeafHeaders);
+        }.bind(this))
+        .then(function(){
+            //Заголовки отрисованы - генерируем событие
+            this.events.headersCompleted(this.getId());
         }.bind(this))
         ;
 
@@ -641,7 +928,11 @@ function abstractFlexGrid (config){
             ]
         ).then(
             function(){
-                //Получены данные. Теперь понятно, сколько у нас строк и какую ширину должна иметь колонка с нумерацией
+                this.events.dataAccepted(this.getId());
+            }.bind(this)
+        ).then(
+            function(){
+                //Получены все необходимые данные. Теперь понятно, сколько у нас строк и какую ширину должна иметь колонка с нумерацией
                 this.visualizer.updateColumnsWidth(['flexGrid.numerableHeader'])
 
                 this.visualizer.showData(
@@ -651,11 +942,12 @@ function abstractFlexGrid (config){
                     }
                 );
 
+
+
                 let tableHeader = document.createElement('div');
-                let tableName = 'tableName' in this.metadata && this.metadata.tableName !== undefined && this.metadata.tableName !== null ?
+                tableHeader.innerHTML = 'tableName' in this.metadata && this.metadata.tableName !== undefined && this.metadata.tableName !== null ?
                     this.metadata.tableName:
                     this.createDefaultMetaada().tableName;
-                tableHeader.innerHTML = tableName;
                 tableHeader.style.textAlign = 'center';
                 tableHeader.style.width = '100%';
                 tableHeader.style.marginBottom = '10px';
@@ -668,7 +960,14 @@ function abstractFlexGrid (config){
                 //Данные получены. Можно сделать доступными кнопки для работы с данными
                 // this.initOptionPanels();//
             }.bind(this)
-        )
+        ).then(function(){
+            this.setReactiveData();
+        }.bind(this)
+        ).then(function(){
+            this.events.completed(this.getId());
+        }.bind(this))
+
+        ;
 
         //Данные получены. Можно создать кнопки для работы с данными
         this.initOptionPanels();//
@@ -705,143 +1004,20 @@ function abstractFlexGrid (config){
             this.configureDataItemAsReactive({
                 dataItem: dataItem
             });
-            //Конфигурация для реактивности
-            let config = {};
-            for (let origPropName in dataItem) {
-                let storagePropName = '_' + origPropName;
-                let reactiveConfig = {};
-            }
-            //
-            // let x = 0;
-            // while (x < hl) {
-            //     header = headers[x++];
-            //     //скорее всего тут просто берем и все свойства объекта данных переделываем на getters/setters
-            //     //TODO Колонка в сущности может отсутствовать явно, но иметь всё же какую-то визуализацию
-            //     // в этом случае скорее всего надо на вспомогательные поля тоже вешать свои обработчики change
-            //     if (header.id in dataItem) {
-            //         let propName = '_' + header.id;
-            //         dataItem[propName] = dataItem[header.id];
-            //         config[header.id] = {
-            //             // get: function(value){
-            //             //
-            //             //     return this[propName];
-            //             //
-            //             // },
-            //             // set: function(value){
-            //             //
-            //             //     this[propName] = value;
-            //             //     gridElement.updateCell(propName);
-            //             //
-            //             // },
-            //             get: (function(propName){
-            //                 return function(value){
-            //
-            //                     return this[propName];
-            //
-            //                 };
-            //             })(propName),
-            //             set: (function(propName, gridElement, hId){
-            //                 return function(value){
-            //
-            //                     this[propName] = value;
-            //                     gridElement.updateCell(hId);
-            //
-            //                 };
-            //             })(propName, gridElement, header.id),
-            //             enumerable: true,
-            //             configurable: false,
-            //         }
-            //
-            //     }
-            // }
 
-            Object.defineProperties(dataItem, config);
         }
 
         window.gridData = gridElements;
 
-        // gridElements[0].setData('number', '123, 456')
         console.log('reactiveData time ', ((new Date()).getTime() - t));
 
     };
-    // this.setReactiveData = function(){
-    //     let t = (new Date()).getTime();
-    //     let gridElements = this.data.flat;
-    //     let grid = this;
-    //     let headers = this.headers.orderedLeafHeaders;
-    //     headers = headers.filter(
-    //         function(header){ return !header.system}
-    //     );
-    //     let i = 0, l = gridElements.length, hl = headers.length;
-    //     while (i < l) {
-    //         let gridElement = gridElements[i++];
-    //         let dataItem = gridElement.getData();
-    //         let config = {};
-    //         let x = 0;
-    //         while (x < hl) {
-    //             header = headers[x++];
-    //             //скорее всего тут просто берем и все свойства объекта данных переделываем на getters/setters
-    //             //TODO Колонка в сущности может отсутствовать явно, но иметь всё же какую-то визуализацию
-    //             // в этом случае скорее всего надо на вспомогательные поля тоже вешать свои обработчики change
-    //             if (header.id in dataItem) {
-    //                 let propName = '_' + header.id;
-    //                 dataItem[propName] = dataItem[header.id];
-    //                 config[header.id] = {
-    //                     // get: function(value){
-    //                     //
-    //                     //     return this[propName];
-    //                     //
-    //                     // },
-    //                     // set: function(value){
-    //                     //
-    //                     //     this[propName] = value;
-    //                     //     gridElement.updateCell(propName);
-    //                     //
-    //                     // },
-    //                     get: (function(propName){
-    //                         return function(value){
-    //
-    //                             return this[propName];
-    //
-    //                         };
-    //                     })(propName),
-    //                     set: (function(propName, gridElement, hId){
-    //                         return function(value){
-    //
-    //                             this[propName] = value;
-    //                             gridElement.updateCell(hId);
-    //
-    //                         };
-    //                     })(propName, gridElement, header.id),
-    //                     enumerable: true,
-    //                     configurable: false,
-    //                 }
-    //
-    //             }
-    //         }
-    //         Object.defineProperties(dataItem, config);
-    //     }
-    //
-    //     window.gridData = gridElements;
-    //
-    //     gridElements[0].setData('number', '123, 456')
-    //     console.log('reactiveData time ', ((new Date()).getTime() - t));
-    //
-    // };
+
 
     this.connectDataItemWithGridElement = function (entityData, gridElement) {
-        // !entityData._fg && (entityData._fg = {});
         //В текущем гриде элемент данных представлен элементом GridElement с указанным идентификатором
         let storage = Storage.get(entityData);
         storage.grids.get(this).gridElement = gridElement;
-        // o._gridElement = new WeakRef(gridElement);
-        // o.grid = this;
-        // o._grid = new WeakRef(this);
-        //
-        //
-        // console.log(o);
-        // console.log(o._gridElement);
-        // // this.gridElementsDict.set [gridElement.getId()] = gridElement;
     };
 
     this.initOptionPanels = function(){
@@ -951,16 +1127,9 @@ function abstractFlexGrid (config){
                 popupWindow.appendChild(windowSpace);
 
                 document.body.appendChild(popupWindow);
-
-
             }
         );
-
-
-
     };
-
-    //this.setReactive
 
     this.setHeaderVisualizer = function(header){
         if (typeof header.type === typeof 'a') {
@@ -977,7 +1146,9 @@ function abstractFlexGrid (config){
         }
         else if (typeof header.type === typeof function(){}) {
             //Метод, решающий по факту, какой визуализатор следует использовать
-            header.getVisualizer = header.type.bind(this.pub);
+            header.getVisualizer = function(itemData){
+                return header.type.bind(this.pub)(header.id, itemData, header, {...this.config});
+            }.bind(this);
         }
         else {
             throw 'Incorrect data visualization component';
@@ -1314,30 +1485,13 @@ function abstractFlexGrid (config){
             storage.grids.set(this, {})
         }
 
-        // if (!('_fg' in object)) {
-        //     let storage = {};
-        //     Object.defineProperties(
-        //         object,
-        //         {
-        //             _fg: {
-        //                 get: () => storage,
-        //                 enumerable: false,
-        //                 configurable: false
-        //             }
-        //         }
-        //     )
-        // }
-        // if (!('grids' in object._fg)) {
-        //     object._fg.grids = new WeakMap();
-        // }
-        // if (!object._fg.grids.has(this)) {
-        //     object._fg.grids.set(this, {})
-        // }
     };
 
     //Методы установлены, начинаем конфигурирование
 
     this.setConfig(config);
+
+    this.configureEvents();
 };
 
 
@@ -1384,28 +1538,6 @@ function TreeGrid(config){
                 this.data.current.hide(collapsedItems);
 
             }
-            // } else {
-            //     let stack = [];
-            //     gridElement.children.map(function(childGridElement){
-            //         stack.push(childGridElement);
-            //     });
-            //
-            //     let collapsedIndexes = [];
-            //     let i = 0;
-            //     let childGridElement = undefined;
-            //     while (childGridElement = stack[i]) {
-            //         i++;
-            //         childGridElement/**gridElement*/.children.map(function(childGridElement){
-            //             if(childGridElement.expanded(priv.data.current.id)) {
-            //
-            //                 stack.push(childGridElement);
-            //             }
-            //         });
-            //         collapsedIndexes.push(childGridElement[this.data.current.id].index);
-            //     }
-            //     this.data.current.remove(collapsedIndexes);
-            //
-            // }
 
             this.visualizer.updatePreview();
         }.bind(this));
@@ -1449,10 +1581,10 @@ function TreeGrid(config){
         for (let i = 0; i < c; i++) {
             /**@type {Object} */
             let entityData = data[i];
+
             if (entityData[epf]) {
-                let entityClass = entityData[ecf];
-                let entityId = entityData[eif];
-                let gridElement = gridElementsDict[entityClass][entityId];
+                let storage = Storage.get(entityData);
+                let gridElement = storage.grids.get(this).gridElement;
                 /**
                  * @type {Object}
                  * Указатель на родителя - объект, содержащий в себе класс и идентификатор родительской сущности.
@@ -1462,12 +1594,14 @@ function TreeGrid(config){
                 let parentEntityClass = parentEntityData[ecf];
                 let parentEntityId = parentEntityData[eif];
                 let parentEntity = objectsDict[parentEntityClass][parentEntityId];
-                let parentGridElement = gridElementsDict[parentEntityClass][parentEntityId];
+                let parentStorage = Storage.get(parentEntity);
+                let parentGridElement = parentStorage.grids.get(this).gridElement;
                 for (let key in parentEntityData) {
                     /**
                      * Если внутри object.parent указаны какие-то дополнительные данные помимо entityId и entityClass, доавляем
                      * их в родителя
                      */
+                    //TODO А если сущность участвует в нескольких точках, стоит ли переносить в нее дополнительные ключи. которые уже в ней самой имеют какое-то значение
                     parentEntity[key] = parentEntityData[key];
                 }
                 /**
@@ -1491,6 +1625,14 @@ function TreeGrid(config){
          */
         this.data.flat = DataSetManager.createFlatDataSet(priv);
         this.data.flat.initData(gridElements);
+
+    };
+
+
+    priv.configureDataItemAsReactive = function(dataItem, gridElement){
+        return;
+        throw 'Method \'configureDataItemAsReactive\' not implemented for TreeGrid';
+
 
     };
 
@@ -1538,13 +1680,8 @@ function FlatGrid(config) {
         this.data.flat.initData(gridElements);
 
     };
-    //v.4 Считаем, что любой объект зарегистрирован только в одном гриде.
-    // Хотя вполне может быть ситуация, что по факту единый объект зарегистрирован в нескольких разных гридах и имеет даже разное представление в них
-    //(например, в одном гриде представлены собственные поля объекта, а в другом - суммы дочерних объектов)
+
     priv.configureDataItemAsReactive = function(params){
-        // return;
-
-
         let dataItem = params.dataItem;
 
         priv.createGridStorageIntoObject(dataItem);
@@ -1562,11 +1699,6 @@ function FlatGrid(config) {
         !('original' in storage) && (storage.original = {});
         !('parents' in storage.reactive) && (storage.reactive.parents = []);
 
-
-
-
-
-        // !('values' in dataItem._fg) && (dataItem._fg.values = {})
         let reactiveConfig = {};
         //Берем перечислимые свойства объекта
         for (let propName in dataItem) {
@@ -1628,7 +1760,6 @@ function FlatGrid(config) {
                         !properties.length && (storage.reactive.parents[i] = null);
 
                     }
-                    // let tmp = new Map();
                     /*
 					При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
 					Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
@@ -1668,63 +1799,7 @@ function FlatGrid(config) {
                     // Возможно, надо создавать в этом случае виртуальные сущности и прогонять их через валидации - в случае успеха уже менять реальные сущности
                     // Для этого делать обертку над сущностью, в эту обертку в ее собственные поля ставить значения, блокировать их изменение и отдавать на валидацию.
 
-                    // eventRes = EventManager.fire(this, 'beforeItemChange', {...eventParams, parents});
-                    // (eventRes instanceof Array) && (eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false));
-                    //
-                    // if (eventRes === false) {
-                    //     return;
-                    // }
 
-                    // if (this._fg.reactive.parents) {
-                    //     while (i < this._fg.reactive.parents.length) {
-                    //         let parentItem = this._fg.reactive.parents[i];
-                    //         let parent = parentItem.parent.deref();
-                    //         if (!parent) {
-                    //             i++;
-                    //             /*
-					// 			Ссылок на этого родителя уже не осталось
-					// 			 */
-                    //             continue;
-                    //         }
-                    //
-                    //         let actualPropNames = [];
-                    //         for (let parentPropName in parentItem.parentPropName) {
-                    //             (parentItem.parent[parentPropName] === this) &&
-                    //             actualPropNames.push(parentPropName)//В этом родителе в указанном свойстве находится пока еще текущий объект
-                    //         }
-                    //         if (actualPropNames.length) {
-                    //             /*
-					// 			Текущий изменяемый объект до сих пор числится в указанном родителе
-					// 			 */
-                    //             let eventParams = {
-                    //                 origValue: origValue,
-                    //                 newValue: value,
-                    //                 propertyName: propName,
-                    //                 targetObject: this,
-                    //                 parentObject: parentItem.parent,
-                    //                 parentPropName: actualPropNames,
-                    //                 grid: priv.pub,
-                    //             };
-                    //
-                    //             tmp[parent] = {
-                    //                 eventParams: eventParams,
-                    //             }
-                    //             /*
-					// 			 На этом этапе удобно проводить валидацию.
-					// 			 Значение может быть как примитивным, так и объектом или набором объектов.
-                    //
-					// 			 */
-                    //             if (
-                    //
-                    //                 false === priv.events.beforeItemChange(eventParams)
-                    //             ) {
-                    //                 return;
-                    //             }
-                    //         }
-                    //
-                    //         i++;
-                    //     }
-                    // }
                     //Проверки выполнены. Теперь меняем значение свойства
 
                     if (value && typeof value === typeof {}) {
@@ -1756,53 +1831,6 @@ function FlatGrid(config) {
 
                     storage.reactive.parents = storage.reactive.parents.filter(parent => !!parent);
 
-
-                    //Свойство установлено. Вызываем реакцию на изменение значения
-                    // i = 0;
-                    // eventParams = {
-                    //     origValue: origValue,
-                    //     newValue: value,
-                    //     propertyName: propName,
-                    //     targetObject: this,
-                    //     parentObject: null,
-                    //     parentPropName: null,
-                    //     grid: priv.pub
-                    // };
-                    //
-                    // priv.events.itemChanged(eventParams);
-                    //
-                    // if (this._fg.reactive.parents) {
-                    //     while (i < this._fg.reactive.parents.length) {
-                    //         let parentItem = this._fg.reactive.parents[i];
-                    //         let parent = parentItem.parent.deref();
-                    //         if (!parent) {
-                    //             i++;
-                    //             /*
-					// 			Ссылок на этого родителя уже не осталось
-					// 			 */
-                    //             continue;
-                    //         }
-                    //         let tmp1 = tmp.get(parent);
-                    //         if (!tmp1) {
-                    //             i++;
-                    //             continue;
-                    //         }
-                    //
-                    //         priv.events.childItemChanged(tmp1.eventParams);
-                    //
-                    //         i++;
-                    //     }
-                    // }
-                    //
-                    //
-                    //
-                    // //Проверим, не осталось ли неактуальных ссылок на родительские компоненты
-                    // let storage = this._fg;
-                    // let t = setTimeout(function(){
-                    //     clearTimeout(t);
-                    //     irrelevantIndexes.reverse().forEach(index => delete storage.parents[index]);
-                    //
-                    // }.bind(this), 0);
                 };
             })(propName);
 
@@ -1814,36 +1842,8 @@ function FlatGrid(config) {
             break;
         }
 
-        // for (let origPropName in tmp) {
-        //     let v = tmp[origPropName];
-        //     dataItem[origPropName] = tmp[origPropName];
-        //     if (v) {
-        //         if (typeof v === typeof {}) {
-        //             this.configureDataItemAsReactive({dataItem: v, parent: dataItem});
-        //         }
-        //     }
-        // }
-
         if (params.parent) {
             EventManager.subscribe(params.parent, 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
-
-            // !('parents' in storage) && (storage.parents = {})
-            // //Как-то сложить все поля, по которым есть связь родителя с сущностью
-            // //Проверить, осталась ли еще связь по этим полям между родителем и сущностью
-            // //Если связи не осталось, надо по идее отписаться
-            // EventManager.subscribe(
-            //     dataItem,
-            //     'itemChanged',
-            //     function(eventObj){
-            //
-            //         eventObj = {...eventObj};
-            //         eventObj.parent = params.parent;
-            //         eventObj.parentPropName = params.parentPropName;
-            //         priv.config.events.childItemChanged(eventObj);
-            //     },
-            //
-            //     {grid: this.pub}
-            // );
 
             let reactive = storage.reactive;
 
@@ -1859,521 +1859,7 @@ function FlatGrid(config) {
         }
 
     };
-    // //v.3 Считаем, что любой объект зарегистрирован только в одном гриде.
-    // // Хотя вполне может быть ситуация, что по факту единый объект зарегистрирован в нескольких разных гридах и имеет даже разное представление в них
-    // //(например, в одном гриде представлены собственные поля объекта, а в другом - суммы дочерних объектов)
-    // priv.configureDataItemAsReactive = function(params){
-    //     // return;
-    //
-    //
-    //     let dataItem = params.dataItem;
-    //
-    //
-    //     priv.createGridStorageIntoObject(dataItem);
-    //
-    //
-    //     if (!('_reactive' in dataItem._fg)) {
-    //         dataItem._fg.reactive = {
-    //             parents: [],
-    //         };
-    //         !('values' in dataItem._fg) && (dataItem._fg.values = {})
-    //         let reactiveConfig = {};
-    //         //Берем перечислимые свойства объекта
-    //         for (let propName in dataItem) {
-    //             let v = dataItem[propName];
-    //             reactiveConfig[propName] = {};
-    //             //Запоминаем оригинальное значение
-    //             dataItem._fg.values[propName] = v;
-    //             //Если значение является объектом или набором объектов, делаем их также реактивными
-    //             if (v && typeof {} === typeof v) {
-    //                 v instanceof Array ?
-    //                     v.forEach(function(itemArray){
-    //                         return itemArray && typeof {} === typeof itemArray ?
-    //                             this.configureDataItemAsReactive({dataItem: itemArray, parent: dataItem, parentPropName: propName}):
-    //                             itemArray;
-    //                     }.bind(this)) :
-    //                     this.configureDataItemAsReactive({dataItem: v, parent: dataItem, parentPropName: propName});
-    //             }
-    //
-    //             reactiveConfig[propName].get = (function(propName){
-    //                 return function(){return this._fg.values[propName];}
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].set = (function(propName){
-    //                 return function(value){
-    //                     let origValue = this._fg.values[propName];
-    //                     let i = 0;
-    //                     let tmp = new Map();
-    //                     /*
-    //                     При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
-    //                     Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
-    //                     провести также проверки в рамках этих объектов
-    //                      */
-    //
-    //                     let eventParams = {
-    //                         origValue: origValue,
-    //                         newValue: value,
-    //                         propertyName: propName,
-    //                         targetObject: this,
-    //                         parentObject: null,
-    //                         parentPropName: null,
-    //                         grid: priv.pub,
-    //                     };
-    //                     if (false === priv.events.beforeItemChange(eventParams)) {
-    //                         return;
-    //                     }
-    //
-    //                     if (this._fg.reactive.parents) {
-    //                         while (i < this._fg.reactive.parents.length) {
-    //                             let parentItem = this._fg.reactive.parents[i];
-    //                             let parent = parentItem.parent.deref();
-    //                             if (!parent) {
-    //                                 i++;
-    //                                 /*
-    //                                 Ссылок на этого родителя уже не осталось
-    //                                  */
-    //                                 continue;
-    //                             }
-    //
-    //                             let actualPropNames = [];
-    //                             for (let parentPropName in parentItem.parentPropName) {
-    //                                 (parentItem.parent[parentPropName] === this) &&
-    //                                     actualPropNames.push(parentPropName)//В этом родителе в указанном свойстве находится пока еще текущий объект
-    //                             }
-    //                             if (actualPropNames.length) {
-    //                                 /*
-	// 								Текущий изменяемый объект до сих пор числится в указанном родителе
-	// 								 */
-    //                                 let eventParams = {
-    //                                     origValue: origValue,
-    //                                     newValue: value,
-    //                                     propertyName: propName,
-    //                                     targetObject: this,
-    //                                     parentObject: parentItem.parent,
-    //                                     parentPropName: actualPropNames,
-    //                                     grid: priv.pub,
-    //                                 };
-    //
-    //                                 tmp[parent] = {
-    //                                     eventParams: eventParams,
-    //                                 }
-    //                                 /*
-	// 								 На этом этапе удобно проводить валидацию.
-	// 								 Значение может быть как примитивным, так и объектом или набором объектов.
-    //
-	// 								 */
-    //                                 if (
-    //
-    //                                     false === priv.events.beforeItemChange(eventParams)
-    //                                 ) {
-    //                                     return;
-    //                                 }
-    //                             }
-    //
-    //                             i++;
-    //                         }
-    //                     }
-    //                     //Проверки выполнены. Теперь меняем значение свойства
-    //
-    //                     if (value && typeof value === typeof {}) {
-    //                         value = priv.configureDataItemAsReactive(
-    //                             {
-    //                                 dataItem: value,
-    //                                 parent: this,
-    //                                 parentPropName: propName,
-    //                             }
-    //                         );
-    //                     }
-    //
-    //                     this._fg.values[propName] = value;
-    //                     //Свойство установлено. Вызываем реакцию на изменение значения
-    //                     i = 0;
-    //                     eventParams = {
-    //                         origValue: origValue,
-    //                         newValue: value,
-    //                         propertyName: propName,
-    //                         targetObject: this,
-    //                         parentObject: null,
-    //                         parentPropName: null,
-    //                         grid: priv.pub
-    //                     };
-    //
-    //                     priv.events.itemChanged(eventParams);
-    //
-    //                     if (this._fg.reactive.parents) {
-    //                         while (i < this._fg.reactive.parents.length) {
-    //                             let parentItem = this._fg.reactive.parents[i];
-    //                             let parent = parentItem.parent.deref();
-    //                             if (!parent) {
-    //                                 i++;
-    //                                 /*
-    //                                 Ссылок на этого родителя уже не осталось
-    //                                  */
-    //                                 continue;
-    //                             }
-    //                             let tmp1 = tmp.get(parent);
-    //                             if (!tmp1) {
-    //                                 i++;
-    //                                 continue;
-    //                             }
-    //
-    //                             priv.events.childItemChanged(tmp1.eventParams);
-    //
-    //                             i++;
-    //                         }
-    //                     }
-    //
-    //
-    //
-    //                     //Проверим, не осталось ли неактуальных ссылок на родительские компоненты
-    //                     let storage = this._fg;
-    //                     let t = setTimeout(function(){
-    //                         clearTimeout(t);
-    //                         irrelevantIndexes.reverse().forEach(index => delete storage.parents[index]);
-    //
-    //                     }.bind(this), 0);
-    //                 };
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].enumerable = true;
-    //         }
-    //
-    //         Object.defineProperties(dataItem, reactiveConfig);
-    //
-    //         // for (let origPropName in tmp) {
-    //         //     let v = tmp[origPropName];
-    //         //     dataItem[origPropName] = tmp[origPropName];
-    //         //     if (v) {
-    //         //         if (typeof v === typeof {}) {
-    //         //             this.configureDataItemAsReactive({dataItem: v, parent: dataItem});
-    //         //         }
-    //         //     }
-    //         // }
-    //
-    //
-    //
-    //
-    //
-    //     }
-    //
-    //     if (params.parent) {
-    //         let reactive = dataItem._fg.reactive;
-    //
-    //         let parentItem = reactive.parents.find(parentItem => parentItem.parent === params.parent)
-    //         if (!parentItem) {
-    //             parentItem = {
-    //                 parent: new WeakRef(params.parent),
-    //                 parentPropName: {},
-    //             };
-    //             reactive.parents.push(parentItem);
-    //         }
-    //         parentItem.parentPropName[params.parentPropName] = true;
-    //     }
-    //
-    // };
-    // //v.2
-    // priv.configureDataItemAsReactive = function(params){
-    //     return;
-    //
-    //
-    //     let dataItem = params.dataItem;
-    //
-    //
-    //     priv.createGridStorageIntoObject(dataItem);
-    //
-    //
-    //     if (!('_reactive' in dataItem._fg)) {
-    //         dataItem._fg.reactive = {};
-    //         !('values' in dataItem._fg) && (dataItem._fg.values = {})
-    //         let reactiveConfig = {};
-    //         //Берем перечислимые свойства объекта
-    //         for (let propName in dataItem) {
-    //             let v = dataItem[propName];
-    //             reactiveConfig[propName] = {};
-    //             //Запоминаем оригинальное значение
-    //             dataItem._fg.values[propName] = v;
-    //             //Если значение является объектом или набором объектов, делаем их также реактивными
-    //             if (v && typeof {} === typeof v) {
-    //                 v instanceof Array ?
-    //                     v.forEach(function(itemArray){
-    //                         return itemArray && typeof {} === typeof itemArray ?
-    //                             this.configureDataItemAsReactive({dataItem: itemArray, parent: dataItem, parentPropName: propName}):
-    //                             itemArray;
-    //                     }.bind(this)) :
-    //                     this.configureDataItemAsReactive({dataItem: v, parent: dataItem, parentPropName: propName});
-    //             }
-    //
-    //             reactiveConfig[propName].get = (function(propName){
-    //                 return function(){return this._fg.values[propName];}
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].set = (function(propName){
-    //                 return function(value){
-    //                     let origValue = this._fg[propName];
-    //                     let i = 0;
-    //                     /*
-    //                     При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
-    //                     Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
-    //                     провести также проверки в рамках этих объектов
-    //                      */
-    //
-    //                     let eventParams = {
-    //                         origValue: origValue,
-    //                         newValue: value,
-    //                         propertyName: propName,
-    //                         targetObject: this,
-    //                         parentObject: null,
-    //                         parentPropName: null,
-    //                     };
-    //                     if (false === priv.events.beforeItemChange(eventParams)) {
-    //                         return;
-    //                     }
-    //
-    //                     if (this._fg.parents) {
-    //                         while (i < this._fg.parents.length) {
-    //                             let parentItem = this._fg.parents[i];
-    //                             if (
-    //                                 !parentItem.parent || //Ссылок на этого родителя уже не осталось
-    //                                 parentItem.parent[parentItem.parentPropName] !== this //В этом родителе в указанном свойстве находится уже другой объект
-    //                             ) {
-    //                                 i++
-    //                                 continue;
-    //                             }
-    //
-    //                             /*
-    //                             Текущий изменяемый объект до сих пор числится в указанном родителе
-    //                              */
-    //                             let eventParams = {
-    //                                 origValue: origValue,
-    //                                 newValue: value,
-    //                                 propertyName: propName,
-    //                                 targetObject: this,
-    //                                 parentObject: parentItem.parent,
-    //                                 parentPropName: parentItem.parentPropName.keys,
-    //                             };
-    //                             /*
-	// 							 На этом этапе удобно проводить валидацию.
-	// 							 Значение может быть как примитивным, так и объектом или набором объектов.
-    //
-	// 							 */
-    //                             if (
-    //
-    //                                 false === priv.events.beforeItemChange(eventParams)
-    //                             ) {
-    //                                 return;
-    //                             }
-    //                             i++;
-    //                         }
-    //                     }
-    //                     //Проверки выполнены. Теперь меняем значение свойства
-    //
-    //                     if (value && typeof value === typeof {}) {
-    //                         value = priv.configureDataItemAsReactive(
-    //                             {
-    //                                 dataItem: value,
-    //                                 parent: this,
-    //                                 parentPropName: propName,
-    //                             }
-    //                         );
-    //                     }
-    //
-    //                     this._fg.values[propName] = value;
-    //                     //Свойство установлено. Вызываем реакцию на изменение значения
-    //                     i = 0;
-    //                     eventParams = {
-    //                         origValue: origValue,
-    //                         newValue: value,
-    //                         propertyName: propName,
-    //                         targetObject: this,
-    //                         parentObject: null,
-    //                         parentPropName: null,
-    //                     };
-    //
-    //                     priv.events.itemChanged(eventParams);
-    //
-    //                     if (this._fg.parents) {
-    //                         while (i < this._fg.parents.length) {
-    //                             let parentItem = this._fg.parents[i];
-    //                             if (
-    //                                 !parentItem.parent || //Ссылок на этого родителя уже не осталось
-    //                                 parentItem.parent[parentItem.parentPropName] !== this //В этом родителе в указанном свойстве находится уже другой объект
-    //                             ) {
-    //                                 i++
-    //                                 continue;
-    //                             }
-    //
-    //                             /*
-    //                             Текущий изменяемый объект до сих пор числится в указанном родителе
-    //                              */
-    //                             let eventParams = {
-    //                                 origValue: origValue,
-    //                                 newValue: value,
-    //                                 propertyName: propName,
-    //                                 targetObject: this,
-    //                                 parentObject: parentItem.parent,
-    //                                 parentPropName: parentItem.parentPropName.keys,
-    //                             };
-    //                             priv.events.childItemChanged(eventParams)
-    //                             i++;
-    //                         }
-    //                     }
-    //
-    //
-    //
-    //                     //Проверим, не осталось ли неактуальных ссылок на родительские компоненты
-    //                     let storage = this._fg;
-    //                     let t = setTimeout(function(){
-    //                         clearTimeout(t);
-    //                         irrelevantIndexes.reverse().forEach(index => delete storage.parents[index]);
-    //
-    //                     }.bind(this), 0);
-    //                 };
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].enumerable = true;
-    //         }
-    //
-    //         Object.defineProperties(dataItem, reactiveConfig);
-    //
-    //         // for (let origPropName in tmp) {
-    //         //     let v = tmp[origPropName];
-    //         //     dataItem[origPropName] = tmp[origPropName];
-    //         //     if (v) {
-    //         //         if (typeof v === typeof {}) {
-    //         //             this.configureDataItemAsReactive({dataItem: v, parent: dataItem});
-    //         //         }
-    //         //     }
-    //         // }
-    //
-    //
-    //
-    //
-    //
-    //     }
-    //
-    //     if (!(this.id in dataItem._fg.reactive))
-    //     {
-    //         /*
-    //         Текущий грид не числится среди подписчиков на события элемента
-    //          */
-    //         dataItem._fg.reactive[this.id] = {
-    //             privGrid: new WeakRef(this),
-    //             parents: [],
-    //         }
-    //     }
-    //
-    //     if (params.parent) {
-    //         let reactive = dataItem._fg.reactive;
-    //
-    //         let parentItem = reactive.parents.find(parentItem => parentItem.parent === params.parent)
-    //         if (!parentItem) {
-    //             parentItem = {
-    //                 parent: new WeakRef(params.parent),
-    //                 parentPropName: {},
-    //             };
-    //             reactive.parents.push(parentItem);
-    //         }
-    //         parentItem.parentPropName[params.parentPropName] = true;
-    //     }
-    //
-    // };
-    // v.1
-    // priv.configureDataItemAsReactive = function(params){
-    //     // return;
-    //
-    //
-    //     let dataItem = params.dataItem;
-    //
-    //
-    //     priv.createGridStorageIntoObject(dataItem);
-    //
-    //
-    //     if (!dataItem._fg.reactive) {
-    //         let gridConfig = this.config;
-    //         let parentObject = params.parent || null;
-    //         let
-    //             reactiveConfig = {},
-    //             objectedValues = {};
-    //         //Берем перечислимые свойства объекта
-    //         for (let propName in dataItem) {
-    //             let v = dataItem[propName];
-    //             reactiveConfig[propName] = {};
-    //             //Запоминаем оригинальное значение
-    //             dataItem._fg[propName] = v;
-    //             //Если значение является объектом или набором объектов, делаем их также реактивными
-    //             if (v && typeof {} === typeof v) {
-    //                 v instanceof Array ?
-    //                     v.forEach(function(itemArray){
-    //                         return itemArray && typeof {} === typeof itemArray ?
-    //                             this.configureDataItemAsReactive({dataItem: itemArray, parent: dataItem}):
-    //                             itemArray;
-    //                     }.bind(this)) :
-    //                     this.configureDataItemAsReactive({dataItem: v, parent: dataItem});
-    //             }
-    //             //Формируем новый ключ
-    //             //TODO Проверить, что свойство-объект на момент изменения до сих пор принадлежит своему родительскому объекту
-    //
-    //             // let actualPropName = '_' + origPropName;
-    //
-    //             reactiveConfig[propName].get = (function(propName){
-    //                 return function(){return this._fg[propName];}
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].set = (function(propName){
-    //                 return function(value){
-    //                     let origValue = this._fg[propName];
-    //                     let eventParams = {
-    //                         origValue: origValue,
-    //                         newValue: value,
-    //                         propertyName: propName,
-    //                         targetObject: this,
-    //                         gridId: priv.getId(),
-    //                         parentObject: parentObject
-    //                     };
-    //
-    //                     if (false === priv.events.itemChange(eventParams)) {
-    //                         return;
-    //                     }
-    //
-    //                     if (value && typeof value === typeof {}) {
-    //                         value = priv.configureDataItemAsReactive(
-    //                             {
-    //                                 dataItem: value,
-    //                                 parent: this
-    //                             }
-    //                         );
-    //                     }
-    //
-    //                     this._fg[propName] = value;
-    //
-    //
-    //                 };
-    //             })(propName);
-    //
-    //             reactiveConfig[propName].enumerable = true;
-    //         }
-    //
-    //         Object.defineProperties(dataItem, reactiveConfig);
-    //
-    //         for (let origPropName in tmp) {
-    //             let v = tmp[origPropName];
-    //             dataItem[origPropName] = tmp[origPropName];
-    //             if (v) {
-    //                 if (typeof v === typeof {}) {
-    //                     this.configureDataItemAsReactive({dataItem: v, parent: dataItem});
-    //                 }
-    //             }
-    //         }
-    //
-    //         dataItem._fg.reactive = true;
-    //
-    //
-    //     }
-    //     else {
-    //
-    //     }
-    //
-    // };
+
 
     this.build = function(){priv.init();};
 

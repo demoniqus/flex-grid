@@ -48,10 +48,6 @@ function FlexGridEventsModel()
             typeof this.config.events.completed === typeof function (){} &&
             this.config.events.completed(...arguments);
         },
-        // childItemChanged: function(eventObj){
-        //     typeof this.config.events.childItemChanged === typeof function (){} &&
-        //     this.config.events.childItemChanged(...arguments);
-        // },
         beforeItemChange: function(eventObj){
             let storage = Storage.get(eventObj.sourceObject);
             eventObj.isGridElement = storage && storage.grids && storage.grids.has(this) && !!storage.grids.get(this).gridElement;
@@ -66,33 +62,6 @@ function FlexGridEventsModel()
         },
         itemChanged: function(eventObj){
             console.log(eventObj)
-            // if (eventObj.dataItem._fg[this.id])
-            // {
-            //     //Объект зарегистрирован в текущем гриде
-            //
-            // }
-
-            /*
-            {
-                            origValue: origValue,
-                            newValue: value,
-                            propertyName: propName,
-                            targetObject: this,
-                            parentObject: null,
-                            parentPropName: null,
-                            grid: priv.pub
-                        }
-             */
-            // let gridElement;
-            // let changedItem = eventObj.targetObject;
-            // let storage = Storage.get(changedItem);
-            // if (
-            //     storage &&
-            //     storage.grids.has(this) &&
-            //     (gridElement = storage.grids.get(this).gridElement)
-            // ) {
-            //     gridElement.updateCell(eventObj.propertyName);
-            // }
 
             typeof this.config.events.itemChanged === typeof function (){} &&
             this.config.events.itemChanged(...arguments);
@@ -116,33 +85,6 @@ function FlexGridEventsModel()
                     properties.forEach(propName => gridElement.isVisualized() &&  gridElement.updateCell(propName));
                 }
             }
-            // if (eventObj.dataItem._fg[this.id])
-            // {
-            //     //Объект зарегистрирован в текущем гриде
-            //
-            // }
-
-            /*
-            {
-                            origValue: origValue,
-                            newValue: value,
-                            propertyName: propName,
-                            targetObject: this,
-                            parentObject: null,
-                            parentPropName: null,
-                            grid: priv.pub
-                        }
-             */
-            // let gridElement;
-            // let changedItem = eventObj.targetObject;
-            // let storage = Storage.get(changedItem);
-            // if (
-            //     storage &&
-            //     storage.grids.has(this) &&
-            //     (gridElement = storage.grids.get(this).gridElement)
-            // ) {
-            //     gridElement.updateCell(eventObj.propertyName);
-            // }
 
             typeof this.config.events.childItemChanged === typeof function (){} &&
             this.config.events.childItemChanged(...arguments);

@@ -152,6 +152,11 @@ export function DataSetInterface()
 
 function pubDataSet(priv){
     this.initData = function(/**@type {[GridElement]}*/data){
+        /*
+        Обязательно клонируем массив, т.к. внутри dataSet'а в нем могут меняться данные и это не должно затрагивать другие наборы строк.
+        При этом сами элементы должны реагировать на изменения
+         */
+        data = [...data];
         data.forEach(priv.convertGridElementToDataSetElement);
         priv.setFullData(data);
         priv.setVisibleData(data);

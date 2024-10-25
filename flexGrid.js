@@ -30,6 +30,7 @@ let ClassModel = Object.defineProperties(
 function FlexGridEventsModel()
 {
     return {
+
         moveItem: function(acceptorItem, draggedItem, acceptorFlexGridCustomId, sourceFlexGridCustomId){
 
             typeof this.config.events.moveItem === typeof function (){} &&
@@ -45,6 +46,7 @@ function FlexGridEventsModel()
             this.config.events.headersCompleted(...arguments);
         },
         completed: function(flexGridCustomId){
+            console.log('grid loading completed')
             typeof this.config.events.completed === typeof function (){} &&
             this.config.events.completed(...arguments);
         },
@@ -80,7 +82,7 @@ function FlexGridEventsModel()
             ) {
                 gridElement = sourceStorage.grids.get(this).gridElement;
                 if (gridElement) {
-                    let properties = sourceEventParams.reverseParentProperties || [];
+                    let properties = sourceEventParams.properties || [];
                     //TODO Выполнить асинхронно?
                     //TODO Выполнить проверку, в каком режиме находится строка и как правильно обновлять ее визуальное представление (и надо ли вообще, чтобы не возникло рекурсии)
                     properties.forEach(propName => gridElement.isVisualized() &&  gridElement.updateCell(propName));
@@ -103,17 +105,11 @@ function FlexGridEventsModel()
                             sourceStorage.reactive.parents[index] = null;
                             return;
                         }
-                        let propertiesDict = parentDefinition.getProperties();
-                        let properties = [];
-                        for (let propName in propertiesDict) {
-                            if (parentDefinition.propertyIsReverse(propName)) {
-                                properties.push(propName);
-                            }
-                        }
+                        let properties = Object.keys(parentDefinition.getReverseProperties());
 
                         // let properties = Object.keys(parentDefinition.parentPropName);
                         //{childItem: this,  parent, properties}
-                        EventManager.fire(parent, 'childItemChanged', {childItem: source, parent, reverseParentProperties: properties})
+                        EventManager.fire(parent, 'childItemChanged', {childItem: source, parent, properties/**TODO Нужен ли тут originalEvent, чтобы на уровне gridElement можно было точно понять, какой вложенный объект изменился? */})
                     }
                 )
                 sourceStorage.reactive.parents = sourceStorage.reactive.parents.filter(definition => !!definition);
@@ -925,8 +921,9 @@ function abstractFlexGrid (config){
                 //Данные получены. Можно сделать доступными кнопки для работы с данными
                 // this.initOptionPanels();//
             }.bind(this)
-        ).then(function(){
-            this.setReactiveData();
+        ).then(async function(){
+            //TODO Выполнять асинхронно
+            await this.setReactiveData();
         }.bind(this)
         ).then(function(){
             this.events.completed(this.getId());
@@ -946,6 +943,96 @@ function abstractFlexGrid (config){
 
     };
 
+    this.directParentFields = {};
+    this.globalStorage = Storage.create(abstractFlexGrid);
+    !('callbacks' in this.globalStorage) && (this.globalStorage.callbacks = {ds: {}, rs: {}, g: {}});
+
+    this.setReactiveData_new = async function(){
+        let priv = this;
+        //TODO Разделить метод для Flat и Tree - entityParentField применим только для Tree - при этом Flat также может реагировать на entityParentField, установленный другими гридами
+        let t = (new Date()).getTime();
+        let gridElements = this.data.flat.getData();
+        let grid = this;
+        let headers = this.headers.orderedLeafHeaders;
+        headers = headers.filter(
+            function(header){ return !header.system}
+        );
+        let
+            i = -1,
+            l = gridElements.length,
+            parentFields = [],
+            blockSize = 500,
+            c = Math.ceil(l / blockSize);
+        ;
+
+        this.directParentFields = {};
+
+        this.config.entityParentField && (
+            parentFields.push(this.config.entityParentField),
+            this.directParentFields[this.config.entityParentField] = true
+        );
+
+        while (++i < c) {
+
+            let callback = (function(){
+                let start = i * blockSize;
+                let end = start + blockSize;
+                end = end  > l ? l : end;
+                start--;
+                return function(resolve, reject){
+                    console.log('run reactivate from ' + start + ' to ' + end)
+                    while (++start < end) {
+                        //Элемент грида
+                        let gridElement = gridElements[start];
+                        //Элемент данных
+                        let dataItem = gridElement.getData();
+
+                        priv.config.entityParentField ?
+                            priv.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
+                                new ReactiveParentDefinition(
+                                    /**
+                                     * Для прямых связей исходное значение извлекается в момент генерации событий прямо из значения поля, поэтому
+                                     * здесь нет большого смысла передавать это значение. Но пусть будет....
+                                     * К тому же, т.к. данные могут состоять из сущностей разных типов, то некоторые типы могут вообще
+                                     * не содержать в себе этого значения
+                                     */
+                                    dataItem[priv.config.entityParentField]
+                                ).addField(priv.config.entityParentField, 'd')
+
+                            )):
+                            priv.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem));
+                    }
+                    resolve();
+                }
+
+            })()
+            await new Promise(function(resolve, reject){
+                t = setTimeout(function(){
+                    clearTimeout(t);
+                    callback(resolve, reject);
+                }, 0);
+            })
+
+        }
+        // while (++i < l) {
+        //     //Элемент грида
+        //     let gridElement = gridElements[i];
+        //     //Элемент данных
+        //     let dataItem = gridElement.getData();
+        //
+        //     this.configureDataItemAsReactive(new ReactiveDataItemDefinition(
+        //         dataItem,
+        //         new ReactiveParentDefinition(null, this.config.entityParentField),
+        //         this.config.entityParentField
+        //     ));
+        // }
+
+        window.gridData = gridElements;
+
+        console.log('reactiveData time ', ((new Date()).getTime() - t));
+
+    };
+    !('timers' in window) && (window.timers = []);
     this.setReactiveData = function(){
         //TODO Разделить метод для Flat и Tree - entityParentField применим только для Tree
         let t = (new Date()).getTime();
@@ -961,14 +1048,19 @@ function abstractFlexGrid (config){
             parentFields = []
         ;
 
-        this.config.entityParentField && parentFields.push(this.config.entityParentField);
+        this.directParentFields = {};
+
+        this.config.entityParentField && (
+            parentFields.push(this.config.entityParentField),
+            this.directParentFields[this.config.entityParentField] = true
+        );
 
         while (++i < l) {
             //Элемент грида
             let gridElement = gridElements[i];
             //Элемент данных
             let dataItem = gridElement.getData();
-
+            let ti = (new Date()).getTime();
             this.config.entityParentField ?
                 this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
                     new ReactiveParentDefinition(
@@ -978,10 +1070,17 @@ function abstractFlexGrid (config){
                          * К тому же, т.к. данные могут состоять из сущностей разных типов, то некоторые типы могут вообще
                          * не содержать в себе этого значения
                          */
-                        dataItem[this.config.entityParentField],
-                        this.config.entityParentField),
+                        dataItem[this.config.entityParentField]
+                    ).addField(this.config.entityParentField, 'd')
+
                 )):
                 this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem));
+            let te = ((new Date()).getTime() - ti);
+            // if (te > 10) {
+            //
+            //     window.timers.push([te, dataItem])
+            // }
+            window.timers.push(te)
         }
         // while (++i < l) {
         //     //Элемент грида
@@ -1507,11 +1606,292 @@ function abstractFlexGrid (config){
 
     };
 
-    this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
+    this.directSetter = function(value, propName, sourceObj){
+        let eventRes;
+        let storage = Storage.get(sourceObj);
+        let origValue = storage.original[propName];
+        let parents = [];
+        let i;
+
+        if (origValue === value) {
+            //Смены родителя фактически не произошло.
+            return;
+        }
+
+        if (origValue) {
+            //Старый родитель
+            parents.push({
+                parent: origValue,
+                properties: [propName],
+            });
+        }
+
+        if (value) {
+            //Новый родитель
+            parents.push({
+                parent: value,
+                properties: [propName],
+            });
+            EventManager.subscribe(value, 'beforeChildItemChange', priv.events.beforeChildItemChange, {grid: priv.pub}, {returnResult: true});
+            EventManager.subscribe(value, 'childItemChanged', priv.events.childItemChanged, {grid: priv.pub});
+        }
+
+
+        //TODO Здесь можно вообще реализовать отдельные события типа removeChild и addChild, но есть ли смысл и не усложнит ли это понимание алгоритма?
+
+
+        let eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+        };
+
+        //Здесь идет обработка смены родителя.
+        //Обработка изменений других полей будет реализована далее.
+        // Генерируем событие накануне изменения текущего элемента
+        eventRes = EventManager.fire(sourceObj, 'beforeItemChange', eventParams);
+        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+        if (eventRes === false) {
+            return;
+        }
+
+        eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+            object: sourceObj
+        };
+        i = -1;
+        while (++i < parents.length) {
+            let parent = parents[i].parent;
+            //Событие накануне изменения родителя дочерним элементом у старого и нового родителя
+            /**
+             *Т.к. связь реализована непосредственно от дочернего элемента к родителю, то родитель не имеет
+             * прямой ссылки на дочерний элемент, поэтому нет возможности определить свойство родителя, в
+             * котором произошло изменение. Ставим properties: null
+             */
+
+
+            eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: null});
+            eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+            if (eventRes === false) {
+                return;
+            }
+        }
+        // while (++i < parents.length) {
+        //     let parent = parents[i].parent;
+        //     let directParentProperties = parents[i].properties;
+        //
+        //     eventRes = EventManager.fire(parent, 'beforeChildItemChange', {...eventParams, parent, directParentProperties});
+        //     eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+        //     if (eventRes === false) {
+        //         return;
+        //     }
+        // }
+
+        //TODO Было бы неплохо придумать способ обновлять сущность не отдельными полями, а сначала обновить, потом выполнить события
+        // В этом случае пользователь может внести изменения, которые по отдельности запрещены, а вместе допустимы
+        // Возможно, надо создавать в этом случае виртуальные сущности и прогонять их через валидации - в случае успеха уже менять реальные сущности
+        // Для этого делать обертку над сущностью, в эту обертку в ее собственные поля ставить значения, блокировать их изменение и отдавать на валидацию.
+
+
+        //Проверки выполнены. Теперь меняем значение свойства
+        //Никакого дополнительного конфигурирования значения тут не требуется, реактивность для родителя настраивается отдельно, как для отдельной строки грида,
+        // а не вложенного объекта
+
+        Storage.get(sourceObj).original[propName] = value;
+        //eventParams генерируем заново, т.к. предыдущий экземпляр мог быть изменен в предыдущем событии
+        // TODO Можно также сделать немодифицируемый экземпляр eventParams
+        //Значение изменено. Генерируем события
+        eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+            child: sourceObj
+        }
+        EventManager.fire(sourceObj, 'itemChanged', eventParams);
+
+        i = -1;
+        while (++i < parents.length) {
+            let parent = parents[i].parent;
+            /**
+             *Т.к. связь реализована непосредственно от дочернего элемента к родителю, то родитель не имеет
+             * прямой ссылки на дочерний элемент, поэтому нет возможности определить свойство родителя, в
+             * котором произошло изменение. Ставим properties: null
+             */
+            EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: null});
+        }
+
+        storage.reactive.parents = storage.reactive.parents.filter(parent => !!parent);
+
+    };
+    this.reverseSetter = function(value, propName, sourceObj){
+        let eventRes;
+        let storage = Storage.get(sourceObj);
+        let origValue = storage.original[propName];
+        /**
+         * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+         * @type {*[]}
+         */
+        let parents = [];
+        let i = -1;
+        /*
+		Получим parent'ов, которых надо известить об изменениях в текущей сущности
+		 */
+        while (++i < storage.reactive.parents.length) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let parentDefinition = storage.reactive.parents[i];
+            let parent = parentDefinition.getParent();
+            if (!parent) {
+                //Этот parent уже почил
+                continue;
+            }
+            /**
+             * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+             * @type {*[]}
+             */
+            let properties = [];
+            for (let propName in parentDefinition.getReverseProperties()) {
+                (
+                    //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                    // но также может быть, что является частью набора дочерних элементов
+                    //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                    sourceObj === parent[propName] ||
+                    (
+                        parent[propName] instanceof Array &&
+                        parent[propName].find(item => item === sourceObj)
+                    )
+                ) && properties.push(propName);
+            }
+
+            properties.length ?
+                parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+        }
+
+        for (let directParentField in storage.reactive.directParentFields) {
+            let parent = sourceObj[directParentField];
+            if (!parent) {
+                continue;
+            }
+            //parent не имеет полей, ссылающихся на child, поэтому properties = null
+            parents.push({parent, properties: null});
+        }
+        /*
+		При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
+		Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
+		провести также проверки в рамках этих объектов
+		 */
+
+        let eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+        };
+
+        eventRes = EventManager.fire(sourceObj, 'beforeItemChange', eventParams);
+        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+        if (eventRes === false) {
+            return;
+        }
+
+        eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+            object: sourceObj
+        };
+        i = -1;
+        while (++i < parents.length) {
+            let parent = parents[i];
+            eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+            eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+            if (eventRes === false) {
+                return;
+            }
+        }
+
+        //TODO Было бы неплохо придумать способ обновлять сущность не отдельными полями, а сначала обновить, потом выполнить события
+        // В этом случае пользователь может внести изменения, которые по отдельности запрещены, а вместе допустимы
+        // Возможно, надо создавать в этом случае виртуальные сущности и прогонять их через валидации - в случае успеха уже менять реальные сущности
+        // Для этого делать обертку над сущностью, в эту обертку в ее собственные поля ставить значения, блокировать их изменение и отдавать на валидацию.
+
+
+        //Проверки выполнены. Теперь меняем значение свойства
+
+        if (value && typeof value === typeof {}) {
+            priv.configureDataItemAsReactive(
+                new ReactiveDataItemDefinition(value)
+                    .addParentDefinition(new ReactiveParentDefinition(sourceObj).addField(propName, 'r'))
+
+            );
+
+        }
+
+        Storage.get(sourceObj).original[propName] = value;
+        //Значение изменено. Генерируем события
+        eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+        }
+        EventManager.fire(sourceObj, 'itemChanged', eventParams);
+
+        eventParams = {
+            origValue,
+            newValue: value,
+            propertyName: propName,
+            object: sourceObj
+        }
+
+        i = -1;
+        while (++i < parents.length) {
+            let parent = parents[i].parent;
+            EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+        }
+
+        storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+
+    };
+
+    this.__callbacks = {};
+
+    this.getGetterCallback = function(propName)
+    {}
+
+    this.createGetterCallback = function(propName){
+        return this.globalStorage.callbacks.g[propName] ||
+        // console.log('create GETTER ' + propName);
+        function(){
+            return Storage.get(this).original[propName];
+        }
+    };
+
+    this.createDirectSetterCallback = function(propName){
+        // console.log('create DIRECT SETTER ' + propName);
         let priv = this;
+        return function(value){
+            priv.directSetter(value, propName, this);
+        }
+    };
+
+    this.createReverseSetterCallback = function(propName){
+        // console.log('create REVERSE SETTER ' + propName);
+        let priv = this;
+        return function(value){
+            priv.reverseSetter(value, propName, this);
+        }
+    };
+
+    this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
+        window.counter.totalObjects++;
+        let priv = this;
+        let cb;
         let dataItem = reactiveDataItemDefinition.getDataItem(),//Объект данных
-            parentDefinitions = reactiveDataItemDefinition.getParentDefinitions(), //Список всех родительских связей
-            directParentDefinitionsDict = {}//Словарь прямых родительских связей
+            parentDefinitions = reactiveDataItemDefinition.getParentDefinitions() //Список всех родительских связей
         ;
 
         let i = -1;
@@ -1520,11 +1900,10 @@ function abstractFlexGrid (config){
              * @type {ReactiveParentDefinition}
              */
             let parentDefinition = parentDefinitions[i];
-            for (let propName in parentDefinition.getProperties()) {
-                if (parentDefinition.propertyIsDirect(propName)) {
-
-                    directParentDefinitionsDict[propName] = parentDefinition;
-                }
+            let parent = parentDefinition.getParent();
+            if (parent) {
+                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
+                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
             }
         }
 
@@ -1541,22 +1920,470 @@ function abstractFlexGrid (config){
         EventManager.subscribe(dataItem, 'beforeItemChange', this.events.beforeItemChange, {grid: this.pub}, {returnResult: true});
         EventManager.subscribe(dataItem, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
         EventManager.subscribe(dataItem, 'itemChanged', this.events.itemChanged, {grid: this.pub});
+        // EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
 
 
         let storage = Storage.get(dataItem);
         //Параметры реактивности
-        !('reactive' in storage) && (storage.reactive = {});
-        //Хранилище значений
-        !('original' in storage) && (storage.original = {});
-        //Список родителей для текущего объекта
-        !('parents' in storage.reactive) && (storage.reactive.parents = []);
-        //Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
-        !('directParentFields' in storage.reactive) && (storage.reactive.directParentFields = {});
-        //Список сконфигурированных реактивных полей объекта
-        !('fields' in storage.reactive) && (storage.reactive.fields = {});
+        !('reactive' in storage) && (
+            storage.reactive = {parents: [], directParentFields: {}, fields: {}},
+            storage.original = {}
+        );
+        // //Хранилище значений
+        // !('original' in storage) && (storage.original = {});
+        // //Список родителей для текущего объекта
+        // !('parents' in storage.reactive) && (storage.reactive.parents = []);
+        // //Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
+        // !('directParentFields' in storage.reactive) && (storage.reactive.directParentFields = {});
+        // //Список сконфигурированных реактивных полей объекта
+        // !('fields' in storage.reactive) && (storage.reactive.fields = {});
 
-        for (let propName in directParentDefinitionsDict) {
+        for (let propName in this.directParentFields) {
             //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
+            // но у разных гридов могут быть разные поля
+            storage.reactive.directParentFields[propName] = true;
+        }
+
+        let reactiveConfig = {enumerable: true};
+
+        //TODO Продумать возможность добавления пользователем в сущность новых реактивных полей
+
+        /**
+         * Эти свойства являются прямой ссылкой из дочернего элемента к родителю.
+         * Изменение значения этих свойств приводят к смене родителя у дочернего элемента
+         */
+        for (let propName in this.directParentFields) {
+            if (!(propName in dataItem)) {
+                continue;
+            }
+            !(propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
+            if (
+                storage.reactive.fields[propName].type === 1 //1 = direct
+            ) {
+                //Это свойство уже сконфигурировано должным образом
+                // console.log('Property '+propName+' already configured as direct', dataItem);
+                continue;
+            }
+
+            /** TODO
+             *   Делаем функцию, в которую зашит конкретный propertyName
+             *   Присваиваем эту функцию в свойство
+             *   Когда произойдет обращение к свойству, в функции появится this
+             *   вызывваем нужный getter или setter через bind, либо через передачу
+             *   this в качестве аргумента функции
+             *
+             */
+
+
+            window.counter.totalProperties++;
+            /**
+             * Данный тип полей может быть заново сконфигурирован, поэтому такая форма записи
+             */
+
+            storage.reactive.fields[propName].type = 1;//1 = direct
+
+            // reactiveConfig[propName] = {};
+
+            let v = dataItem[propName];
+            //Запоминаем оригинальное значение
+            storage.original[propName] = v;
+            !(propName in priv.globalStorage.callbacks.ds) &&
+            (
+                priv.globalStorage.callbacks.g[propName] = priv.createGetterCallback(propName),
+                priv.globalStorage.callbacks.ds[propName] = priv.createDirectSetterCallback(propName)
+            );
+            //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
+            //TODO Если завернуть это в функцию. то можно избавиться от лишней проверки, когда после создания указанного callback'а функция с условием будет замещаться уже безусловной функцией
+            reactiveConfig.get = priv.globalStorage.callbacks.g[propName];// || (cb = priv.createGetterCallback(propName), priv.globalStorage.callbacks.g[propName] = cb, cb);
+
+            reactiveConfig.set = priv.globalStorage.callbacks.ds[propName];// || (cb = priv.createDirectSetterCallback(propName), priv.globalStorage.callbacks.ds[propName] = cb, cb);
+            // //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
+            // //TODO Если завернуть это в функцию. то можно избавиться от лишней проверки, когда после создания указанного callback'а функция с условием будет замещаться уже безусловной функцией
+            // reactiveConfig.get = priv.globalStorage.callbacks.g[propName] || (cb = priv.createGetterCallback(propName), priv.globalStorage.callbacks.g[propName] = cb, cb);
+            //
+            // reactiveConfig.set = priv.globalStorage.callbacks.ds[propName] || (cb = priv.createDirectSetterCallback(propName), priv.globalStorage.callbacks.ds[propName] = cb, cb);
+
+            // reactiveConfig.enumerable = true;
+
+            Object.defineProperty(dataItem, propName, reactiveConfig);
+        }
+
+
+        for (let propName in dataItem) {
+            if (propName in storage.reactive.fields ) {
+                //Это свойство уже сконфигурировано
+                // console.log('Property '+propName+' already configured as reverse', dataItem);
+                continue;
+            }
+            window.counter.totalProperties++;
+            // reactiveConfig[propName] = {};
+
+            let v = dataItem[propName];
+            //Запоминаем оригинальное значение
+            storage.original[propName] = v;
+            storage.reactive.fields[propName] = {
+                type: 0// 0 = 'reverse'
+            };
+            //Если значение является объектом или набором объектов, делаем их также реактивными
+            if (v && typeof {} === typeof v) {
+                //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
+                v instanceof Array ?
+                    v.forEach(function(itemArray){
+                        let rpd;
+                        return itemArray && typeof {} === typeof itemArray ?
+                            (
+                                rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
+                                this.configureDataItemAsReactive(
+                                    new ReactiveDataItemDefinition(itemArray)
+                                        .addParentDefinition(rpd)
+                                )
+                            ):
+                            itemArray;
+                    }.bind(this)) :
+                    this.configureDataItemAsReactive(
+                        new ReactiveDataItemDefinition(v)
+                            .addParentDefinition(new ReactiveParentDefinition(dataItem).addField(propName, 'r'))
+                    );
+            }
+
+            !(propName in priv.globalStorage.callbacks.rs) &&
+            (
+                priv.globalStorage.callbacks.g[propName] = priv.createGetterCallback(propName),
+                priv.globalStorage.callbacks.rs[propName] = priv.createReverseSetterCallback(propName)
+            );
+            reactiveConfig.get = priv.globalStorage.callbacks.g[propName];// || (cb = priv.createGetterCallback(propName), priv.globalStorage.callbacks.g[propName] = cb, cb);
+
+            reactiveConfig.set = priv.globalStorage.callbacks.rs[propName];// || (cb = priv.createReverseSetterCallback(propName), priv.globalStorage.callbacks.rs[propName] = cb, cb);
+            // reactiveConfig.get = priv.globalStorage.callbacks.g[propName] || (cb = priv.createGetterCallback(propName), priv.globalStorage.callbacks.g[propName] = cb, cb);
+            //
+            // reactiveConfig.set = priv.globalStorage.callbacks.rs[propName] || (cb = priv.createReverseSetterCallback(propName), priv.globalStorage.callbacks.rs[propName] = cb, cb);
+
+            // reactiveConfig[propName].enumerable = true;
+            Object.defineProperty(dataItem, propName, reactiveConfig);
+        }
+
+        // for (let propName in reactiveConfig) {
+        //     Object.defineProperties(dataItem, reactiveConfig);
+        //     //Конфиг применяем один раз, если в нем что-то есть
+        //     break;
+        // }
+
+        // let parentDefinitions = reactiveDataItemDefinition.getParentDefinitions();
+        for (let i in parentDefinitions) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let sourceParentDefinition = parentDefinitions[i];
+            // EventManager.subscribe(sourceParentDefinition.getParent(), 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+
+            let reactive = storage.reactive;
+            /**
+             *
+             * @type {ReactiveParentDefinition}
+             */
+            let targetParentDefinition = reactive.parents.find((/**@type {ReactiveParentDefinition} */parentItem) => parentItem.getParent() === sourceParentDefinition.getParent())
+            if (!targetParentDefinition) {
+                targetParentDefinition = sourceParentDefinition;
+                reactive.parents.push(targetParentDefinition);
+            }
+            else {
+                targetParentDefinition.merge(sourceParentDefinition);
+            }
+        }
+        // if (params.parent) {
+        //     EventManager.subscribe(params.parent, 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+        //
+        //     let reactive = storage.reactive;
+        //
+        //     let parentItem = reactive.parents.find(parentItem => parentItem.parent.deref() === params.parent)
+        //     if (!parentItem) {
+        //         parentItem = {
+        //             parent: new WeakRef(params.parent),
+        //             parentPropName: {},
+        //         };
+        //         reactive.parents.push(parentItem);
+        //     }
+        //     parentItem.parentPropName[params.parentPropName] = true;
+        // }
+
+    }
+    this.configureDataItemAsReactive_2 = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
+        window.counter.totalObjects++;
+        let priv = this;
+        let dataItem = reactiveDataItemDefinition.getDataItem(),//Объект данных
+            parentDefinitions = reactiveDataItemDefinition.getParentDefinitions() //Список всех родительских связей
+        ;
+
+        let i = -1;
+        while (++i < parentDefinitions.length) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let parentDefinition = parentDefinitions[i];
+            let parent = parentDefinition.getParent();
+            if (parent) {
+                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
+                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+            }
+        }
+
+
+
+
+        //TODO А что, если два грида разных грида конфигурируют одну и ту же сущность, но по-разному. Например, сначала FlatGrid сконфигурирует parent-поле. а потом TreeGrid?
+
+        this.createGridStorageIntoObject(dataItem);
+
+        /**
+         * Здесь может быть как реальных dataItem, так и вложенный объект, который в свою очередь также может быть в т.ч. и dataItem
+         */
+        EventManager.subscribe(dataItem, 'beforeItemChange', this.events.beforeItemChange, {grid: this.pub}, {returnResult: true});
+        EventManager.subscribe(dataItem, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
+        EventManager.subscribe(dataItem, 'itemChanged', this.events.itemChanged, {grid: this.pub});
+        // EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+
+
+        let storage = Storage.get(dataItem);
+        //Параметры реактивности
+        !('reactive' in storage) && (
+            storage.reactive = {parents: [], directParentFields: {}, fields: {}},
+            storage.original = {}
+        );
+        // //Хранилище значений
+        // !('original' in storage) && (storage.original = {});
+        // //Список родителей для текущего объекта
+        // !('parents' in storage.reactive) && (storage.reactive.parents = []);
+        // //Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
+        // !('directParentFields' in storage.reactive) && (storage.reactive.directParentFields = {});
+        // //Список сконфигурированных реактивных полей объекта
+        // !('fields' in storage.reactive) && (storage.reactive.fields = {});
+
+        for (let propName in this.directParentFields) {
+            //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
+            // но у разных гридов могут быть разные поля
+            storage.reactive.directParentFields[propName] = true;
+        }
+
+        let reactiveConfig = {enumerable: true};
+
+        //TODO Продумать возможность добавления пользователем в сущность новых реактивных полей
+
+        /**
+         * Эти свойства являются прямой ссылкой из дочернего элемента к родителю.
+         * Изменение значения этих свойств приводят к смене родителя у дочернего элемента
+         */
+        for (let propName in this.directParentFields) {
+            if (!(propName in dataItem)) {
+                continue;
+            }
+            !(propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
+            if (
+                storage.reactive.fields[propName].type === 1 //1 = direct
+            ) {
+                //Это свойство уже сконфигурировано должным образом
+                // console.log('Property '+propName+' already configured as direct', dataItem);
+                continue;
+            }
+
+            /** TODO
+             *   Делаем функцию, в которую зашит конкретный propertyName
+             *   Присваиваем эту функцию в свойство
+             *   Когда произойдет обращение к свойству, в функции появится this
+             *   вызывваем нужный getter или setter через bind, либо через передачу
+             *   this в качестве аргумента функции
+             *
+             */
+
+
+            window.counter.totalProperties++;
+            /**
+             * Данный тип полей может быть заново сконфигурирован, поэтому такая форма записи
+             */
+
+            storage.reactive.fields[propName].type = 1;//1 = direct
+
+            // reactiveConfig[propName] = {};
+
+            let v = dataItem[propName];
+            //Запоминаем оригинальное значение
+            storage.original[propName] = v;
+
+            //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
+
+            reactiveConfig.get = (function(propName){
+                return function(){return Storage.get(this).original[propName];}
+            })(propName);
+
+            reactiveConfig.set = (function(propName){
+                //TODO async await Promise?
+                return function(value){
+
+                   return priv.directSetter(value, propName, this);
+
+                };
+            })(propName);
+
+            // reactiveConfig.enumerable = true;
+
+            Object.defineProperty(dataItem, propName, reactiveConfig);
+        }
+
+
+        for (let propName in dataItem) {
+            if (propName in storage.reactive.fields || propName === 'children') {
+                //Это свойство уже сконфигурировано
+                // console.log('Property '+propName+' already configured as reverse', dataItem);
+                continue;
+            }
+            window.counter.totalProperties++;
+            // reactiveConfig[propName] = {};
+
+            let v = dataItem[propName];
+            //Запоминаем оригинальное значение
+            storage.original[propName] = v;
+            storage.reactive.fields[propName] = {
+                type: 0// 0 = 'reverse'
+            };
+            //Если значение является объектом или набором объектов, делаем их также реактивными
+            if (v && typeof {} === typeof v) {
+                //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
+                v instanceof Array ?
+                    v.forEach(function(itemArray){
+                        let rpd;
+                        return itemArray && typeof {} === typeof itemArray ?
+                            (
+                                rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
+                                this.configureDataItemAsReactive(
+                                    new ReactiveDataItemDefinition(itemArray)
+                                        .addParentDefinition(rpd)
+                                )
+                            ):
+                            itemArray;
+                    }.bind(this)) :
+                    this.configureDataItemAsReactive(
+                        new ReactiveDataItemDefinition(v)
+                            .addParentDefinition(new ReactiveParentDefinition(dataItem).addField(propName, 'r'))
+                    );
+            }
+
+            reactiveConfig.get = (function(propName){
+                return function(){return Storage.get(this).original[propName];}
+            })(propName);
+
+            reactiveConfig.set = (function(propName){
+                //TODO async await Promise?
+                return function(value){
+                    return priv.reverseSetter(value, propName, this);
+                };
+            })(propName);
+
+            // reactiveConfig[propName].enumerable = true;
+            Object.defineProperty(dataItem, propName, reactiveConfig);
+        }
+
+        // for (let propName in reactiveConfig) {
+        //     Object.defineProperties(dataItem, reactiveConfig);
+        //     //Конфиг применяем один раз, если в нем что-то есть
+        //     break;
+        // }
+
+        // let parentDefinitions = reactiveDataItemDefinition.getParentDefinitions();
+        for (let i in parentDefinitions) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let sourceParentDefinition = parentDefinitions[i];
+            // EventManager.subscribe(sourceParentDefinition.getParent(), 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+
+            let reactive = storage.reactive;
+            /**
+             *
+             * @type {ReactiveParentDefinition}
+             */
+            let targetParentDefinition = reactive.parents.find((/**@type {ReactiveParentDefinition} */parentItem) => parentItem.getParent() === sourceParentDefinition.getParent())
+            if (!targetParentDefinition) {
+                targetParentDefinition = sourceParentDefinition;
+                reactive.parents.push(targetParentDefinition);
+            }
+            else {
+                targetParentDefinition.merge(sourceParentDefinition);
+            }
+        }
+        // if (params.parent) {
+        //     EventManager.subscribe(params.parent, 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+        //
+        //     let reactive = storage.reactive;
+        //
+        //     let parentItem = reactive.parents.find(parentItem => parentItem.parent.deref() === params.parent)
+        //     if (!parentItem) {
+        //         parentItem = {
+        //             parent: new WeakRef(params.parent),
+        //             parentPropName: {},
+        //         };
+        //         reactive.parents.push(parentItem);
+        //     }
+        //     parentItem.parentPropName[params.parentPropName] = true;
+        // }
+
+    }
+
+    window.counter = {
+        totalObjects: 0,
+        totalProperties: 0
+    };
+    this.configureDataItemAsReactive_orig = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
+        let priv = this;
+        let dataItem = reactiveDataItemDefinition.getDataItem(),//Объект данных
+            parentDefinitions = reactiveDataItemDefinition.getParentDefinitions() //Список всех родительских связей
+        ;
+
+        let i = -1;
+        while (++i < parentDefinitions.length) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let parentDefinition = parentDefinitions[i];
+            let parent = parentDefinition.getParent();
+            if (parent) {
+                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
+                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+            }
+        }
+
+
+
+
+        //TODO А что, если два грида разных грида конфигурируют одну и ту же сущность, но по-разному. Например, сначала FlatGrid сконфигурирует parent-поле. а потом TreeGrid?
+
+        this.createGridStorageIntoObject(dataItem);
+
+        /**
+         * Здесь может быть как реальных dataItem, так и вложенный объект, который в свою очередь также может быть в т.ч. и dataItem
+         */
+        EventManager.subscribe(dataItem, 'beforeItemChange', this.events.beforeItemChange, {grid: this.pub}, {returnResult: true});
+        EventManager.subscribe(dataItem, 'beforeChildItemChange', this.events.beforeChildItemChange, {grid: this.pub}, {returnResult: true});
+        EventManager.subscribe(dataItem, 'itemChanged', this.events.itemChanged, {grid: this.pub});
+        // EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+
+
+        let storage = Storage.get(dataItem);
+        //Параметры реактивности
+        !('reactive' in storage) && (
+            storage.reactive = {parents: [], directParentFields: {}, fields: {}},
+            storage.original = {}
+        );
+        // //Хранилище значений
+        // !('original' in storage) && (storage.original = {});
+        // //Список родителей для текущего объекта
+        // !('parents' in storage.reactive) && (storage.reactive.parents = []);
+        // //Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
+        // !('directParentFields' in storage.reactive) && (storage.reactive.directParentFields = {});
+        // //Список сконфигурированных реактивных полей объекта
+        // !('fields' in storage.reactive) && (storage.reactive.fields = {});
+
+        for (let propName in this.directParentFields) {
+            //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
+            // но у разных гридов могут быть разные поля
             storage.reactive.directParentFields[propName] = true;
         }
 
@@ -1564,22 +2391,27 @@ function abstractFlexGrid (config){
 
         //TODO Продумать возможность добавления пользователем в сущность новых реактивных полей
 
-        for (let propName in directParentDefinitionsDict) {
+        /**
+         * Эти свойства являются прямой ссылкой из дочернего элемента к родителю.
+         * Изменение значения этих свойств приводят к смене родителя у дочернего элемента
+         */
+        for (let propName in this.directParentFields) {
             if (!(propName in dataItem)) {
                 continue;
             }
+            !(propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
             if (
-                propName in storage.reactive.fields &&
-                storage.reactive.fields[propName].type === 'direct'
+                storage.reactive.fields[propName].type === 1 //1 = direct
             ) {
                 //Это свойство уже сконфигурировано должным образом
+                // console.log('Property '+propName+' already configured as direct', dataItem);
                 continue;
             }
             /**
              * Данный тип полей может быть заново сконфигурирован, поэтому такая форма записи
              */
-            (!propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
-            storage.reactive.fields[propName].type = 'direct';
+
+            storage.reactive.fields[propName].type = 1;//1 = direct
 
             reactiveConfig[propName] = {};
 
@@ -1620,6 +2452,8 @@ function abstractFlexGrid (config){
                             parent: value,
                             properties: [propName],
                         });
+                        EventManager.subscribe(value, 'beforeChildItemChange', priv.events.beforeChildItemChange, {grid: priv.pub}, {returnResult: true});
+                        EventManager.subscribe(value, 'childItemChanged', priv.events.childItemChanged, {grid: priv.pub});
                     }
 
 
@@ -1634,7 +2468,7 @@ function abstractFlexGrid (config){
 
                     //Здесь идет обработка смены родителя.
                     //Обработка изменений других полей будет реализована далее.
-
+                    // Генерируем событие накануне изменения текущего элемента
                     eventRes = EventManager.fire(this, 'beforeItemChange', eventParams);
                     eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
                     if (eventRes === false) {
@@ -1645,17 +2479,35 @@ function abstractFlexGrid (config){
                         origValue,
                         newValue: value,
                         propertyName: propName,
+                        object: this
                     };
                     i = -1;
                     while (++i < parents.length) {
                         let parent = parents[i].parent;
-                        let directParentProperties = parents[i].properties;
-                        eventRes = EventManager.fire(this, 'beforeChildItemChange', {...eventParams, parent, directParentProperties});
+                        //Событие накануне изменения родителя дочерним элементом у старого и нового родителя
+                        /**
+                         *Т.к. связь реализована непосредственно от дочернего элемента к родителю, то родитель не имеет
+                         * прямой ссылки на дочерний элемент, поэтому нет возможности определить свойство родителя, в
+                         * котором произошло изменение. Ставим properties: null
+                         */
+
+
+                        eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: null});
                         eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
                         if (eventRes === false) {
                             return;
                         }
                     }
+                    // while (++i < parents.length) {
+                    //     let parent = parents[i].parent;
+                    //     let directParentProperties = parents[i].properties;
+                    //
+                    //     eventRes = EventManager.fire(parent, 'beforeChildItemChange', {...eventParams, parent, directParentProperties});
+                    //     eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                    //     if (eventRes === false) {
+                    //         return;
+                    //     }
+                    // }
 
                     //TODO Было бы неплохо придумать способ обновлять сущность не отдельными полями, а сначала обновить, потом выполнить события
                     // В этом случае пользователь может внести изменения, которые по отдельности запрещены, а вместе допустимы
@@ -1668,19 +2520,26 @@ function abstractFlexGrid (config){
                     // а не вложенного объекта
 
                     Storage.get(this).original[propName] = value;
+                    //eventParams генерируем заново, т.к. предыдущий экземпляр мог быть изменен в предыдущем событии
+                    // TODO Можно также сделать немодифицируемый экземпляр eventParams
                     //Значение изменено. Генерируем события
                     eventParams = {
                         origValue,
                         newValue: value,
                         propertyName: propName,
+                        child: this
                     }
                     EventManager.fire(this, 'itemChanged', eventParams);
 
                     i = -1;
                     while (++i < parents.length) {
                         let parent = parents[i].parent;
-                        let directParentProperties = parents[i].properties;
-                        EventManager.fire(parent, 'childItemChanged', {childItem: this,  parent, directParentProperties});
+                        /**
+                         *Т.к. связь реализована непосредственно от дочернего элемента к родителю, то родитель не имеет
+                         * прямой ссылки на дочерний элемент, поэтому нет возможности определить свойство родителя, в
+                         * котором произошло изменение. Ставим properties: null
+                         */
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: null});
                     }
 
                     storage.reactive.parents = storage.reactive.parents.filter(parent => !!parent);
@@ -1693,8 +2552,9 @@ function abstractFlexGrid (config){
 
 
         for (let propName in dataItem) {
-            if (propName in storage.reactive.fields) {
+            if (propName in storage.reactive.fields || propName === 'children') {
                 //Это свойство уже сконфигурировано
+                // console.log('Property '+propName+' already configured as reverse', dataItem);
                 continue;
             }
 
@@ -1704,7 +2564,7 @@ function abstractFlexGrid (config){
             //Запоминаем оригинальное значение
             storage.original[propName] = v;
             storage.reactive.fields[propName] = {
-                type: 'reverse'
+                type: 0// 0 = 'reverse'
             };
             //Если значение является объектом или набором объектов, делаем их также реактивными
             if (v && typeof {} === typeof v) {
@@ -1757,12 +2617,8 @@ function abstractFlexGrid (config){
                          * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
                          * @type {*[]}
                          */
-                        let reverseParentProperties = [];
-                        let propertiesDict = parentDefinition.getProperties();
-                        for (let propName in propertiesDict) {
-                            if (!parentDefinition.propertyIsReverse(propName)) {
-                                continue;
-                            }
+                        let properties = [];
+                        for (let propName in parentDefinition.getReverseProperties()) {
                             (
                                 //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
                                 // но также может быть, что является частью набора дочерних элементов
@@ -1772,11 +2628,11 @@ function abstractFlexGrid (config){
                                     parent[propName] instanceof Array &&
                                     parent[propName].find(item => item === this)
                                 )
-                            ) && reverseParentProperties.push(propName);
+                            ) && properties.push(propName);
                         }
 
-                        reverseParentProperties.length ?
-                            parents.push({parent, reverseParentProperties}): //С этим parent'ом текущая сущность все еще связана
+                        properties.length ?
+                            parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
                             (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
 
                     }
@@ -1786,7 +2642,8 @@ function abstractFlexGrid (config){
                         if (!parent) {
                             continue;
                         }
-                        parents.push({parent, directParentProperties: [directParentField]});
+                        //parent не имеет полей, ссылающихся на child, поэтому properties = null
+                        parents.push({parent, properties: null});
                     }
                     /*
 					При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
@@ -1810,11 +2667,12 @@ function abstractFlexGrid (config){
                         origValue,
                         newValue: value,
                         propertyName: propName,
+                        object: this
                     };
                     i = -1;
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        eventRes = EventManager.fire(this, 'beforeChildItemChange', {...eventParams, ...parent});
+                        eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
                         eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
                         if (eventRes === false) {
                             return;
@@ -1830,7 +2688,7 @@ function abstractFlexGrid (config){
                     //Проверки выполнены. Теперь меняем значение свойства
 
                     if (value && typeof value === typeof {}) {
-                        value = priv.configureDataItemAsReactive(
+                        priv.configureDataItemAsReactive(
                             new ReactiveDataItemDefinition(value)
                                 .addParentDefinition(new ReactiveParentDefinition(this).addField(propName, 'r'))
 
@@ -1847,10 +2705,17 @@ function abstractFlexGrid (config){
                     }
                     EventManager.fire(this, 'itemChanged', eventParams);
 
+                    eventParams = {
+                        origValue,
+                        newValue: value,
+                        propertyName: propName,
+                        object: this
+                    }
+
                     i = -1;
                     while (++i < parents.length) {
                         let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {childItem: this,  ...parents[i]});
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
                     }
 
                     storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
@@ -1863,7 +2728,8 @@ function abstractFlexGrid (config){
 
         for (let propName in reactiveConfig) {
             Object.defineProperties(dataItem, reactiveConfig);
-            // break;
+            //Конфиг применяем один раз, если в нем что-то есть
+            break;
         }
 
         // let parentDefinitions = reactiveDataItemDefinition.getParentDefinitions();
@@ -1872,7 +2738,7 @@ function abstractFlexGrid (config){
              * @type {ReactiveParentDefinition}
              */
             let sourceParentDefinition = parentDefinitions[i];
-            EventManager.subscribe(sourceParentDefinition.getParent(), 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+            // EventManager.subscribe(sourceParentDefinition.getParent(), 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
 
             let reactive = storage.reactive;
             /**
@@ -1962,7 +2828,6 @@ function TreeGrid(config){
                     collapsedItems.push(childGridElement);
                 }
                 this.data.current.hide(collapsedItems);
-
             }
 
             this.visualizer.updatePreview();
@@ -1995,6 +2860,7 @@ function TreeGrid(config){
 
     priv.prepareData = function(data){
         let {gridElements, objectsDict} = this.createGridElements(data);
+
         let c = data.length;
         let ecf = this.config.entityClassField;
         let eif = this.config.entityIdField;
@@ -2035,6 +2901,7 @@ function TreeGrid(config){
                  * устанавливаем связь с реальным объектом-родителем вместо указателя
                  */
                 entityData[epf] = parentEntity;
+                !(echldf in parentEntity) && (Object.defineProperty(parentEntity, echldf, {enumerable: false, writable: true, configurable: false}));
                 parentEntity[echldf] = parentEntity[echldf] || []; //TODO Может эта коллекция не так уж и нужна, а достаточно связей внутри parentGridElement->childrenGridElements ?
                 parentEntity[echldf].push(entityData);
                 gridElement.setParent(parentGridElement);
@@ -2458,13 +3325,15 @@ export let FlexGrid = Object.defineProperties(
 function ReactiveParentDefinition(/**@type {Object} */parent)
 {
     let priv = {
-        fields: {},
+        properties: {
+            d: {},
+            r: {}
+        },
         //В случае с прямыми ссылками значение parent извлекается не из этого поля, а из поля редактируемой сущности.
         //Поэтому тут вполне может быть null
         parent: parent ? new WeakRef(parent) : null,
     };
 
-    this.getProperties = () => priv.fields;
     this.getParent = () => priv.parent ? priv.parent.deref() : null;
     /**
      * Тип ссылки на родителя:
@@ -2473,21 +3342,23 @@ function ReactiveParentDefinition(/**@type {Object} */parent)
      * - r - reverse - обратная ссылка, т.е. родитель содержит ссылку на дочерний элемент, но дочерний элемент не имеет ссылки на родителя (parent.someProp = {childProp1: childVal1, ...})
      */
     this.addField = function(/**@type {string} */ propName, /**@type {string} */type = 'd') {
-        priv.fields[propName] = (propName in priv.fields ? priv.fields[propName] : 0) | (type === 'd' ? 1 : 2);
+        priv.properties[type][propName] = true;
 
         return this;
     }
 
     this.merge = function(/**@type {ReactiveParentDefinition} */ source){
-        let propertiesDict = source.getProperties();
-
-        for (let propName in propertiesDict) {
-            priv.fields[propName] = (propName in priv.fields ? priv.fields[propName] : 0) | propertiesDict[propName];
+        for (let propName in source.getDirectProperties()) {
+            priv.properties.d[propName] = true;
+        }
+        for (let propName in source.getReverseProperties()) {
+            priv.properties.r[propName] = true;
         }
     }
 
-    this.propertyIsDirect = (/**@type {string} */propName) => (propName in priv.fields ? priv.fields[propName] : 0) & 1;
-    this.propertyIsReverse = (/**@type {string} */propName) => (propName in priv.fields ? priv.fields[propName] : 0) & 2;
+    this.getDirectProperties = () => priv.properties.d;
+    this.getReverseProperties = () => priv.properties.r;
+
 
 }
 

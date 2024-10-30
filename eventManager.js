@@ -35,7 +35,7 @@ export const EventManager = new function(){
                     let event = container[eventName];
                     return event.fire(eventParams);
             },
-                                            getEvent: function(
+            getEvent: function(
                     /**@type {Object} объект-источник события */ object,
                     /**@type {string} наименование события */ eventName,
                                                     )

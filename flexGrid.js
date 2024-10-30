@@ -1741,18 +1741,18 @@ function abstractFlexGrid (config){
         ;
 
 
-        let i = -1;
-        while (++i < parentDefinitions.length) {
-            /**
-             * @type {ReactiveParentDefinition}
-             */
-            let parentDefinition = parentDefinitions[i];
-            let parent = parentDefinition.getParent();
-            if (parent) {
-                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, evExtParams,evConf);
-                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, evExtParams);
-            }
-        }
+//        let i = -1;
+//        while (++i < parentDefinitions.length) {
+//            /**
+//             * @type {ReactiveParentDefinition}
+//             */
+//            let parentDefinition = parentDefinitions[i];
+//            let parent = parentDefinition.getParent();
+//            if (parent) {
+//                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, evExtParams,evConf);
+//                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, evExtParams);
+//            }
+//        }
 
         /**
          * Одно и то же поле в одной и той же сущности могут попытаться сконфигурировать несколько Grid'ов
@@ -1778,7 +1778,7 @@ function abstractFlexGrid (config){
         EventManager.subscribe(dataItem, 'beforeItemChange', this.events.beforeItemChange, evExtParams, evConf);
         EventManager.subscribe(dataItem, 'beforeChildItemChange', this.events.beforeChildItemChange, evExtParams, evConf);
         EventManager.subscribe(dataItem, 'itemChanged', this.events.itemChanged, evExtParams);
-        // EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+        EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
 
 
         let storage = Storage.get(dataItem);

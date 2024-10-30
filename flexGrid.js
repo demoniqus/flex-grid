@@ -1729,7 +1729,7 @@ function abstractFlexGrid (config){
         return function(value){
             //this - это объект данных, а не grid
             priv.reverseSetter(value, propName, this);
-        }
+        };
     };
 
     this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
@@ -1740,19 +1740,6 @@ function abstractFlexGrid (config){
             evExtParams = {grid: this.pub}//Сделать неизменяемым объект
         ;
 
-
-//        let i = -1;
-//        while (++i < parentDefinitions.length) {
-//            /**
-//             * @type {ReactiveParentDefinition}
-//             */
-//            let parentDefinition = parentDefinitions[i];
-//            let parent = parentDefinition.getParent();
-//            if (parent) {
-//                EventManager.subscribe(parent, 'beforeChildItemChange', this.events.beforeChildItemChange, evExtParams,evConf);
-//                EventManager.subscribe(parent, 'childItemChanged', this.events.childItemChanged, evExtParams);
-//            }
-//        }
 
         /**
          * Одно и то же поле в одной и той же сущности могут попытаться сконфигурировать несколько Grid'ов

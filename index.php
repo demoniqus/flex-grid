@@ -28,6 +28,7 @@ if (array_key_exists('index', $_GET)) {
 <html>
 <head>
     <meta charset="UTF-8">
+	<link rel="icon" type="image/png" href="img/f.jpg"/>
     <link rel="stylesheet" href="custom.css">
     <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap.css">
     <link rel="stylesheet" href="bootstrap-5.0.2-dist/css/bootstrap-grid.css">
@@ -52,18 +53,35 @@ if (array_key_exists('index', $_GET)) {
 				this.getData =  (dataAcceptor) => {
 					let xhr = new XMLHttpRequest();
 					xhr.onload = function(){
-						console.log(xhr);
+						// console.log(xhr);
 						let data = typeof xhr.responseText === typeof 'aaa' ?
 							JSON.parse(xhr.responseText) :
 							xhr.responseText;
+
+						let estimateItems = [];
+						let i = 1;
+						while (i < 11) {
+							let eri = {
+								estimate: {number: 'Estimate ' + i++}
+							};
+							eri[config.entityClassField] = 'EstimateReestrItem';
+							eri.estimate[config.entityClassField] = 'Estimate';
+							estimateItems.push(eri);
+						}
+
+						window.estimateItems = estimateItems;
+
+						data.forEach((dataItem, index) => dataItem.estimateItem = estimateItems[index % 10]);
+
 						dataAcceptor(data);
+						window.testData = data;
 					}
 					xhr.onerror = function(){
 						console.log(xhr);
 					}
 					xhr.open('GET', '/?index=0&rand=' + (Math.random() * 10000), false );
 
-					xhr.send()
+					xhr.send();
 
 				};
 				// this.getData =   (dataAcceptor) => setTimeout(function(){
@@ -81,7 +99,7 @@ if (array_key_exists('index', $_GET)) {
 				// 	}
 				// 	dataAcceptor(data);
 				// }, 0);
-                this.getHeaders =  (headersAcceptor) => setTimeout(function(){headersAcceptor(testHeaders)}, 3000);
+                this.getHeaders =  (headersAcceptor) => setTimeout(function(){headersAcceptor(testHeaders)}, 500);
 				this.getMetadata = (metadataAcceptor) => metadataAcceptor({
 					'tableName': 'Test Tree Grid'
 				})
@@ -117,16 +135,45 @@ if (array_key_exists('index', $_GET)) {
         config.draggableRows = true;
         config.scrollStepSize = 3;
         config.events = {
-            moveItem: function(acceptorItem, draggedItem, acceptorFlexGridId, sourceFlexGridId){
-                if (
-                        acceptorFlexGridId.gridClass !== sourceFlexGridId.gridClass ||
-                        acceptorFlexGridId.id !== sourceFlexGridId.id
-                ) {
-                    // Из других grid'ов не принимаем строки
-                    return;
-                }
-                console.log('element ' + acceptorItem.id + ' accept element ' + draggedItem.id)
-            }
+            moveItem: config._events.moveItem,
+			childItemChanged: function(eventObj){
+				console.log(eventObj);
+				// let parent = eventObj.sourceEventParams.parent;
+				// if (parent[config.entityClassField] === 'EstimateReestrItem') {
+				// 	let parentProperties = eventObj.sourceEventParams.parentProperties;
+				//
+				// 	parentProperties.forEach(function(parentPropName){
+				// 		FlexGridPlugin.EventManager.fire(
+				// 			eventObj.sourceEventParams.parent,
+				// 			'itemChanged',
+				// 			{
+				// 				origValue: parent,
+				// 				newValue: parent,
+				// 				propertyName: parentPropName,
+				// 				originalEvent: eventObj
+				// 			}
+				// 		)
+				// 	});
+				// }
+				// let parent = eventObj.sourceEventParams.parent;
+				// if (parent[config.entityClassField] === 'EstimateReestrItem') {
+				// 	let parentProperties = eventObj.sourceEventParams.parentProperties;
+				//
+				// 	parentProperties.forEach(function(parentPropName){
+				// 		FlexGridPlugin.EventManager.fire(
+				// 			eventObj.sourceEventParams.parent,
+				// 			'childItemChanged',
+				// 			{
+				// 				origValue: parent,
+				// 				newValue: parent,
+				// 				propertyName: parentPropName,
+				// 				originalEvent: eventObj
+				// 			}
+				// 		)
+				// 	});
+				// }
+			}
+
         };
         config.id = {
             gridClass: 'TestFlatGrid',
@@ -136,8 +183,12 @@ if (array_key_exists('index', $_GET)) {
 		let budgetNameVisualizer = (function(){
 			let v = function(){
 				this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
+					if (!DOMContainer) {
+						//У элемента еще пока нет визуального представления
+					}
 					let dataItem = gridElement.getData();
-					DOMContainer.innerHTML = '(' + dataItem.itemType + ') ' + dataItem.number;
+
+					DOMContainer.innerHTML = '(' + dataItem.entityClass + ') ' + dataItem.number;
 				};
 			};
 			v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
@@ -149,7 +200,16 @@ if (array_key_exists('index', $_GET)) {
 			let v = function(){
 				this.buildReadForm = function (/** @type {Element}*/DOMContainer, /** @type {string}*/fieldName, /** @type {object}*/gridElement, /** @type {object}*/headerData){
 					let dataItem = gridElement.getData();
-					DOMContainer.innerHTML = dataItem.estimate.number;
+					// if (dataItem[config.entityClassField] === 'IncomeStageBundle\\Entity\\IncomeStage') {
+					// 	return;
+					// }
+					if (!dataItem.estimateItem || !dataItem.estimateItem.estimate) {
+						DOMContainer.innerHTML = 'Отсутствует привязка к смете';
+					}
+					else {
+
+						DOMContainer.innerHTML = dataItem.estimateItem.estimate.number;
+					}
 				};
 			};
 			v.prototype = new FlexGridPlugin.FlexGrid.StringVisualizationComponent();
@@ -249,7 +309,7 @@ if (array_key_exists('index', $_GET)) {
         }
         let n = (new Date).getTime();
         //Полностью сконфигурировали компоненты. Теперь можно начинать загрузку
-        flatGrid.build();
+        // flatGrid.build();
 		window.FlatGridInstance = flatGrid;
 
 
@@ -260,6 +320,51 @@ if (array_key_exists('index', $_GET)) {
 		    //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
 		    let loader = function(){
 		        this.getData =   (dataAcceptor) => setTimeout(function(){
+					data.splice(2000, 10000)
+					data.forEach(function(item){
+						let sum = 1;
+						item.delivery = {
+							baseEstimate: {
+								baseTotalSumEstimateDelivery: sum++,
+								baseEquipmentSumEstimateDelivery: sum++,
+								baseServiceSumEstimateDelivery: sum++,
+								baseMaterialSumEstimateDelivery: sum++,
+							},
+							factEstimate: {
+								sumWoNdsEstimateDelivery: sum++,
+								equipmentSumEstimateDelivery: sum++,
+								serviceSumEstimateDelivery: sum++,
+								materialSumEstimateDelivery: sum++,
+							},
+							baseStage: {
+								baseTotalSumStageDelivery: sum++,
+								baseEquipmentSumStageDelivery: sum++,
+								baseServiceSumStageDelivery: sum++,
+								baseMaterialSumStageDelivery: sum++,
+							},
+							factStage: {
+								sumWoNdsStageDelivery: sum++,
+								equipmentSumStageDelivery: sum++,
+								serviceSumStageDelivery: sum++,
+								materialSumStageDelivery: sum++,
+							},
+						};
+						item.estContrDelivery = {
+							base: {
+								baseTotalSumEstContrDelivery: sum++,
+								baseEquipmentSumEstContrDelivery: sum++,
+								baseServiceSumEstContrDelivery: sum++,
+								baseMaterialSumEstContrDelivery: sum++,
+							},
+							fact: {
+								sumWoNdsEstContrDelivery: sum++,
+								equipmentSumEstContrDelivery: sum++,
+								serviceSumEstContrDelivery: sum++,
+								materialSumEstContrDelivery: sum++,
+							},
+						}
+					});
+
 					dataAcceptor(data)
 				}, 3000);
 		        this.getHeaders =  (headersAcceptor) => setTimeout(function(){
@@ -328,7 +433,7 @@ if (array_key_exists('index', $_GET)) {
                 ro.timeout && clearTimeout(ro.timeout);
                 ro.timeout = setTimeout(
                     function(){
-                        flatGrid.updatePreview();
+                        // flatGrid.updatePreview();
 						treeGrid.updatePreview();
                     },
                     //100

@@ -1469,6 +1469,7 @@ function abstractFlexGrid (config){
         let origValue = storage.original[propName];
         let parents = [];
         let i;
+        let priv = this;
 
         if (origValue === value) {
             //Смены родителя фактически не произошло.
@@ -1480,6 +1481,7 @@ function abstractFlexGrid (config){
             parents.push({
                 parent: origValue,
                 properties: [propName],
+                eventSubtype: 'removeParent',
             });
         }
 
@@ -1488,6 +1490,7 @@ function abstractFlexGrid (config){
             parents.push({
                 parent: value,
                 properties: [propName],
+                eventSubtype: 'setParent',
             });
             EventManager.subscribe(value, 'beforeChildItemChange', priv.events.beforeChildItemChange, {grid: priv.pub}, {returnResult: true});
             EventManager.subscribe(value, 'childItemChanged', priv.events.childItemChanged, {grid: priv.pub});
@@ -1528,7 +1531,7 @@ function abstractFlexGrid (config){
              * котором произошло изменение. Ставим properties: null
              */
 
-
+            eventParams.eventSubtype = parents[i].eventSubtype;
             eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: null});
             eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
             if (eventRes === false) {
@@ -1555,12 +1558,13 @@ function abstractFlexGrid (config){
             newValue: value,
             propertyName: propName,
             child: sourceObj
-        }
+        };
         EventManager.fire(sourceObj, 'itemChanged', eventParams);
 
         i = -1;
         while (++i < parents.length) {
             let parent = parents[i].parent;
+            eventParams.eventSubtype = parents[i].eventSubtype;
             /**
              *Т.к. связь реализована непосредственно от дочернего элемента к родителю, то родитель не имеет
              * прямой ссылки на дочерний элемент, поэтому нет возможности определить свойство родителя, в
@@ -1577,6 +1581,7 @@ function abstractFlexGrid (config){
         let eventRes;
         let storage = Storage.get(sourceObj);
         let origValue = storage.original[propName];
+        let priv = this;
         /**
          * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
          * @type {*[]}
@@ -1584,8 +1589,8 @@ function abstractFlexGrid (config){
         let parents = [];
         let i = -1;
         /*
-		Получим parent'ов, которых надо известить об изменениях в текущей сущности
-		 */
+            Получим parent'ов, которых надо известить об изменениях в текущей сущности
+         */
         while (++i < storage.reactive.parents.length) {
             /**
              * @type {ReactiveParentDefinition}
@@ -1629,10 +1634,10 @@ function abstractFlexGrid (config){
             parents.push({parent, properties: null});
         }
         /*
-		При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
-		Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
-		провести также проверки в рамках этих объектов
-		 */
+            При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
+            Далее, если изменяемый объект является частью других (родительских) объектов, то необходимо
+            провести также проверки в рамках этих объектов
+         */
 
         let eventParams = {
             origValue,
@@ -1685,7 +1690,7 @@ function abstractFlexGrid (config){
             origValue,
             newValue: value,
             propertyName: propName,
-        }
+        };
         EventManager.fire(sourceObj, 'itemChanged', eventParams);
 
         eventParams = {
@@ -1731,6 +1736,7 @@ function abstractFlexGrid (config){
             priv.reverseSetter(value, propName, this);
         };
     };
+  
 
     this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
         let priv = this,
@@ -1775,7 +1781,11 @@ function abstractFlexGrid (config){
         //storage.reactive.directParentFields - Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
         //storage.reactive.fields - Список сконфигурированных реактивных полей объекта
         !('reactive' in storage) && (
-            storage.reactive = {parents: [], directParentFields: {}, fields: {}},
+            storage.reactive = {
+                    parents: [], 
+                    directParentFields: {},
+                    fields: {}
+                },
                 storage.original = {}
         );
 
@@ -1842,20 +1852,24 @@ function abstractFlexGrid (config){
             };
             //Если значение является объектом или набором объектов, делаем их также реактивными
             if (v && typeof {} === typeof v) {
+                let rpd;
                 //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
                 v instanceof Array ?
-                    v.forEach(function(itemArray){
-                        let rpd;
-                        return itemArray && typeof {} === typeof itemArray ?
-                            (
-                                rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
-                                this.configureDataItemAsReactive(
-                                    new ReactiveDataItemDefinition(itemArray)
-                                        .addParentDefinition(rpd)
-                                )
-                            ):
-                            itemArray;
-                    }.bind(this)) :
+                    (
+                            rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
+                    
+                            v.forEach(function(itemArray){
+                                return itemArray && typeof {} === typeof itemArray ?
+                                    (
+                                        
+                                        this.configureDataItemAsReactive(
+                                            new ReactiveDataItemDefinition(itemArray)
+                                                .addParentDefinition(rpd)
+                                        )
+                                    ):
+                                    itemArray;
+                            }.bind(this))
+                    ) :
                     this.configureDataItemAsReactive(
                         new ReactiveDataItemDefinition(v)
                             .addParentDefinition(new ReactiveParentDefinition(dataItem).addField(propName, 'r'))

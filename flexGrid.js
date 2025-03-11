@@ -1468,6 +1468,18 @@ function abstractFlexGrid (config){
 
     };
 
+    this.fire = function(
+        /**@type {Object} */ sourceObj,
+        /**@type {string} */ eventName,
+        /**@type {Object|null} */ eventParams
+    ){
+        let eventRes = EventManager.fire(sourceObj, eventName, eventParams);
+
+        return eventRes instanceof Array ?
+            eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false) :
+            eventRes;
+    }
+
     this.directSetter = function(value, propName, sourceObj){
         let eventRes;
         let storage = Storage.get(sourceObj);
@@ -1514,9 +1526,7 @@ function abstractFlexGrid (config){
         //Здесь идет обработка смены родителя.
         //Обработка изменений других полей будет реализована далее.
         // Генерируем событие накануне изменения текущего элемента
-        eventRes = EventManager.fire(sourceObj, 'beforeItemChange', eventParams);
-        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-        if (eventRes === false) {
+        if (this.fire(sourceObj, 'beforeItemChange', eventParams) === false) {
             return;
         }
 
@@ -1537,9 +1547,8 @@ function abstractFlexGrid (config){
              */
 
             eventParams.eventSubtype = parents[i].eventSubtype;
-            eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: null});
-            eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-            if (eventRes === false) {
+
+            if (this.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: null}) === false) {
                 return;
             }
         }
@@ -1650,9 +1659,7 @@ function abstractFlexGrid (config){
             propertyName: propName,
         };
 
-        eventRes = EventManager.fire(sourceObj, 'beforeItemChange', eventParams);
-        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-        if (eventRes === false) {
+        if (this.fire(sourceObj, 'beforeItemChange', eventParams) === false) {
             return;
         }
 
@@ -1665,9 +1672,8 @@ function abstractFlexGrid (config){
         i = -1;
         while (++i < parents.length) {
             let parent = parents[i];
-            eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-            eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-            if (eventRes === false) {
+
+            if (this.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                 return;
             }
         }
@@ -1878,9 +1884,8 @@ function abstractFlexGrid (config){
                     };
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-                        if (eventRes === false) {
+
+                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                             return;
                         }
                     }
@@ -1958,9 +1963,8 @@ function abstractFlexGrid (config){
                     };
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-                        if (eventRes === false) {
+
+                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                             return;
                         }
                     }
@@ -2037,9 +2041,8 @@ function abstractFlexGrid (config){
                     };
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-                        if (eventRes === false) {
+
+                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                             return;
                         }
                     }
@@ -2117,9 +2120,8 @@ function abstractFlexGrid (config){
                     };
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-                        if (eventRes === false) {
+
+                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                             return;
                         }
                     }
@@ -2199,15 +2201,14 @@ function abstractFlexGrid (config){
                     };
                     while (++i < parents.length) {
                         let parent = parents[i];
-                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
-                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
-                        if (eventRes === false) {
+
+                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                             return;
                         }
                     }
-                    
+
                     item = Array.prototype.pop.apply(this, arguments);
-                    
+
                     i = -1;
                     while (++i < parents.length) {
                         let parent = parents[i].parent;
@@ -2215,9 +2216,9 @@ function abstractFlexGrid (config){
                     }
 
                     storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
-                    
+
                     return item;
-                    
+
                 },
                 storage.reactive.methods[arrayMethodName] = true
             

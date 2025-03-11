@@ -824,6 +824,11 @@ function abstractFlexGrid (config){
 
         this.directParentFields = {};
         this.globalStorage = Storage.create(abstractFlexGrid);
+        /**
+         * ds - Direct Setter
+         * rs - Reverse Setter
+         * g - Getter
+         */
         !('callbacks' in this.globalStorage) && (this.globalStorage.callbacks = {ds: {}, rs: {}, g: {}});
 
         //TODO async await
@@ -1830,6 +1835,8 @@ function abstractFlexGrid (config){
                 priv.globalStorage.callbacks.ds[propName] = priv.createDirectSetterCallback(propName)
             );
             //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
+            // Например, смета может передать фрагментам свой номер
+
             //Здесь уже точно существуют необходимые callback'и для propName, поэтому не проверяем их наличие
             reactiveConfig.get = priv.globalStorage.callbacks.g[propName];
 
@@ -1852,7 +1859,9 @@ function abstractFlexGrid (config){
             };
             //Если значение является объектом или набором объектов, делаем их также реактивными
             if (v && typeof {} === typeof v) {
-                let rpd;
+                //Все элементы массива находятся в одних и тех же свойствах родителя, что и сам массив. 
+                //Поэтому им можно единый ReactiveParentDefinition прописать
+                let rpd  = new ReactiveParentDefinition(dataItem).addField(propName, 'r')
                 //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
                 v instanceof Array ?
                     (

@@ -46,7 +46,7 @@ if (array_key_exists('index', $_GET)) {
 
         let nn = (new Date).getTime();
 
-        config.dataTransmitter = (function(){
+        config.dataProvider = (function(){
             //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
             let loader = function(){
 				// this.getData =  (dataAcceptor) => setTimeout(function(){dataAcceptor(data)}, 0);
@@ -106,11 +106,11 @@ if (array_key_exists('index', $_GET)) {
                 // this.getData = (dataAcceptor) => dataAcceptor(data);
                 // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
             };
-            loader.prototype = new FlexGridPlugin.FlexGrid.DataTransmitterInterface;
+            loader.prototype = new FlexGridPlugin.FlexGrid.DataProviderInterface;
 
             return new loader();
         })()
-        // config.dataTransmitter = (function(){
+        // config.dataProvider = (function(){
         //     //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
         //     let loader = function(){
         //         this.getData =   (dataAcceptor) => setTimeout(function(){
@@ -120,7 +120,7 @@ if (array_key_exists('index', $_GET)) {
         //         // this.getData = (dataAcceptor) => dataAcceptor(data);
         //         // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
         //     };
-        //     loader.prototype = new FlexGridPlugin.FlexGrid.DataTransmitterInterface;
+        //     loader.prototype = new FlexGridPlugin.FlexGrid.DataProviderInterface;
 		//
         //     return new loader();
         // })()
@@ -316,7 +316,7 @@ if (array_key_exists('index', $_GET)) {
 		//Иерархический грид
 
 
-		config.dataTransmitter = (function(){
+		config.dataProvider = (function(){
 		    //Загрузки с сервака можно либо в асинхронность убрать, либо в отдельные воркеры (и стоит ли вообще с ними связываться??)
 		    let loader = function(){
 		        this.getData =   (dataAcceptor) => setTimeout(function(){
@@ -395,7 +395,7 @@ if (array_key_exists('index', $_GET)) {
 		        // this.getData = (dataAcceptor) => dataAcceptor(data);
 		        // this.getHeaders = (headersAcceptor) => headersAcceptor(headers);
 		    };
-		    loader.prototype = new FlexGridPlugin.FlexGrid.DataTransmitterInterface;
+		    loader.prototype = new FlexGridPlugin.FlexGrid.DataProviderInterface;
 
 		    return new loader();
 		})()

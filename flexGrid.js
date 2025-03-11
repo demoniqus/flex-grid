@@ -164,8 +164,8 @@ function FlexGridDefaultConfig()
         filterable: true,
         _visualizer: 'Пользовательский компонент визуализации данных. Должен реализовывать интерфейс DefaultVisualizer.VisualizerInterface',
         visualizer: null,
-        _dataTransmitter: 'Пользовательский компонент передачи данных. Должен реализовывать интерфейс FlexGrid.DataTransmitterInterface',
-        dataTransmitter: null,
+        _dataProvider: 'Пользовательский компонент передачи данных. Должен реализовывать интерфейс FlexGrid.DataProviderInterface',
+        dataProvider: null,
         _events: {
             moveItem: function(acceptorItem, draggedItem, acceptorFlexGridCustomId, sourceFlexGridCustomId){
                 try {
@@ -452,7 +452,7 @@ function abstractFlexGrid (config){
         // Набор фильтров данных
     };
 
-    this.dataTransmitter = undefined;
+    this.dataProvider = undefined;
     //Список наименований полей в сущностях, которые являются прямыми ссылками на родителя
     this.directParentFields = undefined;
     //Глобальное хранилище для всех экземпляров grid'ов
@@ -677,8 +677,8 @@ function abstractFlexGrid (config){
             errors.push('Incorrect grid container');
         }
         if (
-            !config.dataTransmitter ||
-            !(config.dataTransmitter instanceof FlexGrid.DataTransmitterInterface)
+            !config.dataProvider ||
+            !(config.dataProvider instanceof FlexGrid.DataProviderInterface)
         ) {
             errors.push('Incorrect data processor');
         }
@@ -742,8 +742,8 @@ function abstractFlexGrid (config){
 
         delete config.visualizer;
 
-        this.dataTransmitter = config.dataTransmitter;
-        delete config.dataTransmitter;
+        this.dataProvider = config.dataProvider;
+        delete config.dataProvider;
 
         this.config = config;
 
@@ -835,7 +835,7 @@ function abstractFlexGrid (config){
                         resolve(headers):
                         reject();
                 }.bind(this);
-                this.dataTransmitter.getHeaders(headersAcceptor);
+                this.dataProvider.getHeaders(headersAcceptor);
             }.bind(this)
         )
         .then(function(headers){
@@ -869,7 +869,7 @@ function abstractFlexGrid (config){
                         reject();
                     }
                 }.bind(this);
-                this.dataTransmitter.getData(dataAcceptor);
+                this.dataProvider.getData(dataAcceptor);
             }.bind(this)
         );
 
@@ -889,7 +889,7 @@ function abstractFlexGrid (config){
                         reject();
                     }
                 }.bind(this);
-                this.dataTransmitter.getMetadata(metadataAcceptor)
+                this.dataProvider.getMetadata(metadataAcceptor)
             }.bind(this)
         )
 
@@ -2228,7 +2228,7 @@ export let FlexGrid = Object.defineProperties(
             configurable: false,
             enumerable: false,
         },
-        DataTransmitterInterface: {
+        DataProviderInterface: {
             get: () => function(){
                 this.getData = function(/**@type {function} */dataAcceptor){throw 'Method getData not implemented'};
                 this.getHeaders = function(/**@type {function} */headersAcceptor){throw 'Method getData not implemented'};

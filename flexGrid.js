@@ -1681,13 +1681,22 @@ function abstractFlexGrid (config){
         //Проверки выполнены. Теперь меняем значение свойства
 
         if (value && typeof value === typeof {}) {
-            priv.configureDataItemAsReactive(
-                new ReactiveDataItemDefinition(value)
-                    .addParentDefinition(new ReactiveParentDefinition(sourceObj).addField(propName, 'r'))
-
-            );
+            let rdid = new ReactiveDataItemDefinition(value)
+                .addParentDefinition(new ReactiveParentDefinition(sourceObj).addField(propName, 'r'));
+            
+            value instanceof Array ?
+                priv.reactiveArray(rdid):
+                priv.configureDataItemAsReactive(rdid);
 
         }
+//         if (value && typeof value === typeof {}) {
+//            priv.configureDataItemAsReactive(
+//                new ReactiveDataItemDefinition(value)
+//                    .addParentDefinition(new ReactiveParentDefinition(sourceObj).addField(propName, 'r'))
+//
+//            );
+//
+//        }
 
         Storage.get(sourceObj).original[propName] = value;
         //Значение изменено. Генерируем события
@@ -1741,7 +1750,517 @@ function abstractFlexGrid (config){
             priv.reverseSetter(value, propName, this);
         };
     };
-  
+    
+    this.reactiveArray = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
+        
+         let priv = this,
+            dataItem = reactiveDataItemDefinition.getDataItem(),//Объект данных
+            parentDefinitions = reactiveDataItemDefinition.getParentDefinitions(), //Список всех родительских связей
+            evConf = {returnResult: true},//Теоретически можно вытащить из этого метода вверх evConf и evExtParams
+            evExtParams = {grid: this.pub},//Сделать неизменяемым объект
+            reactiveConfig = {enumerable: true},
+            arrayMethodName,
+            stackArrays = [dataItem],
+            stackArraysCounter = -1,
+            rdid
+        ;
+         /**
+          * Массивы могут содержать в себе примитивные значения, объекты, вложенные массивы.
+          * Проверяем полученный массив. Примитивные значения не конфигурируем никак. 
+          * Если пользователь захочет изменить их, ему надо будет воспользоваться методом set, который будет 
+          * добавлен массиву, вместо доступа по индексу.  В этом случае массив сможет сгенерировать событие 
+          * изменения.
+          * Объектные значения отправляем на конфигурацию в configureDataItemAsReactive и конфигурируем
+          * таким образом, чтобы если у массива есть родительский объект (не массив, а объект), то события
+          * изменения дочерних элементов пробрасывались сразу к ним. Для самого массива состояние элемента
+          * не имеет значения - важны лишь порядок, количество.
+          * Если вложенные элементы сами являются массивами, мы их также конфигурируем как массивы.
+          * Для массива мы конфигурируем методы, которые влияют на состав и порядок элементов. При этом,
+          * если у массива есть родительский объект, то его также надо уведомлять об изменениях структуры 
+          * массива. При этом 
+          */
+        while (++stackArraysCounter < stackArrays.length) {
+            let arr = stackArrays[stackArraysCounter];
+            arr.forEach(function(item){
+                if (!item || !(typeof item === 'object')) return;
+                (item instanceof Array) ?
+                    stackArrays.push(item) :
+                    (
+                        rdid = new ReactiveDataItemDefinition(item),
+                        reactiveDataItemDefinition.getParentDefinitions().forEach((rpd) => rdid.addParentDefinition(rpd)),
+                        priv.configureDataItemAsReactive(rdid)
+                    ) ;
+                
+            });
+        }
+        
+        let i = -1;
+        while (++stackArraysCounter < stackArrays.length) {
+            let arr = stackArrays[stackArraysCounter];
+            this.configureArrayAsReactive(arr, reactiveDataItemDefinition.getParentDefinitions() )
+        }
+    };
+    
+    this.configureArrayAsReactive = function(/**@type {array} */ dataItem, /**@type {ReactiveParentDefinition[]} */ parentDefinitions){
+        //TODO Может еще быть массив массивов
+         let priv = this,
+            evConf = {returnResult: true},//Теоретически можно вытащить из этого метода вверх evConf и evExtParams
+            evExtParams = {grid: this.pub},//Сделать неизменяемым объект
+            reactiveConfig = {enumerable: true},
+            arrayMethodName
+        ;
+        
+        
+        
+        this.createGridStorageIntoObject(dataItem);
+
+        let storage = Storage.get(dataItem);
+
+         !('reactive' in storage) && (
+            storage.reactive = {
+                parents: [], 
+                methods: {}
+            }
+        );
+           
+        arrayMethodName = 'set';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(item, index){
+                    let origValue = this.length > index ? this[index] : undefined;
+                    let sourceObj = this;
+                     /**
+                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+                    * @type {*[]}
+                    */
+                   let parents = [];
+                   let i = -1;
+                   /*
+                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
+                    */
+                   while (++i < storage.reactive.parents.length) {
+                       /**
+                        * @type {ReactiveParentDefinition}
+                        */
+                       let parentDefinition = storage.reactive.parents[i];
+                       let parent = parentDefinition.getParent();
+                       if (!parent) {
+                           //Этот parent уже почил
+                           continue;
+                       }
+                       /**
+                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+                        * @type {*[]}
+                        */
+                       let properties = [];
+                       for (let propName in parentDefinition.getReverseProperties()) {
+                           (
+                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                               // но также может быть, что является частью набора дочерних элементов
+                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                               sourceObj === parent[propName] ||
+                               (
+                                   parent[propName] instanceof Array &&
+                                   parent[propName].find(item => item === sourceObj)
+                               )
+                           ) && properties.push(propName);
+                       }
+
+                       properties.length ?
+                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+                   }
+                    let eventParams = {
+                        origValue,
+                        newValue: item,
+                        index,
+                        eventSubtype: 'set'
+                    };
+                    while (++i < parents.length) {
+                        let parent = parents[i];
+                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                        if (eventRes === false) {
+                            return;
+                        }
+                    }
+                    
+                    this[index] = item;
+
+                    i = -1;
+                    while (++i < parents.length) {
+                        let parent = parents[i].parent;
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+                    }
+
+                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    
+                },
+                storage.reactive.methods[arrayMethodName] = true
+            
+        );
+
+   
+        arrayMethodName = 'push';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(){
+                    let index = this.length;
+                    let item = arguments[0];
+                    let origValue = undefined;
+                    let sourceObj = this;
+                     /**
+                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+                    * @type {*[]}
+                    */
+                   let parents = [];
+                   let i = -1;
+                   /*
+                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
+                    */
+                   while (++i < storage.reactive.parents.length) {
+                       /**
+                        * @type {ReactiveParentDefinition}
+                        */
+                       let parentDefinition = storage.reactive.parents[i];
+                       let parent = parentDefinition.getParent();
+                       if (!parent) {
+                           //Этот parent уже почил
+                           continue;
+                       }
+                       /**
+                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+                        * @type {*[]}
+                        */
+                       let properties = [];
+                       for (let propName in parentDefinition.getReverseProperties()) {
+                           (
+                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                               // но также может быть, что является частью набора дочерних элементов
+                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                               sourceObj === parent[propName] ||
+                               (
+                                   parent[propName] instanceof Array &&
+                                   parent[propName].find(item => item === sourceObj)
+                               )
+                           ) && properties.push(propName);
+                       }
+
+                       properties.length ?
+                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+                   }
+                    let eventParams = {
+                        origValue,
+                        newValue: item,
+                        index,
+                        eventSubtype:  'push',
+                    };
+                    while (++i < parents.length) {
+                        let parent = parents[i];
+                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                        if (eventRes === false) {
+                            return;
+                        }
+                    }
+                    
+                    Array.prototype.push.apply(this, arguments);
+
+                    i = -1;
+                    while (++i < parents.length) {
+                        let parent = parents[i].parent;
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+                    }
+
+                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    
+                },
+                storage.reactive.methods[arrayMethodName] = true
+            
+        );
+
+        arrayMethodName = 'unshift';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(){
+                    let index = 0;
+                    let item = arguments[0];
+                    let origValue = undefined;
+                    let sourceObj = this;
+                     /**
+                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+                    * @type {*[]}
+                    */
+                   let parents = [];
+                   let i = -1;
+                   /*
+                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
+                    */
+                   while (++i < storage.reactive.parents.length) {
+                       /**
+                        * @type {ReactiveParentDefinition}
+                        */
+                       let parentDefinition = storage.reactive.parents[i];
+                       let parent = parentDefinition.getParent();
+                       if (!parent) {
+                           //Этот parent уже почил
+                           continue;
+                       }
+                       /**
+                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+                        * @type {*[]}
+                        */
+                       let properties = [];
+                       for (let propName in parentDefinition.getReverseProperties()) {
+                           (
+                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                               // но также может быть, что является частью набора дочерних элементов
+                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                               sourceObj === parent[propName] ||
+                               (
+                                   parent[propName] instanceof Array &&
+                                   parent[propName].find(item => item === sourceObj)
+                               )
+                           ) && properties.push(propName);
+                       }
+
+                       properties.length ?
+                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+                   }
+                    let eventParams = {
+                        origValue,
+                        newValue: item,
+                        index,
+                        eventSubtype:  'unshift',
+                    };
+                    while (++i < parents.length) {
+                        let parent = parents[i];
+                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                        if (eventRes === false) {
+                            return;
+                        }
+                    }
+                    
+                    Array.prototype.unshift.apply(this, arguments);
+
+                    i = -1;
+                    while (++i < parents.length) {
+                        let parent = parents[i].parent;
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+                    }
+
+                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    
+                },
+                storage.reactive.methods[arrayMethodName] = true
+            
+        );
+
+
+        arrayMethodName = 'shift';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(){
+                    let index = 0;
+                    let item = undefined;
+                    let origValue = this[index];
+                    let sourceObj = this;
+                     /**
+                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+                    * @type {*[]}
+                    */
+                   let parents = [];
+                   let i = -1;
+                   /*
+                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
+                    */
+                   while (++i < storage.reactive.parents.length) {
+                       /**
+                        * @type {ReactiveParentDefinition}
+                        */
+                       let parentDefinition = storage.reactive.parents[i];
+                       let parent = parentDefinition.getParent();
+                       if (!parent) {
+                           //Этот parent уже почил
+                           continue;
+                       }
+                       /**
+                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+                        * @type {*[]}
+                        */
+                       let properties = [];
+                       for (let propName in parentDefinition.getReverseProperties()) {
+                           (
+                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                               // но также может быть, что является частью набора дочерних элементов
+                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                               sourceObj === parent[propName] ||
+                               (
+                                   parent[propName] instanceof Array &&
+                                   parent[propName].find(item => item === sourceObj)
+                               )
+                           ) && properties.push(propName);
+                       }
+
+                       properties.length ?
+                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+                   }
+                    let eventParams = {
+                        origValue,
+                        newValue: item,
+                        index,
+                        eventSubtype: 'shift',
+                    };
+                    while (++i < parents.length) {
+                        let parent = parents[i];
+                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                        if (eventRes === false) {
+                            return;
+                        }
+                    }
+                    
+                    item = Array.prototype.shift.apply(this, arguments);
+                    
+                    i = -1;
+                    while (++i < parents.length) {
+                        let parent = parents[i].parent;
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+                    }
+
+                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    
+                    return item;
+                    
+                },
+                storage.reactive.methods[arrayMethodName] = true
+            
+        );
+
+
+        arrayMethodName = 'pop';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(){
+                    let index = this.length ? (this.length - 1) : 0;
+                    let item = undefined;
+                    let origValue = this[index];
+                    let sourceObj = this;
+                     /**
+                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
+                    * @type {*[]}
+                    */
+                   let parents = [];
+                   let i = -1;
+                   /*
+                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
+                    */
+                   while (++i < storage.reactive.parents.length) {
+                       /**
+                        * @type {ReactiveParentDefinition}
+                        */
+                       let parentDefinition = storage.reactive.parents[i];
+                       let parent = parentDefinition.getParent();
+                       if (!parent) {
+                           //Этот parent уже почил
+                           continue;
+                       }
+                       /**
+                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
+                        * @type {*[]}
+                        */
+                       let properties = [];
+                       for (let propName in parentDefinition.getReverseProperties()) {
+                           (
+                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
+                               // но также может быть, что является частью набора дочерних элементов
+                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
+                               sourceObj === parent[propName] ||
+                               (
+                                   parent[propName] instanceof Array &&
+                                   parent[propName].find(item => item === sourceObj)
+                               )
+                           ) && properties.push(propName);
+                       }
+
+                       properties.length ?
+                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+
+                   }
+                    let eventParams = {
+                        origValue,
+                        newValue: item,
+                        index,
+                        eventSubtype: 'pop',
+                    };
+                    while (++i < parents.length) {
+                        let parent = parents[i];
+                        let eventRes = EventManager.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties});
+                        eventRes = eventRes.reduce((accum, eventResItem) => eventResItem !== false && accum !== false);
+                        if (eventRes === false) {
+                            return;
+                        }
+                    }
+                    
+                    item = Array.prototype.pop.apply(this, arguments);
+                    
+                    i = -1;
+                    while (++i < parents.length) {
+                        let parent = parents[i].parent;
+                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
+                    }
+
+                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    
+                    return item;
+                    
+                },
+                storage.reactive.methods[arrayMethodName] = true
+            
+        );
+        /**
+         * 
+         * splice
+         * push
+         * set
+         * map / forEach
+         * sort
+         * shift
+         * pop
+         * unshift
+         * reverse
+         * fill???
+         * delete (index, collapse = true) - удаление элемента со схлопыванием пустого пространства
+         * 
+         */
+
+         for (let i in parentDefinitions) {
+            /**
+             * @type {ReactiveParentDefinition}
+             */
+            let sourceParentDefinition = parentDefinitions[i];
+            // EventManager.subscribe(sourceParentDefinition.getParent(), 'childItemChanged', priv.events.childItemChanged, {grid: this.pub});
+
+            let reactive = storage.reactive;
+            /**
+             *
+             * @type {ReactiveParentDefinition}
+             */
+            let targetParentDefinition = reactive.parents.find((/**@type {ReactiveParentDefinition} */parentItem) => parentItem.getParent() === sourceParentDefinition.getParent())
+            if (!targetParentDefinition) {
+                targetParentDefinition = sourceParentDefinition;
+                reactive.parents.push(targetParentDefinition);
+            }
+            else {
+                targetParentDefinition.merge(sourceParentDefinition);
+            }
+        }
+    
+    };
 
     this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
         let priv = this,
@@ -1864,24 +2383,28 @@ function abstractFlexGrid (config){
                 let rpd  = new ReactiveParentDefinition(dataItem).addField(propName, 'r')
                 //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
                 v instanceof Array ?
-                    (
-                            rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
-                    
-                            v.forEach(function(itemArray){
-                                return itemArray && typeof {} === typeof itemArray ?
-                                    (
-                                        
-                                        this.configureDataItemAsReactive(
-                                            new ReactiveDataItemDefinition(itemArray)
-                                                .addParentDefinition(rpd)
-                                        )
-                                    ):
-                                    itemArray;
-                            }.bind(this))
-                    ) :
+                    this.reactiveArray(
+                        new ReactiveDataItemDefinition(v)
+                            .addParentDefinition(rpd)
+                    ):
+//                    (
+////                            rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
+//                    
+//                            v.forEach(function(itemArray){
+//                                return itemArray && typeof {} === typeof itemArray ?
+//                                    (
+//                                        
+//                                        this.configureDataItemAsReactive(
+//                                            new ReactiveDataItemDefinition(itemArray)
+//                                                .addParentDefinition(rpd)
+//                                        )
+//                                    ):
+//                                    itemArray;
+//                            }.bind(this))
+//                    ) :
                     this.configureDataItemAsReactive(
                         new ReactiveDataItemDefinition(v)
-                            .addParentDefinition(new ReactiveParentDefinition(dataItem).addField(propName, 'r'))
+                            .addParentDefinition(rpd)
                     );
             }
 

@@ -405,3 +405,21 @@ body {
     font-size: 1.5em;
     cursor: pointer;
 }
+
+.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field .flex-grid-filter-option button {
+    border: 0 none;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 100%;
+    max-height: 100%;
+    margin: 0;
+    padding: 0 3px;
+
+}
+.flex-grid-filter-panel .flex-grid-filter-component-container .form-control {
+    padding-left: 0;
+    padding-right: 0;
+
+}

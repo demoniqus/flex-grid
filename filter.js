@@ -226,6 +226,19 @@ export function FlexGridDataFilterComponentInterface (){
             button: button
         };
     };
+    this.buildConfigurationOption = function(){
+        let container = document.createElement('div');
+        container.classList.add('flex-grid-filter-option');
+        let button = document.createElement('button');
+        button.classList.add('filter-configuration-button');
+        button.innerHTML = '&#9881;';
+
+        container.appendChild(button);
+        return {
+            container: container,
+            button: button
+        };
+    };
 
     this.customizeComponents = function(componentsDict){
 
@@ -272,15 +285,24 @@ export function StringFilterComponent(){
 
         //events: onchange (minlength >= 0), onenter,
 
+
         let div = document.createElement('div');
+        let formControlContainer = document.createElement('div');
         let input = document.createElement('input');
         div.classList.add('flex-grid-filter-field');
-        div.appendChild(input);
+        formControlContainer.classList.add('form-control-container');
+
+
         let resetOption = this.buildResetOption(filterComponent);
+        let configurationOption = this.buildConfigurationOption(filterComponent);
         // console.log(this.Filter); //(pubFilter)
 
         forms.componentContainer.appendChild(div);
-        forms.componentContainer.appendChild(resetOption.container);
+        div.appendChild(configurationOption.container);
+        div.appendChild(formControlContainer);
+        div.appendChild(resetOption.container);
+        formControlContainer.appendChild(input);
+        // forms.componentContainer.appendChild(resetOption.container);
 
         resetOption.button.addEventListener(
             'click',

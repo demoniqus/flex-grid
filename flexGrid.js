@@ -64,6 +64,24 @@ function FlexGridEventsModel()
         },
         itemChanged: function(eventObj){
             console.log(eventObj)
+            let gridElement;
+            let sourceEventParams  = eventObj.sourceEventParams;
+            let source = eventObj.sourceObject;
+            let sourceStorage = Storage.get(source);
+            //Если изменился
+            if (
+                sourceStorage &&
+                sourceStorage.grids &&
+                sourceStorage.grids.has(this)
+            ) {
+                gridElement = sourceStorage.grids.get(this).gridElement;
+                if (gridElement) {
+                    let properties = [sourceEventParams.propertyName];
+                    //TODO Выполнить асинхронно?
+                    //TODO Выполнить проверку, в каком режиме находится строка и как правильно обновлять ее визуальное представление (и надо ли вообще, чтобы не возникло рекурсии)
+                    properties.forEach(propName => gridElement.isVisualized() &&  gridElement.updateCell(propName));
+                }
+            }
 
             typeof this.config.events.itemChanged === typeof function (){} &&
             this.config.events.itemChanged(...arguments);

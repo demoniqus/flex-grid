@@ -330,6 +330,10 @@ function FlexGridInterface()
     this.getId = function(){
         throw 'Method \'getId\' is not implemented';
     };
+
+    this.getContainer = () => {
+        throw 'Method \'getContainer\' not implemented'
+    };
 }
 
 function FlatGridInterface()
@@ -749,6 +753,8 @@ function abstractFlexGrid (config){
 
         return this;
     };
+
+    this.getContainer = () => this.visualizer.getContainer();
 
     this.configureEvents = function(){
         let gridEventsModel = new FlexGridEventsModel();
@@ -2619,6 +2625,8 @@ function TreeGrid(config){
 
     };
 
+    this.getContainer = () => priv.getContainer();
+
     this.getId = function(){return priv.getId();};
 
     priv.registerDefaultComponents();
@@ -2670,6 +2678,8 @@ function FlatGrid(config) {
         throw 'Method \'destroy\' is not implemented for flexGrid';
 
     };
+
+    this.getContainer = () => priv.getContainer();
 
     this.getId = function(){return priv.getId();};
 

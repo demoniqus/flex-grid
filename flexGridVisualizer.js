@@ -99,6 +99,9 @@ function VisualizerInterface(){
     this.setColumnWidth = function(/**@type {Object|string} */column, /**@type {int} */width){
         throw 'Define setColumnWidth method';
     };
+    this.getContainer = function(){
+        throw 'Define getContainer method';
+    }
 
     return this;
 };
@@ -1141,6 +1144,8 @@ export function DefaultVisualizer(){
     pub.setColumnWidth = function(columnId, width){
         priv.setColumnWidth(columnId, width);
     };
+
+    pub.getContainer = () => priv.DOM.container;
 
     pub.updateColumnsWidth = (columns) => priv.updateColumnsWidth(columns)
 

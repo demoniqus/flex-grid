@@ -172,7 +172,28 @@ if (array_key_exists('index', $_GET)) {
 				// 		)
 				// 	});
 				// }
-			}
+			},
+            completed: function(/**@type {mixed} */ gridId){
+                /**@type {FlexGridPlugin.FlexGridInterface} grid  */
+                let grid = gridId.gridClass === 'TestFlatGrid' ?
+                    window.FlatGridInstance :
+                    window.TreeGridInstance;
+                const ro = new ResizeObserver(function(mutations){
+                    //TODO НЕ выполнять при первой инициализации страницы
+                    // Возможно, timeout тут вообще не нужен, т.к. пока пользователь не остановит перемещение resizer'а, событие не наступает
+                    ro.timeout && clearTimeout(ro.timeout);
+                    ro.timeout = setTimeout(
+                        function(){
+                            grid.updatePreview();
+                        },
+                        100
+                        // 7000
+                    );
+                    //TODO resize для скроллируемых панелей!!
+                })
+                ro.observe(grid.getContainer());
+                // ro.observe(document.getElementById('container'));
+            }
 
         };
         config.id = {
@@ -426,23 +447,23 @@ if (array_key_exists('index', $_GET)) {
 		window.TreeGridInstance = treeGrid;
 
         console.log('time building ', (new Date()).getTime() - n);
-        (function(){
-            const ro = new ResizeObserver(function(mutations){
-                //TODO НЕ выполнять при первой инициализации страницы
-                // Возможно, timeout тут вообще не нужен, т.к. пока пользователь не остановит перемещение resizer'а, событие не наступает
-                ro.timeout && clearTimeout(ro.timeout);
-                ro.timeout = setTimeout(
-                    function(){
-                        // flatGrid.updatePreview();
-						treeGrid.updatePreview();
-                    },
-                    //100
-                        7000
-                )
-                //TODO resize для скроллируемых панелей!!
-            })
-            ro.observe(document.getElementById('container'));
-        })();
+        // (function(){
+        //     const ro = new ResizeObserver(function(mutations){
+        //         //TODO НЕ выполнять при первой инициализации страницы
+        //         // Возможно, timeout тут вообще не нужен, т.к. пока пользователь не остановит перемещение resizer'а, событие не наступает
+        //         ro.timeout && clearTimeout(ro.timeout);
+        //         ro.timeout = setTimeout(
+        //             function(){
+        //                 flatGrid.updatePreview();
+		// 				treeGrid.updatePreview();
+        //             },
+        //             100
+        //                 // 7000
+        //         )
+        //         //TODO resize для скроллируемых панелей!!
+        //     })
+        //     ro.observe(document.getElementById('container'));
+        // })();
 
 
 

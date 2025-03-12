@@ -1616,15 +1616,16 @@ function abstractFlexGrid (config){
     };
 
     this.reverseSetter = function(value, propName, sourceObj){
-        let eventRes;
         let storage = Storage.get(sourceObj);
         let origValue = storage.original[propName];
         let priv = this;
+        let stop = false;
         /**
-         * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-         * @type {*[]}
+         * Список уникальных родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект,
+         * которых надо известить о событиях
+         * @type {Map}
          */
-        let parents = [];
+        let parents = new Map();
         let i = -1;
         /*
             Получим parent'ов, которых надо известить об изменениях в текущей сущности
@@ -1639,11 +1640,20 @@ function abstractFlexGrid (config){
                 //Этот parent уже почил
                 continue;
             }
+            if (!parentDefinition.hasReverseProperties()) {
+                //В этом definition'е не определены reverse-связи
+                continue;
+            }
             /**
-             * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-             * @type {*[]}
+             * Список свойств, через которые указанный родитель всё еще ссылается на текущий обрабатываемый объект
+             * @type {Set}
              */
-            let properties = [];
+            let properties = new Set();
+            /**
+             * Список свойств, по которым связь с предполагаемым родителем уже отсутствует
+             * @type {Set}
+             */
+            let brokenProperties = new Set();
             for (let propName in parentDefinition.getReverseProperties()) {
                 (
                     //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
@@ -1652,24 +1662,41 @@ function abstractFlexGrid (config){
                     sourceObj === parent[propName] ||
                     (
                         parent[propName] instanceof Array &&
-                        parent[propName].find(item => item === sourceObj)
+                        parent[propName].find(item => item === sourceObj)//TODO Иерархия теоретически может иметь более одного уровня вложенности
                     )
-                ) && properties.push(propName);
+                ) ?
+                    properties.add(propName):
+                    brokenProperties.add(propName)
             }
 
-            properties.length ?
-                parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+            if (properties.size) {
+                if (parents.has(parent)) {
+                    let o = parents.get(parent);
+                    properties.forEach(propName => o.properties.set(propName))
+                }
+                else {
+                    parents.set(parent, {parent, properties}); //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
+                }
+            }
+
+            /**
+             * brokenProperties - список полей, по которым сущность уже фактически не связана с указанными родителями.
+             * Убираем эти связи.
+             */
+            brokenProperties.forEach(propName => parentDefinition.deleteReverseProperty(propName))
 
         }
 
         for (let directParentField in storage.reactive.directParentFields) {
             let parent = sourceObj[directParentField];
-            if (!parent) {
+            if (
+                !parent ||
+                parents.has(parent)
+            ) {
                 continue;
             }
             //parent не имеет полей, ссылающихся на child, поэтому properties = null
-            parents.push({parent, properties: null});
+            parents.set(parent, {parent, properties: null});
         }
         /*
             При изменении свойства объекта первая проверка должна производиться в рамках самого объекта.
@@ -1693,14 +1720,15 @@ function abstractFlexGrid (config){
             propertyName: propName,
             object: sourceObj
         };
-        i = -1;
-        while (++i < parents.length) {
-            let parent = parents[i];
 
-            if (this.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                return;
+        parents.forEach(function(parent){
+            if (stop) return;
+            if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
+                stop = true;
             }
-        }
+        })
+
+        if (stop) return;
 
         //TODO Было бы неплохо придумать способ обновлять сущность не отдельными полями, а сначала обновить, потом выполнить события
         // В этом случае пользователь может внести изменения, которые по отдельности запрещены, а вместе допустимы
@@ -1744,13 +1772,17 @@ function abstractFlexGrid (config){
             object: sourceObj
         }
 
-        i = -1;
-        while (++i < parents.length) {
-            let parent = parents[i].parent;
-            EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-        }
+        parents.forEach(parent => EventManager.fire(parent.parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}))
 
-        storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+        storage.reactive.parents = storage.reactive.parents.filter(
+            (/**@type ReactiveParentDefinition */parent) =>
+                parent &&
+                !!parent.getParent() &&
+                (
+                    parent.hasReverseProperties() ||
+                    parent.hasDirectProperties()
+                )
+        );
 
     };
 
@@ -2839,6 +2871,20 @@ function ReactiveParentDefinition(/**@type {Object} */parent)
 
     this.getDirectProperties = () => priv.properties.d;
     this.getReverseProperties = () => priv.properties.r;
+    this.hasDirectProperties = () => {for (let propName in priv.properties.d) {return true;} return false;};
+    this.hasReverseProperties = () => {for (let propName in priv.properties.r) {return true;} return false;};
+    this.deleteReverseProperty = function (/** @type {string} */ propName)
+    {
+        delete priv.properties.r[propName];
+
+        return this;
+    }
+    this.deleteDirectProperty = function (/** @type {string} */ propName)
+    {
+        delete priv.properties.d[propName];
+
+        return this;
+    }
 
 
 }

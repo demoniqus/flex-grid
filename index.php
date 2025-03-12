@@ -1,7 +1,7 @@
 <?php
 if (array_key_exists('index', $_GET)) {
 	$index = +$_GET['index'];
-	$count = $index + 1000;
+	$count = $index + 10000;
 	$data = [];
 	for ($i = $index; $i < $count; $i++) {
 		$data[] = [
@@ -330,7 +330,7 @@ if (array_key_exists('index', $_GET)) {
         }
         let n = (new Date).getTime();
         //Полностью сконфигурировали компоненты. Теперь можно начинать загрузку
-        // flatGrid.build();
+        flatGrid.build();
 		window.FlatGridInstance = flatGrid;
 
 
@@ -427,7 +427,6 @@ if (array_key_exists('index', $_GET)) {
 		};
 
 		config.container = document.getElementById('container2');
-
 
 		var treeGrid = FlexGridPlugin.FlexGrid.GridManager.createTreeGrid(config);
 

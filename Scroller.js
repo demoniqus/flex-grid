@@ -597,7 +597,7 @@ function abstractScroller (){
          */
 
         if (!this.items.list.length) {
-            elementInfo = this.loadPrevElement(firstItemIndex - 1)
+            elementInfo = this.loadPrevElement(requestIndex - 1)
             if (elementInfo) {
                 elementInfo.getElement().classList.add(ClassModel.Transparent);
                 this.appendOnViewportEnd(elementInfo.getElement());

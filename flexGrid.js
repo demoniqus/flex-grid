@@ -964,6 +964,8 @@ function abstractFlexGrid (config){
             }.bind(this)
         ).then(async function(){
             //TODO Выполнять асинхронно
+            //TODO Подумать, может реактивность надо навешивать только при изменении сущностей через пользовательский интерфейс?
+            // Хотя, не исключено, что сущности могут меняться и при обновлении с сервака. В этом случае надо как-то это разрулить
             await this.setReactiveData();
         }.bind(this)
         ).then(function(){
@@ -999,6 +1001,7 @@ function abstractFlexGrid (config){
             let gridElement = gridElements[i];
             //Элемент данных
             let dataItem = gridElement.getData();
+            //TODO Здесь можно разбить данные на более мелкие блоки и выполнить конфигурацию через Promise'ы или setTimeout'ы, чтобы не блокировать интерфейс на большой промежуток времени
             this.config.entityParentField ?
                 this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
                     new ReactiveParentDefinition(

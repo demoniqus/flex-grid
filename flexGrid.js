@@ -1618,11 +1618,7 @@ function abstractFlexGrid (config){
 
     };
 
-    this.reverseSetter = function(value, propName, sourceObj){
-        let storage = Storage.get(sourceObj);
-        let origValue = storage.original[propName];
-        let priv = this;
-        let stop = false;
+    this.getReverseReferences = function(storage, sourceObj){
         /**
          * Список уникальных родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект,
          * которых надо известить о событиях
@@ -1687,8 +1683,22 @@ function abstractFlexGrid (config){
              * Убираем эти связи.
              */
             brokenProperties.forEach(propName => parentDefinition.deleteReverseProperty(propName))
-
         }
+
+        return parents;
+    }
+
+    this.reverseSetter = function(value, propName, sourceObj){
+        let storage = Storage.get(sourceObj);
+        let origValue = storage.original[propName];
+        let priv = this;
+        let stop = false;
+        /**
+         * Список уникальных родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект,
+         * которых надо известить о событиях
+         * @type {Map}
+         */
+        let parents = this.getReverseReferences(storage, sourceObj);
 
         for (let directParentField in storage.reactive.directParentFields) {
             let parent = sourceObj[directParentField];

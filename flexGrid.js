@@ -5,7 +5,7 @@ import { DefaultVisualizer, Scroller } from "./flexGridVisualizer.js";
 
 import {DataSetInterface, DataSetManager} from './dataSet.js'
 import * as standardVisualComponents from './visualComponents.js'
-import * as filter from './filter.js'
+import * as filter from './filter/filter.js'
 import {GridElement} from "./gridElement.js";
 import {Storage} from "./storage.js"
 import {EventManager} from "./eventManager.js";

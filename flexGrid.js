@@ -1902,7 +1902,7 @@ function abstractFlexGrid (config){
 
         let storage = Storage.get(dataItem);
 
-         !('reactive' in storage) && (
+        !('reactive' in storage) && (
             storage.reactive = {
                 parents: [], 
                 methods: {}
@@ -2044,6 +2044,46 @@ function abstractFlexGrid (config){
                 storage.reactive.methods[arrayMethodName] = true
             
         );
+
+        arrayMethodName = 'splice';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(){
+                    /**
+                     * item - добавляемые элементы
+                     */
+                    let item = [...arguments];
+                    let index = item.splice(0, 2);
+                    let origValue = [...this];
+                    let sourceObj = this;
+
+                    let specHandler = function(){
+                        return Array.prototype.splice.apply(sourceObj, arguments);
+                    };
+
+                    return commonHandler(storage, sourceObj, origValue, index, item, 'splice', specHandler, arguments);
+
+                },
+                storage.reactive.methods[arrayMethodName] = true
+
+        );
+
+        arrayMethodName = 'delete';
+        !(arrayMethodName in storage.reactive.methods) && (
+                dataItem[arrayMethodName] = function(index){
+                    let item = undefined;
+                    let origValue = [...this];
+                    let sourceObj = this;
+
+                    let specHandler = function(){
+                        return Array.prototype.splice.apply(sourceObj, arguments);
+                    };
+
+                    return commonHandler(storage, sourceObj, origValue, index, item, 'splice', specHandler, arguments);
+
+                },
+                storage.reactive.methods[arrayMethodName] = true
+
+        );
         /**
          * TODO
          * splice - change original array
@@ -2057,6 +2097,8 @@ function abstractFlexGrid (config){
          * reverse - change original array
          * fill???
          * delete (index, collapse = true) - удаление элемента со схлопыванием пустого пространства
+         * concat - doesn't change original array
+         * .length - change original array
          * 
          */
 

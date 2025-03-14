@@ -1908,51 +1908,61 @@ function abstractFlexGrid (config){
                 methods: {}
             }
         );
-           
+
+        let commonHandler = function(storage, sourceObj, origValue, index, item, eventSubtype, specHandler, specHandlerArguments){
+            /**
+             * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+             * @type Map
+             */
+            let parents = priv.getReverseReferences(storage, sourceObj);
+
+            let eventParams = {
+                origValue,
+                newValue: item,
+                index,
+                eventSubtype,
+            };
+
+            let stop = false;
+
+            parents.forEach(function(parent){
+                if (stop) return;
+
+                if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
+                    stop = true;
+                }
+            });
+
+            if (stop) return;
+
+            let result = specHandler(...arguments);
+
+            parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
+
+            storage.reactive.parents = storage.reactive.parents.filter(
+                (/**@type ReactiveParentDefinition */parent) =>
+                    parent &&
+                    !!parent.getParent() &&
+                    (
+                        parent.hasReverseProperties() ||
+                        parent.hasDirectProperties()
+                    )
+            );
+
+            return result;
+        };
+
         arrayMethodName = 'set';
         !(arrayMethodName in storage.reactive.methods) && (
             dataItem[arrayMethodName] = function(item, index){
                 let origValue = this.length > index ? this[index] : undefined;
                 let sourceObj = this;
-                /**
-                * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
-                * @type Map
-                */
-                let parents = priv.getReverseReferences(storage, sourceObj);
 
-                let eventParams = {
-                    origValue,
-                    newValue: item,
-                    index,
-                    eventSubtype: 'set'
+                let specHandler = function(){
+                    sourceObj[index] = item;
                 };
 
-                let stop = false;
-
-                parents.forEach(function(parent){
-                    if (stop) return;
-
-                    if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                        stop = true;
-                    }
-                });
-
-                if (stop) return;
-
-                this[index] = item;
-
-                parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
-
-                storage.reactive.parents = storage.reactive.parents.filter(
-                    (/**@type ReactiveParentDefinition */parent) =>
-                        parent &&
-                        !!parent.getParent() &&
-                        (
-                            parent.hasReverseProperties() ||
-                            parent.hasDirectProperties()
-                        )
-                );
-
+                commonHandler(storage, sourceObj, origValue, index, item, 'set', specHandler, []);
             },
             storage.reactive.methods[arrayMethodName] = true
             
@@ -1966,45 +1976,12 @@ function abstractFlexGrid (config){
                     let item = arguments[0];
                     let origValue = undefined;
                     let sourceObj = this;
-                    /**
-                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
-                     * @type Map
-                     */
-                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-                    let eventParams = {
-                        origValue,
-                        newValue: item,
-                        index,
-                        eventSubtype:  'push',
+                    let specHandler = function(){
+                        Array.prototype.push.apply(sourceObj, arguments);
                     };
 
-                    let stop = false;
-
-                    parents.forEach(function(parent){
-                        if (stop) return;
-
-                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            stop = true;
-                        }
-                    });
-
-                    if (stop) return;
-                    
-                    Array.prototype.push.apply(this, arguments);
-
-                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
-
-                    storage.reactive.parents = storage.reactive.parents.filter(
-                        (/**@type ReactiveParentDefinition */parent) =>
-                            parent &&
-                            !!parent.getParent() &&
-                            (
-                                parent.hasReverseProperties() ||
-                                parent.hasDirectProperties()
-                            )
-                    );
-                    
+                    commonHandler(storage, sourceObj, origValue, index, item, 'push', specHandler, arguments);
                 },
                 storage.reactive.methods[arrayMethodName] = true
             
@@ -2017,46 +1994,12 @@ function abstractFlexGrid (config){
                     let item = arguments[0];
                     let origValue = undefined;
                     let sourceObj = this;
-                    /**
-                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
-                     * @type Map
-                     */
-                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-
-                    let eventParams = {
-                        origValue,
-                        newValue: item,
-                        index,
-                        eventSubtype:  'unshift',
+                    let specHandler = function(){
+                        Array.prototype.unshift.apply(sourceObj, arguments);
                     };
 
-                    let stop = false;
-
-                    parents.forEach(function(parent){
-                        if (stop) return;
-
-                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            stop = true;
-                        }
-                    });
-
-                    if (stop) return;
-                    
-                    Array.prototype.unshift.apply(this, arguments);
-
-                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
-
-                    storage.reactive.parents = storage.reactive.parents.filter(
-                        (/**@type ReactiveParentDefinition */parent) =>
-                            parent &&
-                            !!parent.getParent() &&
-                            (
-                                parent.hasReverseProperties() ||
-                                parent.hasDirectProperties()
-                            )
-                    );
-                    
+                    commonHandler(storage, sourceObj, origValue, index, item, 'unshift', specHandler, arguments);
                 },
                 storage.reactive.methods[arrayMethodName] = true
             
@@ -2070,47 +2013,12 @@ function abstractFlexGrid (config){
                     let item = undefined;
                     let origValue = this[index];
                     let sourceObj = this;
-                    /**
-                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
-                     * @type Map
-                     */
-                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-
-                    let eventParams = {
-                        origValue,
-                        newValue: item,
-                        index,
-                        eventSubtype: 'shift',
+                    let specHandler = function(){
+                        return Array.prototype.shift.apply(sourceObj, arguments);
                     };
 
-                    let stop = false;
-
-                    parents.forEach(function(parent){
-                        if (stop) return;
-
-                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            stop = true;
-                        }
-                    });
-
-                    if (stop) return;
-                    
-                    item = Array.prototype.shift.apply(this, arguments);
-
-                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
-
-                    storage.reactive.parents = storage.reactive.parents.filter(
-                        (/**@type ReactiveParentDefinition */parent) =>
-                            parent &&
-                            !!parent.getParent() &&
-                            (
-                                parent.hasReverseProperties() ||
-                                parent.hasDirectProperties()
-                            )
-                    );
-                    
-                    return item;
+                    return commonHandler(storage, sourceObj, origValue, index, item, 'shift', specHandler, arguments);
                     
                 },
                 storage.reactive.methods[arrayMethodName] = true
@@ -2125,47 +2033,12 @@ function abstractFlexGrid (config){
                     let item = undefined;
                     let origValue = this[index];
                     let sourceObj = this;
-                    /**
-                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
-                     * @type Map
-                     */
-                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-
-                    let eventParams = {
-                        origValue,
-                        newValue: item,
-                        index,
-                        eventSubtype: 'pop',
+                    let specHandler = function(){
+                        return Array.prototype.pop.apply(sourceObj, arguments);
                     };
 
-                    let stop = false;
-
-                    parents.forEach(function(parent){
-                        if (stop) return;
-
-                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            stop = true;
-                        }
-                    });
-
-                    if (stop) return;
-
-                    item = Array.prototype.pop.apply(this, arguments);
-
-                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
-
-                    storage.reactive.parents = storage.reactive.parents.filter(
-                        (/**@type ReactiveParentDefinition */parent) =>
-                            parent &&
-                            !!parent.getParent() &&
-                            (
-                                parent.hasReverseProperties() ||
-                                parent.hasDirectProperties()
-                            )
-                    );
-
-                    return item;
+                    return commonHandler(storage, sourceObj, origValue, index, item, 'pop', specHandler, arguments);
 
                 },
                 storage.reactive.methods[arrayMethodName] = true

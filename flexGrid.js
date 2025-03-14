@@ -1653,6 +1653,7 @@ function abstractFlexGrid (config){
              * @type {Set}
              */
             let brokenProperties = new Set();
+            let stack;
             for (let propName in parentDefinition.getReverseProperties()) {
                 (
                     //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
@@ -1661,7 +1662,17 @@ function abstractFlexGrid (config){
                     sourceObj === parent[propName] ||
                     (
                         parent[propName] instanceof Array &&
-                        parent[propName].find(item => item === sourceObj)//TODO Иерархия теоретически может иметь более одного уровня вложенности
+                        (
+                            stack = [...parent[propName]],
+                            stack.find(function(item){
+                                item instanceof Array &&
+                                    item.forEach(sumItem => stack.push(subItem));
+                                //TODO По идее достаточно первого совпадения и надо переходить к проверке следующего propName
+
+                                return item === sourceObj;
+                            })
+                        )
+                        //parent[propName].find(item => item === sourceObj)//TODO Иерархия теоретически может иметь более одного уровня вложенности, но скорее всего позволять иерархию глубиной более 1
                     )
                 ) ?
                     properties.add(propName):

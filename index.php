@@ -4,17 +4,18 @@ if (array_key_exists('index', $_GET)) {
 	$count = $index + 10000;
 	$data = [];
 	for ($i = $index; $i < $count; $i++) {
+        $sum = 1000000000 + $i;
 		$data[] = [
 			'id' => $i,
 			'name' => 'Name ' . $i,
 			'number' => 'Number ' . $i,
 			"entityClass" =>  "IncomeStageBundle\\Entity\\IncomeStage",
-			"sums"=> [
-				'baseTotalSumEstimateDelivery' => $i,
-				'sumWoNdsEstimateDelivery' => $i,
-				'baseTotalSumStageDelivery' => $i,
-				'sumWoNdsStageDelivery' => $i,
-			]
+//			"sums"=> [
+//			]
+            'baseTotalSumEstimateDelivery' => $sum,
+            'sumWoNdsEstimateDelivery' => $sum * 2,
+            'baseTotalSumStageDelivery' => $sum * 3,
+            'sumWoNdsStageDelivery' => $sum * 4,
 		];
 
 	}

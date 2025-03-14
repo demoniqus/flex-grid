@@ -1911,77 +1911,50 @@ function abstractFlexGrid (config){
            
         arrayMethodName = 'set';
         !(arrayMethodName in storage.reactive.methods) && (
-                dataItem[arrayMethodName] = function(item, index){
-                    let origValue = this.length > index ? this[index] : undefined;
-                    let sourceObj = this;
-                     /**
-                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-                    * @type {*[]}
-                    */
-                   let parents = [];
-                   let i = -1;
-                   /*
-                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
-                    */
-                   while (++i < storage.reactive.parents.length) {
-                       /**
-                        * @type {ReactiveParentDefinition}
-                        */
-                       let parentDefinition = storage.reactive.parents[i];
-                       let parent = parentDefinition.getParent();
-                       if (!parent) {
-                           //Этот parent уже почил
-                           continue;
-                       }
-                       /**
-                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-                        * @type {*[]}
-                        */
-                       let properties = [];
-                       for (let propName in parentDefinition.getReverseProperties()) {
-                           (
-                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
-                               // но также может быть, что является частью набора дочерних элементов
-                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
-                               sourceObj === parent[propName] ||
-                               (
-                                   parent[propName] instanceof Array &&
-                                   parent[propName].find(item => item === sourceObj)
-                               )
-                           ) && properties.push(propName);
-                       }
+            dataItem[arrayMethodName] = function(item, index){
+                let origValue = this.length > index ? this[index] : undefined;
+                let sourceObj = this;
+                /**
+                * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+                * @type Map
+                */
+                let parents = priv.getReverseReferences(storage, sourceObj);
 
-                       properties.length ?
-                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
+                let eventParams = {
+                    origValue,
+                    newValue: item,
+                    index,
+                    eventSubtype: 'set'
+                };
 
-                   }
-                    let eventParams = {
-                        origValue,
-                        newValue: item,
-                        index,
-                        eventSubtype: 'set'
-                    };
-                    while (++i < parents.length) {
-                        let parent = parents[i];
+                let stop = false;
 
-                        if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            return;
-                        }
+                parents.forEach(function(parent){
+                    if (stop) return;
+
+                    if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
+                        stop = true;
                     }
-                    
-                    this[index] = item;
+                });
 
-                    i = -1;
-                    while (++i < parents.length) {
-                        let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-                    }
+                if (stop) return;
 
-                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
-                    
-                },
-                storage.reactive.methods[arrayMethodName] = true
+                this[index] = item;
+
+                parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
+
+                storage.reactive.parents = storage.reactive.parents.filter(
+                    (/**@type ReactiveParentDefinition */parent) =>
+                        parent &&
+                        !!parent.getParent() &&
+                        (
+                            parent.hasReverseProperties() ||
+                            parent.hasDirectProperties()
+                        )
+                );
+
+            },
+            storage.reactive.methods[arrayMethodName] = true
             
         );
 
@@ -1993,71 +1966,44 @@ function abstractFlexGrid (config){
                     let item = arguments[0];
                     let origValue = undefined;
                     let sourceObj = this;
-                     /**
-                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-                    * @type {*[]}
-                    */
-                   let parents = [];
-                   let i = -1;
-                   /*
-                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
-                    */
-                   while (++i < storage.reactive.parents.length) {
-                       /**
-                        * @type {ReactiveParentDefinition}
-                        */
-                       let parentDefinition = storage.reactive.parents[i];
-                       let parent = parentDefinition.getParent();
-                       if (!parent) {
-                           //Этот parent уже почил
-                           continue;
-                       }
-                       /**
-                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-                        * @type {*[]}
-                        */
-                       let properties = [];
-                       for (let propName in parentDefinition.getReverseProperties()) {
-                           (
-                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
-                               // но также может быть, что является частью набора дочерних элементов
-                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
-                               sourceObj === parent[propName] ||
-                               (
-                                   parent[propName] instanceof Array &&
-                                   parent[propName].find(item => item === sourceObj)
-                               )
-                           ) && properties.push(propName);
-                       }
+                    /**
+                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+                     * @type Map
+                     */
+                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-                       properties.length ?
-                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
-
-                   }
                     let eventParams = {
                         origValue,
                         newValue: item,
                         index,
                         eventSubtype:  'push',
                     };
-                    while (++i < parents.length) {
-                        let parent = parents[i];
+
+                    let stop = false;
+
+                    parents.forEach(function(parent){
+                        if (stop) return;
 
                         if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            return;
+                            stop = true;
                         }
-                    }
+                    });
+
+                    if (stop) return;
                     
                     Array.prototype.push.apply(this, arguments);
 
-                    i = -1;
-                    while (++i < parents.length) {
-                        let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-                    }
+                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
 
-                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    storage.reactive.parents = storage.reactive.parents.filter(
+                        (/**@type ReactiveParentDefinition */parent) =>
+                            parent &&
+                            !!parent.getParent() &&
+                            (
+                                parent.hasReverseProperties() ||
+                                parent.hasDirectProperties()
+                            )
+                    );
                     
                 },
                 storage.reactive.methods[arrayMethodName] = true
@@ -2071,71 +2017,45 @@ function abstractFlexGrid (config){
                     let item = arguments[0];
                     let origValue = undefined;
                     let sourceObj = this;
-                     /**
-                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-                    * @type {*[]}
-                    */
-                   let parents = [];
-                   let i = -1;
-                   /*
-                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
-                    */
-                   while (++i < storage.reactive.parents.length) {
-                       /**
-                        * @type {ReactiveParentDefinition}
-                        */
-                       let parentDefinition = storage.reactive.parents[i];
-                       let parent = parentDefinition.getParent();
-                       if (!parent) {
-                           //Этот parent уже почил
-                           continue;
-                       }
-                       /**
-                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-                        * @type {*[]}
-                        */
-                       let properties = [];
-                       for (let propName in parentDefinition.getReverseProperties()) {
-                           (
-                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
-                               // но также может быть, что является частью набора дочерних элементов
-                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
-                               sourceObj === parent[propName] ||
-                               (
-                                   parent[propName] instanceof Array &&
-                                   parent[propName].find(item => item === sourceObj)
-                               )
-                           ) && properties.push(propName);
-                       }
+                    /**
+                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+                     * @type Map
+                     */
+                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-                       properties.length ?
-                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
 
-                   }
                     let eventParams = {
                         origValue,
                         newValue: item,
                         index,
                         eventSubtype:  'unshift',
                     };
-                    while (++i < parents.length) {
-                        let parent = parents[i];
+
+                    let stop = false;
+
+                    parents.forEach(function(parent){
+                        if (stop) return;
 
                         if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            return;
+                            stop = true;
                         }
-                    }
+                    });
+
+                    if (stop) return;
                     
                     Array.prototype.unshift.apply(this, arguments);
 
-                    i = -1;
-                    while (++i < parents.length) {
-                        let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-                    }
+                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
 
-                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    storage.reactive.parents = storage.reactive.parents.filter(
+                        (/**@type ReactiveParentDefinition */parent) =>
+                            parent &&
+                            !!parent.getParent() &&
+                            (
+                                parent.hasReverseProperties() ||
+                                parent.hasDirectProperties()
+                            )
+                    );
                     
                 },
                 storage.reactive.methods[arrayMethodName] = true
@@ -2150,71 +2070,45 @@ function abstractFlexGrid (config){
                     let item = undefined;
                     let origValue = this[index];
                     let sourceObj = this;
-                     /**
-                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-                    * @type {*[]}
-                    */
-                   let parents = [];
-                   let i = -1;
-                   /*
-                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
-                    */
-                   while (++i < storage.reactive.parents.length) {
-                       /**
-                        * @type {ReactiveParentDefinition}
-                        */
-                       let parentDefinition = storage.reactive.parents[i];
-                       let parent = parentDefinition.getParent();
-                       if (!parent) {
-                           //Этот parent уже почил
-                           continue;
-                       }
-                       /**
-                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-                        * @type {*[]}
-                        */
-                       let properties = [];
-                       for (let propName in parentDefinition.getReverseProperties()) {
-                           (
-                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
-                               // но также может быть, что является частью набора дочерних элементов
-                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
-                               sourceObj === parent[propName] ||
-                               (
-                                   parent[propName] instanceof Array &&
-                                   parent[propName].find(item => item === sourceObj)
-                               )
-                           ) && properties.push(propName);
-                       }
+                    /**
+                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+                     * @type Map
+                     */
+                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-                       properties.length ?
-                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
 
-                   }
                     let eventParams = {
                         origValue,
                         newValue: item,
                         index,
                         eventSubtype: 'shift',
                     };
-                    while (++i < parents.length) {
-                        let parent = parents[i];
+
+                    let stop = false;
+
+                    parents.forEach(function(parent){
+                        if (stop) return;
 
                         if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            return;
+                            stop = true;
                         }
-                    }
+                    });
+
+                    if (stop) return;
                     
                     item = Array.prototype.shift.apply(this, arguments);
-                    
-                    i = -1;
-                    while (++i < parents.length) {
-                        let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-                    }
 
-                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
+
+                    storage.reactive.parents = storage.reactive.parents.filter(
+                        (/**@type ReactiveParentDefinition */parent) =>
+                            parent &&
+                            !!parent.getParent() &&
+                            (
+                                parent.hasReverseProperties() ||
+                                parent.hasDirectProperties()
+                            )
+                    );
                     
                     return item;
                     
@@ -2231,71 +2125,45 @@ function abstractFlexGrid (config){
                     let item = undefined;
                     let origValue = this[index];
                     let sourceObj = this;
-                     /**
-                    * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый объект
-                    * @type {*[]}
-                    */
-                   let parents = [];
-                   let i = -1;
-                   /*
-                       Получим parent'ов, которых надо известить об изменениях в текущей сущности
-                    */
-                   while (++i < storage.reactive.parents.length) {
-                       /**
-                        * @type {ReactiveParentDefinition}
-                        */
-                       let parentDefinition = storage.reactive.parents[i];
-                       let parent = parentDefinition.getParent();
-                       if (!parent) {
-                           //Этот parent уже почил
-                           continue;
-                       }
-                       /**
-                        * Список свойств, через которые указанный родитель ссылается на текущий обрабатываемый объект
-                        * @type {*[]}
-                        */
-                       let properties = [];
-                       for (let propName in parentDefinition.getReverseProperties()) {
-                           (
-                               //Наиболее вероятно, что данный объект является непосредственно дочерним для parent,
-                               // но также может быть, что является частью набора дочерних элементов
-                               //Поэтому сначала проверяем просто на равенство, а лишь потом проверяем, является ли parent[propName] массивом
-                               sourceObj === parent[propName] ||
-                               (
-                                   parent[propName] instanceof Array &&
-                                   parent[propName].find(item => item === sourceObj)
-                               )
-                           ) && properties.push(propName);
-                       }
+                    /**
+                     * Список родителей, всё еще ссылающихся на настоящий момент на текущий обрабатываемый массив
+                     * @type Map
+                     */
+                    let parents = priv.getReverseReferences(storage, sourceObj);
 
-                       properties.length ?
-                           parents.push({parent, properties}): //Текущий изменяемый объект все еще связан с указанным parent'ом через его поля properties
-                           (storage.reactive.parents[i] = null); //С этим parent'ом сущность уже фактически не связана, поэтому помечаем связь на удаление
 
-                   }
                     let eventParams = {
                         origValue,
                         newValue: item,
                         index,
                         eventSubtype: 'pop',
                     };
-                    while (++i < parents.length) {
-                        let parent = parents[i];
+
+                    let stop = false;
+
+                    parents.forEach(function(parent){
+                        if (stop) return;
 
                         if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
-                            return;
+                            stop = true;
                         }
-                    }
+                    });
+
+                    if (stop) return;
 
                     item = Array.prototype.pop.apply(this, arguments);
 
-                    i = -1;
-                    while (++i < parents.length) {
-                        let parent = parents[i].parent;
-                        EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties});
-                    }
+                    parents.forEach(parent => EventManager.fire(parent, 'childItemChanged', {child: {...eventParams}, properties: parent.properties}));
 
-                    storage.reactive.parents = storage.reactive.parents.filter((/**@type ReactiveParentDefinition */parent) => !!parent.getParent());
+                    storage.reactive.parents = storage.reactive.parents.filter(
+                        (/**@type ReactiveParentDefinition */parent) =>
+                            parent &&
+                            !!parent.getParent() &&
+                            (
+                                parent.hasReverseProperties() ||
+                                parent.hasDirectProperties()
+                            )
+                    );
 
                     return item;
 
@@ -2304,16 +2172,16 @@ function abstractFlexGrid (config){
             
         );
         /**
-         * 
-         * splice
-         * push
-         * set
-         * map / forEach
-         * sort
-         * shift
-         * pop
-         * unshift
-         * reverse
+         * TODO
+         * splice - change original array
+         * push - change original array
+         * set - change original array, replace [] of original Array
+         * map / forEach - doesn't change original array
+         * sort - change original array
+         * shift - change original array
+         * pop - change original array
+         * unshift - change original array
+         * reverse - change original array
          * fill???
          * delete (index, collapse = true) - удаление элемента со схлопыванием пустого пространства
          * 

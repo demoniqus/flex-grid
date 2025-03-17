@@ -1,16 +1,16 @@
 "use strict";
 
-import { DefaultVisualizer, Scroller } from "./flexGridVisualizer.js";
+import { DefaultVisualizer, Scroller } from "./visualization/flexGridVisualizer.js";
 
 import {DataSetInterface, DataSetManager} from './dataSet/dataSetManager.js'
-import * as standardVisualComponents from './visualComponents.js'
+import * as standardVisualComponents from './visualization/visualComponents.js'
 import * as filter from './filter/filter.js'
 import {GridElement} from "./gridElement/gridElement.js";
 import {Storage} from "./storage/storage.js"
 import {EventManager} from "./event/eventManager.js";
 import {Dragger} from "./dragger/dragger.js";
 
-export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";
+export { DefaultVisualizer, FlexPanel } from "./visualization/flexGridVisualizer.js";
 
 
 let pluginIds = {};

@@ -8,7 +8,7 @@ export function FlexGridDataVisualizationComponentInterface (){
         throw 'Method \'buildEditForm\' is not implemented';
     };
 
-};
+}
 
 
 
@@ -37,7 +37,7 @@ export function StringVisualizationComponent(){
         DOMContainer.appendChild(textBox);
     };
 
-};
+}
 StringVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
 
 export function TextVisualizationComponent(){
@@ -58,7 +58,7 @@ export function TextVisualizationComponent(){
         DOMContainer.appendChild(textBox);
     };
 
-};
+}
 TextVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
 
 export function MoneyVisualizationComponent(){
@@ -91,7 +91,7 @@ export function MoneyVisualizationComponent(){
         DOMContainer.classList.add('money-format');
     };
 
-};
+}
 MoneyVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
 
 export function BooleanVisualizationComponent(){
@@ -114,7 +114,7 @@ export function BooleanVisualizationComponent(){
         return '<div style="color: red; font-weight: bold; font-size: 2em;">need implement checkbox edit form</div>';
     };
 
-};
+}
 BooleanVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
 
 export function TreeVisualizationComponent(){
@@ -130,7 +130,7 @@ export function TreeVisualizationComponent(){
     this.buildReadForm = f;
     this.buildEditForm = f;
 
-};
+}
 TreeVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();
 
 export function NumerableVisualizationComponent(){
@@ -141,5 +141,5 @@ export function NumerableVisualizationComponent(){
     this.buildReadForm = f;
     this.buildEditForm = f;
 
-};
+}
 NumerableVisualizationComponent.prototype = new FlexGridDataVisualizationComponentInterface();

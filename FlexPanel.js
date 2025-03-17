@@ -1,7 +1,7 @@
 "use strict";
 
 
-import {Scroller} from './Scroller.js';
+import {Scroller} from './scroller/scroller.js';
 import {Dragger} from "./dragger/dragger.js";
 
 let pluginIds = {};

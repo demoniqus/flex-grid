@@ -1,11 +1,12 @@
 "use strict";
 
-import {Scroller} from './Scroller.js';
 import {FlexPanel} from "./FlexPanel.js";
 import {Dragger} from "./dragger/dragger.js";
 
+import {Scroller} from './scroller/scroller.js';
+
 export {FlexPanel} from "./FlexPanel.js";
-export {Scroller} from './Scroller.js';
+export {Scroller} from './scroller/scroller.js';
 
 
 
@@ -1201,6 +1202,8 @@ DefaultVisualizer.prototype = new VisualizerInterface();
 DefaultVisualizer.getFlags = function(){
     //Копируем объект с флагами, чтобы снаружи нельзя было изменить исходный объект
     let flags = {...Scroller.getFlags()};
+    // let flags = {...Scroller.getFlags()};
+    let flags = Object.create(Scroller.Flags);
     //Тут можно расширить список флагов
     return flags;
 };

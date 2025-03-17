@@ -1,13 +1,13 @@
 "use strict";
 
-import {FlexPanel} from "../FlexPanel.js";
+import {FlexPanel} from "../flexPanel/panel.js";
 
 import {Scroller} from '../scroller/scroller.js';
 import {ClassModel} from "./classModel.js";
 import {VisualizerInterface} from "./visualizerInterface.js";
 import {AbstractVisualizer} from "./abstractVisualizer.js";
 
-export {FlexPanel} from "../FlexPanel.js";
+export {FlexPanel} from "../flexPanel/panel.js";
 export {Scroller} from '../scroller/scroller.js';
 
 function DefaultVisualizer(){

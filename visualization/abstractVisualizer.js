@@ -1,6 +1,6 @@
 import {ClassModel} from "./classModel.js";
 import {Dragger} from "../dragger/dragger.js";
-import {FlexPanel} from "../FlexPanel.js";
+import {FlexPanel} from "../flexPanel/panel.js";
 import {Scroller} from "../scroller/scroller.js";
 
 let pluginIds = {};

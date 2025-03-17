@@ -1,8 +1,8 @@
-"use strict";
+import {OrientationModel} from "./orientationModel.js";
+import {Dragger} from "../dragger/dragger.js";
+import {ClassModel} from "./classModel.js";
 
 
-import {Scroller} from './scroller/scroller.js';
-import {Dragger} from "./dragger/dragger.js";
 
 let pluginIds = {};
 let draggedPanelItem = undefined;
@@ -14,67 +14,10 @@ let draggedPanelItem = undefined;
  */
 let draggedPanel = undefined;
 
-let ClassModel = Object.defineProperties(
-    Object.create(null),
-    {
-        PanelItem: {
-            get: () =>  'panel-item',
-            configurable: false,
-            enumerable: false,
-        },
-        OnlyVerticalItem: {
-            get: () => 'only-vertical-panel-item',
-            configurable: false,
-            enumerable: false
-        },
-        OnlyHorizontalItem: {
-            get: () => 'only-horizontal-panel-item',
-            configurable: false,
-            enumerable: false
-        },
-    }
-);
 
-let OrientationModel = Object.defineProperties(
-    Object.create(null),
-    {
-        Vertical: {
-            get: () => 'vertical',
-            configurable: false,
-            enumerable: false,
-        },
-        Horizontal: {
-            get: () => 'horizontal',
-            configurable: false,
-            enumerable: false,
-        }
-    }
-);
-
-export let FlexPanel = Object.defineProperties(
-    Object.create(null),
-    {
-        Panel: {
-            get: function(){return Panel;},
-            configurable: false,
-            enumerable: false,
-        },
-        OrientationModel: {
-            get: function () { return OrientationModel;},
-            configurable: false,
-            enumerable: false,
-        },
-        ClassModel: {
-            get: function() {return ClassModel;},
-            configurable: false,
-            enumerable: false,
-        }
-    }
-);
-
-function abstractPanel() {
-    this.items = {},
-        this.config = {};
+function AbstractPanel() {
+    this.items = {};
+    this.config = {};
     this.DOM = {
         panel: undefined,
     };
@@ -218,129 +161,8 @@ function abstractPanel() {
     };
 }
 
-function pubPanel(priv) {
-    this.setStyle = function(propName, propValue){
-        this.DOM.panel.style[propName] = propValue;
-    }.bind(priv);
 
-    this.addItem = function (key, item){
-
-        if (key in this.items) {
-            this.items[key].parentElement.removeChild(this.items[key]);
-        }
-        this.items[key] = item;
-        this.DOM.panel.appendChild(item);
-        item.classList.add(ClassModel.PanelItem);
-        this.setPanelItemAsDraggable(item);
-    }.bind(priv);
-
-    this.setScrollable = function(){
-        let div = document.createElement('div')
-        div.classList.add('panel-scroll-wrapper')
-        div.classList.add('flex-grid-panel')
-        div.classList.add('flex-grid-nowrapped-panel')
-        div.classList.add('flex-grid-vertical-panel')
-        let options = [];
-        while (this.DOM.panel.children.length) {
-            let panelItem = this.DOM.panel.children[0]
-            div.appendChild(panelItem);
-            options.push(panelItem)
-        }
-        this.DOM.panel.appendChild(div)
-
-
-        let scroller = new Scroller(
-            {
-                firstIndex:0,
-                itemsCount: options.length,
-                DOM: {
-                    container: this.DOM.panel,
-                    scrolledItemsContainer: div,
-                },
-                getElement: function (index) {
-                    return options[index];
-                },
-                name: 'Panel'
-            }
-        );
-        // let scroller = new Scroller(
-        //     {
-        //         firstIndex:0,
-        //         itemsCount: () => div.children.length,
-        //         DOM: {
-        //             container: this.DOM.panel,
-        //             scrolledItemsContainer: div,
-        //         },
-        //         getElement: (index) => div.children[index]
-        //     }
-        // );
-
-        scroller.reload();
-
-        // scroller.reload();
-    }.bind(priv);
-
-    this.addItemAfter = function (key, item, after){
-        //TODO Если after - число, то
-        if (key in this.items) {
-            this.items[key].parentElement.removeChild(this.items[key]);
-        }
-        this.items[key] = item;
-        this.DOM.panel.appendChild(item);
-    }.bind(priv)
-
-    this.addItemBefore = function (key, item, before){
-        //TODO Можно добавить after, before
-        if (key in this.items) {
-            this.items[key].parentElement.removeChild(this.items[key]);
-        }
-        this.items[key] = item;
-        this.DOM.panel.appendChild(item);
-    }.bind(priv);
-
-    this.addItemBefore = function (key, item, /** @type {number} */ position){
-        //TODO Вставка в позицию №position
-        if (key in this.items) {
-            this.items[key].parentElement.removeChild(this.items[key]);
-        }
-        this.items[key] = item;
-        this.DOM.panel.appendChild(item);
-    }.bind(priv);
-
-    this.removeItem = function (key, item){
-        if (key in this.items) {
-            this.items[key].parentElement.removeChild(this.items[key]);
-        }
-    }.bind(priv);
-
-    this.draggable = function(/** @type {boolean} */ flag){
-        //Можно ли перемещать панель
-    };
-
-    this.droppable = function(/** @type {boolean} */ flag){
-        //Может ли панель принимать другие панели после себя
-    };
-}
-
-function Panel(config){
-    let priv = new abstractPanel();
-    let pub = new pubPanel(priv);
-    priv.pub = pub;
-    let errors = priv.validateConfig(config)
-    if (errors) {
-        throw 'Incorrect config: ' + errors.join('; ');
-    }
-
-    priv.setConfig(config);
-    priv.init();
-
-
-    return pub;
-
-};
-
-
-abstractPanel.prototype = new (function(){
+AbstractPanel.prototype = new (function(){
     this.getDefaultConfig = function(){
         return {
             _panel: 'DOM-элемент.',
@@ -350,3 +172,5 @@ abstractPanel.prototype = new (function(){
         };
     };
 })();
+
+export {AbstractPanel}

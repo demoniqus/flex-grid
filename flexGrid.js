@@ -1,6 +1,5 @@
 "use strict";
 
-import './dragger.js';
 import { DefaultVisualizer, Scroller } from "./flexGridVisualizer.js";
 
 import {DataSetInterface, DataSetManager} from './dataSet/dataSetManager.js'
@@ -9,6 +8,7 @@ import * as filter from './filter/filter.js'
 import {GridElement} from "./gridElement/gridElement.js";
 import {Storage} from "./storage/storage.js"
 import {EventManager} from "./event/eventManager.js";
+import {Dragger} from "./dragger/dragger.js";
 
 export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";
 
@@ -508,7 +508,7 @@ function abstractFlexGrid (config){
             //https://developer.mozilla.org/ru/docs/Web/API/HTML_Drag_and_Drop_API
 
             //TODO Можно установить картинку при перетаскивании строки
-            window.dragger
+            Dragger
                 .initDraw(
                     {drawElement: gridElement.DOM.row}
                 )

@@ -1,7 +1,8 @@
 "use strict";
 
-import './dragger.js';
+
 import {Scroller} from './Scroller.js';
+import {Dragger} from "./dragger/dragger.js";
 
 let pluginIds = {};
 let draggedPanelItem = undefined;
@@ -138,7 +139,7 @@ function abstractPanel() {
     };
 
     this.setPanelAsDroppable = function(){
-        window.dragger.initAcceptor(
+        Dragger.initAcceptor(
             {
                 acceptorElement: this.DOM.panel,
                 onDrop: function(drawElement, acceptorElement){
@@ -173,7 +174,7 @@ function abstractPanel() {
 
     this.setPanelItemAsDraggable = function(panelItem)
     {
-        window.dragger
+        Dragger
             .initDraw(
                 {
                     drawElement: panelItem

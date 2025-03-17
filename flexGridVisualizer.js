@@ -1,7 +1,8 @@
 "use strict";
-import './dragger.js';
+
 import {Scroller} from './Scroller.js';
 import {FlexPanel} from "./FlexPanel.js";
+import {Dragger} from "./dragger/dragger.js";
 
 export {FlexPanel} from "./FlexPanel.js";
 export {Scroller} from './Scroller.js';
@@ -606,7 +607,7 @@ function abstractVisualizer()
     };
     this.setHeaderAsDraggable = function(cell){
         let priv = this;
-        window.dragger
+        Dragger
             .initDraw(
                 {
                     drawElement: cell

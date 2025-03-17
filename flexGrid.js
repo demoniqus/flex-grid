@@ -7,7 +7,7 @@ import {DataSetInterface, DataSetManager} from './dataSet/dataSetManager.js'
 import * as standardVisualComponents from './visualComponents.js'
 import * as filter from './filter/filter.js'
 import {GridElement} from "./gridElement/gridElement.js";
-import {Storage} from "./storage.js"
+import {Storage} from "./storage/storage.js"
 import {EventManager} from "./event/eventManager.js";
 
 export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";

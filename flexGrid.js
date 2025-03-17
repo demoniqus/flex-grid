@@ -8,10 +8,9 @@ import * as standardVisualComponents from './visualComponents.js'
 import * as filter from './filter/filter.js'
 import {GridElement} from "./gridElement/gridElement.js";
 import {Storage} from "./storage.js"
-import {EventManager} from "./eventManager.js";
+import {EventManager} from "./event/eventManager.js";
 
 export { DefaultVisualizer, FlexPanel } from "./flexGridVisualizer.js";
-//export {EventManager} from "./eventManager.js";
 
 
 let pluginIds = {};

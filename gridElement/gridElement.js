@@ -1,8 +1,8 @@
 "use strict";
 
-import {DataSetInterface} from "./dataSet.js";
+import {DataSetInterface} from "../dataSet/dataSetInterface.js";
 
-export function GridElement(id, config, privFlexGrid, pubFlexGrid){
+function GridElement(id, config, privFlexGrid, pubFlexGrid){
     let priv = {
         DOM: {
             row: undefined,
@@ -133,3 +133,5 @@ export function GridElement(id, config, privFlexGrid, pubFlexGrid){
 
     );
 }
+
+export {GridElement}

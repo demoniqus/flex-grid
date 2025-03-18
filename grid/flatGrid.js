@@ -51,7 +51,7 @@ function FlatGrid(config) {
     this.getId = function(){return priv.getId();};
 
     priv.registerDefaultComponents();
-};
+}
 
 FlatGrid.prototype = new FlatGridInterface();
 

@@ -25,6 +25,17 @@ function Styler(config)
         return this
     }
 
+    this.setStyle = function (
+        /** @type {string} */ selector,
+        /** @type {string} */ value,
+        /** @type {string|null} */ afterSelector
+    )
+    {
+        priv.setStyle(...arguments);
+
+        return this
+    }
+
     this.removeStyle = function (
         /** @type {string} */ selector,
         /** @type {object|array|null} */ keys)

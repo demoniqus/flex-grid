@@ -200,6 +200,46 @@ function AbstractStyler(config)
         }
     }
 
+
+    this.setStyle = function (/** @type {string} */ selector, /** @type {string} */ value, /** @type {string|null} */ afterSelector) {
+        let styleItem;
+        if (selector in this.stylesDict) {
+            styleItem = this.stylesDict[selector];
+            if (afterSelector) {
+                let i = -1;
+                while (++i < this.styles.length) {
+                    if (this.styles[i].key === selector) {
+                        this.styles.splice(i, 1);
+                    }
+                }
+                /**
+                 * Удалить из общей очереди
+                 */
+            }
+            styleItem.setStyle(value);
+        }
+        else {
+            styleItem = new Style({key: selector, style: value});
+            this.stylesDict[styleItem.key()] = styleItem;
+            if (!afterSelector) {
+                this.styles.push(styleItem);
+            }
+        }
+
+        if (afterSelector) {
+            /**
+             * найти afterSelector и поместить после него, либо в конце, если не найден
+             */
+            let i = -1;
+            while (++i < this.styles.length) {
+                if (this.styles[i].key === afterSelector) {
+                    break;
+                }
+            }
+            this.styles.splice(i, 0, styleItem);
+        }
+    }
+
     this.removeStyle = (/** @type {string} */ selector, /** @type {object|array|null} */  keys) => {
         //Если keys не указан, удаляем весь стиль, иначе удаляем его отдельные части по указанным ключам
         throw 'Method \'removeStyle\' is not implemented';

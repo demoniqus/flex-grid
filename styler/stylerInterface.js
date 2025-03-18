@@ -11,6 +11,8 @@ function StylerInterface()
      */
     this.addStyle = (/** @type {string} */ selector, /** @type {string} */ value, /** @type {string|null} */ afterSelector) => {throw 'Method \'addStyle\' is not implemented';}
 
+    this.setStyle = (/** @type {string} */ selector, /** @type {string} */ value, /** @type {string|null} */ afterSelector) => {throw 'Method \'setStyle\' is not implemented';}
+
     this.removeStyle = (/** @type {string} */ selector, /** @type {object|array|null} */ keys) => {throw 'Method \'removeStyle\' is not implemented';}
 
     this.clear = () => {throw 'Method \'clear\' is not implemented';}

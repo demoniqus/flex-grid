@@ -1331,7 +1331,7 @@ function AbstractFlexGrid (config){
                             stack = [...parent[propName]],
                                 stack.find(function(item){
                                     item instanceof Array &&
-                                    item.forEach(sumItem => stack.push(subItem));
+                                    item.forEach(subItem => stack.push(subItem));
                                     //TODO По идее достаточно первого совпадения и надо переходить к проверке следующего propName
 
                                     return item === sourceObj;

@@ -448,7 +448,7 @@ function AbstractFlexGrid (config){
         return this;
     };
 
-    this.createDefaultMetaada = function(){
+    this.createDefaultMetadata = function(){
         return {
             'tableName': 'Flex grid',
         }
@@ -575,7 +575,7 @@ function AbstractFlexGrid (config){
                         metadata === null ||
                         metadata === undefined
                     ) {
-                        !metadata && (metadata = this.createDefaultMetaada());
+                        !metadata && (metadata = this.createDefaultMetadata());
                         this.metadata = metadata;
                         resolve();
                     }
@@ -614,7 +614,7 @@ function AbstractFlexGrid (config){
                 let tableHeader = document.createElement('div');
                 tableHeader.innerHTML = 'tableName' in this.metadata && this.metadata.tableName !== undefined && this.metadata.tableName !== null ?
                     this.metadata.tableName:
-                    this.createDefaultMetaada().tableName;
+                    this.createDefaultMetadata().tableName;
                 tableHeader.style.textAlign = 'center';
                 tableHeader.style.width = '100%';
                 tableHeader.style.marginBottom = '10px';

@@ -1796,7 +1796,7 @@ function AbstractFlexGrid (config){
             dataItem = reactiveDataItemDefinition.getDataItem(),//Объект данных
             parentDefinitions = reactiveDataItemDefinition.getParentDefinitions(), //Список всех родительских связей
             evConf = {returnResult: true},//Теоретически можно вытащить из этого метода вверх evConf и evExtParams
-            evExtParams = {grid: this.pub}//Сделать неизменяемым объект
+            evExtParams = {grid: this.pub}//Сделать неизменяемым объект через Object.defineProperty
         ;
 
 
@@ -1842,7 +1842,7 @@ function AbstractFlexGrid (config){
                 storage.original = {}
         );
 
-        for (let propName in this.directParentFields) {
+        for (let propName in this.directParentFields) {//Здесь по факту нужен не цикл, а просто присвоить в directParentFields ссылку на прямого родителя с рамках этого грида, т.к. у сущности в гриде может быть только один непосредственный родитель
             //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
             // но у разных гридов могут быть разные поля
             storage.reactive.directParentFields[propName] = true;

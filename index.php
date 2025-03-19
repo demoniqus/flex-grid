@@ -1,7 +1,7 @@
 <?php
 if (array_key_exists('index', $_GET)) {
 	$index = +$_GET['index'];
-	$count = $index + 10000;
+	$count = $index + 200;
 	$data = [];
 	for ($i = $index; $i < $count; $i++) {
         $sum = 1000000000 + $i;
@@ -100,7 +100,25 @@ if (array_key_exists('index', $_GET)) {
 				// 	}
 				// 	dataAcceptor(data);
 				// }, 0);
-                this.getHeaders =  (headersAcceptor) => setTimeout(function(){headersAcceptor(testHeaders)}, 500);
+                this.getHeaders =  (headersAcceptor) => setTimeout(function(){
+                    let headers = [];
+                    let i = 0;
+                    let clone = function(header){
+                        let res = Object.create(header);
+                        if (header.children) {
+                            let children = [];
+                            let x = 0;
+                            while (x < header.children.length) {
+                                children.push(clone(header.children[x++]));
+                            }
+                        }
+                        return res;
+                    };
+                    while (i < testHeaders.length) {
+                        headers.push(clone(testHeaders[i++]));
+                    }
+                    headersAcceptor(headers)
+                }, 500);
 				this.getMetadata = (metadataAcceptor) => metadataAcceptor({
 					'tableName': 'Test Tree Grid'
 				})

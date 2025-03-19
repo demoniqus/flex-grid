@@ -1,15 +1,15 @@
-import {AbstractStyler} from "./abstractStyler.js";
-import {StylerInterface} from "./stylerInterface.js";
+import {AbstractStylesManager} from "./abstractStylesManager.js";
+import {StylesManagerInterface} from "./stylesManagerInterface.js";
 
 
-function Styler(config)
+function StylesManager(config)
 {
     config = config && typeof config === typeof {} ?
         {...config} :
         {}
     ;
 
-    let priv = new AbstractStyler(config);
+    let priv = new AbstractStylesManager(config);
     priv.pub = this;
 
     this.getId = () => priv.id
@@ -17,7 +17,8 @@ function Styler(config)
     this.addStyle = function (
         /** @type {string} */ selector,
         /** @type {string} */ value,
-        /** @type {string|null} */ afterSelector
+        /** @type {string|null} */ afterSelector,
+        /** @type {string|null} */ context
     )
     {
         priv.addStyle(...arguments);
@@ -28,7 +29,8 @@ function Styler(config)
     this.setStyle = function (
         /** @type {string} */ selector,
         /** @type {string} */ value,
-        /** @type {string|null} */ afterSelector
+        /** @type {string|null} */ afterSelector,
+        /** @type {string|null} */ context
     )
     {
         priv.setStyle(...arguments);
@@ -51,7 +53,7 @@ function Styler(config)
 
 
 }
-Styler.prototype = new StylerInterface();
+StylesManager.prototype = new StylesManagerInterface();
 
 
-export {Styler}
+export {StylesManager}

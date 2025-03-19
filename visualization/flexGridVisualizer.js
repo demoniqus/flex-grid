@@ -18,7 +18,7 @@ function DefaultVisualizer(){
     pub.init = function(){
         priv.wrap();
 
-        priv.updateStyleElement();
+        priv.updateStyles();
 
         //TODO При перезагрузке грида не только панели с заголовками, фильтрами и данными надо вычищать, но и панели с опциями для грида, т.к. состав опций может поменяться
 

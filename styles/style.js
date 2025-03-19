@@ -1,7 +1,7 @@
-import {AbstractStyle} from "./abstractStyle.js";
+import {AbstractStylesManager} from "./abstractStyle.js";
 
 function Style(config) {
-    let priv = new AbstractStyle(config);
+    let priv = new AbstractStylesManager(config);
 
     this.key = () => {
         return priv.id
@@ -13,6 +13,7 @@ function Style(config) {
 
     this.setStyle = (/** @type {string|null} */ style) => priv.style = style;
 
+    this.toString = () => priv.context + priv.id + ' {' + priv.style + '}';
 }
 
 export {Style}

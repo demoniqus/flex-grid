@@ -3,7 +3,7 @@ import {Style} from "./style.js";
 
 let pluginIds = {};
 
-function AbstractStyler(config)
+function AbstractStylesManager(config)
 {
     this.pub = undefined;
 
@@ -56,7 +56,7 @@ function AbstractStyler(config)
             config.defaultStyles &&
             !(config.defaultStyles instanceof Array)
         ) {
-            errors.push('Default styles list for styler must be instance of array');
+            errors.push('Default styles list for styles must be instance of array');
         }
 
         if (config.defaultStyles instanceof Array) {
@@ -151,7 +151,12 @@ function AbstractStyler(config)
 
 
 
-    this.addStyle = function (/** @type {string} */ selector, /** @type {string} */ value, /** @type {string|null} */ afterSelector) {
+    this.addStyle = function (
+        /** @type {string} */ selector,
+        /** @type {string} */ value,
+        /** @type {string|null} */ afterSelector,
+        /** @type {string|null} */ context
+    ) {
         let styleItem;
         if (selector in this.stylesDict) {
             styleItem = this.stylesDict[selector];
@@ -179,7 +184,7 @@ function AbstractStyler(config)
             }
         }
         else {
-            styleItem = new Style({key: selector, style: value});
+            styleItem = new Style({key: selector, style: value, context});
             this.stylesDict[styleItem.key()] = styleItem;
             if (!afterSelector) {
                 this.styles.push(styleItem);
@@ -201,7 +206,12 @@ function AbstractStyler(config)
     }
 
 
-    this.setStyle = function (/** @type {string} */ selector, /** @type {string} */ value, /** @type {string|null} */ afterSelector) {
+    this.setStyle = function (
+        /** @type {string} */ selector,
+        /** @type {string} */ value,
+        /** @type {string|null} */ afterSelector,
+        /** @type {string|null} */ context
+    ) {
         let styleItem;
         if (selector in this.stylesDict) {
             styleItem = this.stylesDict[selector];
@@ -219,7 +229,7 @@ function AbstractStyler(config)
             styleItem.setStyle(value);
         }
         else {
-            styleItem = new Style({key: selector, style: value});
+            styleItem = new Style({key: selector, style: value, context});
             this.stylesDict[styleItem.key()] = styleItem;
             if (!afterSelector) {
                 this.styles.push(styleItem);
@@ -263,7 +273,7 @@ function AbstractStyler(config)
 
         while (++i < this.styles.length) {
             let style = this.styles[i];
-            styles += '.' + this.config.baseId + ' ' + style.key() + ' {' + style.style() + '}' + "\n"
+            styles += style.toString() + "\n"
         }
 
         this.styleContainer.textContent = styles;
@@ -287,4 +297,4 @@ function AbstractStyler(config)
 
 // AbstractStyler.prototype = new StylerInterface();
 
-export {AbstractStyler}
+export {AbstractStylesManager}

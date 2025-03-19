@@ -12,7 +12,7 @@ import {EventManager} from "../event/eventManager.js";
 import {DataProviderInterface} from "./dataProviderInterface.js";
 import {FlexGridDefaultConfig} from "./flexGridDefaultConfig.js";
 import {DefaultVisualizer} from "../visualization/flexGridVisualizer.js";
-import {Styler} from "../styler/styler.js";
+import {StylesManager} from "../styles/stylesManager.js";
 
 let pluginIds = {};
 
@@ -104,7 +104,7 @@ function AbstractFlexGrid (config){
 
     this.metadata = undefined;
 
-    this.styler = undefined
+    this.stylesManager = undefined
 
     this.visualizer = undefined;
 
@@ -121,30 +121,41 @@ function AbstractFlexGrid (config){
     //Глобальное хранилище для всех экземпляров grid'ов
     this.globalStorage = undefined;
 
-    this.createStyler = function() {
-        this.styler = new Styler(
+    this.createStylesManager = function() {
+        this.stylesManager = new StylesManager(
             {
                 baseId: this.id
             }
         );
     };
 
+    this.getStyleContext = function(){
+        return '.' + this.id + ' ';
+    };
+
     this.setDefaultStyles = function(){
-        /**
-         * TODO Может эти стили вытащить в visualizer?
-         */
-        this.styler.addStyle('.selected-row', 'background-color: rgba(200, 200, 200, .3);');
-        this.styler.addStyle('.filter-reset-button', 'border: 1px solid #fcc; color: red; font-weight: bold;');
-        this.styler.addStyle('.flex-grid-row .flex-grid-cell.flexGrid_numerableHeader', 'text-wrap: nowrap !important;');
-        this.styler.addStyle(',string-filter-option', '');
-
-        this.styler.addStyle('.flex-grid-tree-cell', '--tree-lvl-padding: ' + this.config.treeLvlPadding + 'px;');
+        this.stylesManager.setStyle(
+            '.flex-grid-tree-cell',
+            '--tree-lvl-padding: ' + this.config.treeLvlPadding + 'px;',
+            null,
+            this.getStyleContext()
+        );
         for (let i = 1; i <= config.treeMaxVisualDepth; i++) {
-            this.styler.addStyle('.flex-grid-tree-cell.enclosure-' + i,  'padding-left: calc(var(--tree-lvl-padding) * ' + i + ');');
+            this.stylesManager.setStyle(
+                '.flex-grid-tree-cell.enclosure-' + i,
+                'padding-left: calc(var(--tree-lvl-padding) * ' + i + ');',
+                null,
+                this.getStyleContext()
+            );
         }
-        this.styler.addStyle('.flex-grid-tree-cell.enclosure-exceed', 'padding-left: calc(var(--tree-lvl-padding) * ' + config.treeMaxVisualDepth + ');');
+        this.stylesManager.setStyle(
+            '.flex-grid-tree-cell.enclosure-exceed',
+            'padding-left: calc(var(--tree-lvl-padding) * ' + config.treeMaxVisualDepth + ');',
+            null,
+            this.getStyleContext()
+        );
 
-        this.styler.update()
+        this.stylesManager.update()
     };
 
     this.setGridElementHtmlHandlers = function(/** @type {GridElement} */ gridElement){
@@ -497,7 +508,7 @@ function AbstractFlexGrid (config){
          */
         this.createId();
         this.identifyContainer();
-        this.createStyler();
+        this.createStylesManager();
         this.setDefaultStyles()
 
         this.directParentFields = {};

@@ -2,6 +2,8 @@ import {ClassModel} from "./classModel.js";
 import {Dragger} from "../dragger/dragger.js";
 import {FlexPanel} from "../flexPanel/panel.js";
 import {Scroller} from "../scroller/scroller.js";
+import {StylesManager} from "../styles/stylesManager.js";
+import {CommonGridStylesManager} from "./commonGridStylesManager.js";
 
 let pluginIds = {};
 
@@ -38,9 +40,14 @@ function AbstractVisualizer()
         getElement: function(){return document.createElement('div');},
         getElements: function(){return [document.createElement('div')];},
     };
-    this.styleContainer = null;
-    this.sizesStyleContainer = null;
-    this.orderStyleContainer = null;
+
+    this.stylesManager = null;
+    /**
+     * Размеры компонентов могут активно и часто меняться, поэтому для них выделим отдельный style-объект, чтобы
+     * как можно меньше нужно было парсить стилей
+     */
+    this.sizesStylesManager = null;
+    this.orderStylesManager = null;
     this.widthUnit = 'px';
     this.headers = {
         leafs: null,
@@ -49,69 +56,14 @@ function AbstractVisualizer()
     };
     this.wrapped = false;//Флаг, указывающий, что компоненты обертки созданы
 
-    this.styles = {//TODO Организовать
-        '.flex-grid-container': 'display: flex; flex-direction: column; overflow-x: hidden; overflow-y: hidden;',
-        '.flex-grid-panel': 'box-sizing: border-box; display: flex; overflow: hidden;',
-        '.flex-grid-panel.flex-grid-horizontal-panel:empty': 'min-height: 10px; height: 10px; max-height: 10px;',
-        '.flex-grid-panel.flex-grid-horizontal-panel': 'flex-direction: row;',
-        '.flex-grid-panel.flex-grid-vertical-panel:empty': 'min-width: 10px; width: 10px; max-width: 10px;',
-        '.flex-grid-panel.flex-grid-vertical-panel': 'flex-direction: column;',
-        '.flex-grid-panel.flex-grid-nowrapped-panel': 'flex-wrap: nowrap; align-items: stretch;',
-        '.flex-grid-panel.flex-grid-wrapped-panel': 'flex-wrap: wrap; ',
-        '.flex-grid-top-panel' : 'overflow: visible;',
-        '.flex-grid-middle-panel' : 'flex-grow: 1;',
-        '.flex-grid-bottom-panel' : 'overflow-y: visible;',
-        '.flex-grid-left-panel' : '',
-        '.flex-grid-central-panel' : 'flex-grow: 1;',
-        '.flex-grid-right-panel' : '',
-        '.flex-grid-content-panel' : 'flex-grow: 1; overflow-x: visible;',
-        '.flex-grid-content-right-panel' : '',
-        '.flex-grid-header-panel': 'flex-grow: 0; overflow: visible; /*padding-right: 16px;*/',
-        '.flex-grid-filter-panel' : 'overflow: visible;',
-        '.flex-grid-data-panel': 'flex-grow:1; overflow-y: hidden; overflow-x: visible;',
-        '.flex-grid-footer-panel' : 'overflow: visible;',
-        '.flex-grid-row': 'flex-wrap: nowrap; display: flex; align-items: stretch; overflow: visible;',
-        '.flex-grid-cell': 'margin: 0 !important; box-sizing: border-box !important; padding: 0px 5px; border: 1px solid grey; overflow: visible; text-wrap: wrap; word-break: break-all;',
-        '.flex-grid-header-cell': 'text-align: center; font-weight: bold; background-color: rgba(100, 180, 130, .3);',
-        '.flex-grid-header-cell.virtual-header': 'border-bottom-color: transparent;',
-        '.flex-grid-header-cell.has-virtual-parent': 'border-top-color: transparent;',
-        '.flex-grid-headers-row:not(:first-child) .flex-grid-header-cell.virtual-header': 'border-top-color: transparent;',
-        '.flex-grid-data-cell': '',
-        '.flex-grid-row.flex-grid-data-row': 'overflow-x: visible; overflow-y: hidden; flex-grow: 0; flex-shrink: 0;',
+    this.styles = {
+        '.flex-grid-cell': 'border-color: grey; ',
+        '.flex-grid-header-cell': 'background-color: rgba(100, 180, 130, .3);',
         '.flex-grid-row.flex-grid-data-row:hover .flex-grid-cell.flex-grid-data-cell': '--brd-clr: lime; border-top-color: var(--brd-clr); border-bottom-color: var(--brd-clr);',
         '.flex-grid-row.flex-grid-data-row.selected-row': 'background-color: rgba(220, 220, 220, .5);',
-        '.flex-grid-row.flex-grid-filters-row .flex-grid-filter-cell': 'text-align: center; padding: 5px 0px; display: flex; flex-direction: column; row-gap: 2px;',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container': 'display: flex; flex-direction: row; flex-wrap: nowrap; box-sizing: border-box;  align-items: center; width: 100%; min-width: 100%; max-width: 100%; position: relative; column-gap: 2px;',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field': 'display: flex; flex-direction: row; align-items: stretch; flex-grow: 1; /*padding-right: 16px; width: calc(100% - 4px); min-width: calc(100% - 4px); max-width: calc(100% - 4px);*/',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field .form-control-container': 'flex-shrink: 100;',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field .flex-grid-filter-option': 'border: 1px solid #ced4da; padding: 0px; flex-grow: 1;',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container input, .flex-grid-filter-panel .flex-grid-filter-component-container select': '/*--w: calc(100% - 20px); max-width: var(--w); min-width: var(--w); var(--w);*/ box-sizing: border-box;',
-        '.flex-grid-filter-component-options-container': 'display: flex; justify-content: center; column-gap: 2px; flex-wrap: wrap;',
-        '.string-filter-option': 'text-wrap: nowrap !important; font-size: .6rem; padding: 2px; ',
-        '.flex-grid-filter-panel .flex-grid-filter-component-container .filter-reset-button': 'padding: 3px; line-height: 1;',
-        '.flex-grid-filter-component-container': '',
-
-
-        '.flex-grid-container .flex-grid-header-panel.spinner': 'display: block; box-sizing: border-box; border: 1px solid lime; height: 20%; min-height: 40px; border-radius: 20px;',
-        '.flex-grid-container .flex-grid-data-panel.spinner': 'display: block; box-sizing: border-box; border: 1px solid lime; height: 80%; min-height: 40px; border-radius: 20px;',
-
-
-        '.flex-grid-footer-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
-        '.flex-grid-left-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
-        '.flex-grid-left-panel .button-wrapper': 'display: inline-block; box-sizing: border-box; ',
-        '.flex-grid-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
-        '.flex-grid-content-right-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
-        '.flex-grid-bottom-panel .button': 'display: inline-block; box-sizing: border-box; width: 75px; min-width: 75px; max-width: 75px; height: 25px; min-height: 25px; max-height: 25px; border: 1px solid grey; border-radius: 5px; margin: 5px; text-align: center;',
-
+        '.flex-grid-filter-panel .flex-grid-filter-component-container .flex-grid-filter-field .flex-grid-filter-option': 'border-color: #ced4da;',
     };
 
-    this.sizeStyles = {
-        /**
-         * Размеры компонентов могут активно и часто меняться, поэтому для них выделим отдельный style-объект, чтобы
-         * как можно меньше нужно было парсить стилей
-         */
-    };
-    this.orderStyles = {};
     this.initContainer = function(){
 
         /**
@@ -125,7 +77,7 @@ function AbstractVisualizer()
         this.DOM.container.classList.add(ClassModel.FlexGridVerticalPanel);
         this.DOM.container.classList.add(ClassModel.FlexGridNowrappedPanel);
         this.DOM.container.classList.add(this.getRootClassName());
-        // this.styles['.flex-grid-' + this.id] = 'display: flex; flex-direction: column; overflow-x: auto; overflow-y: hidden;'
+        this.DOM.container.classList.add(this.id);
     };
 
     this.getRootClassName = function(){
@@ -335,43 +287,36 @@ function AbstractVisualizer()
     };
 
 
-    this.createStyleElement = function(){
-        //TODO Добавить префикс - корневой класс типа '.flex-grid-visualizer-' + this.id, чтобы стили влияли только на используемый DOM-контейнер
-        this.styleContainer = document.createElement('style');
-        this.styleContainer.id = 'flex-grid-visualizer-style-container-' + this.id;
-        document.getElementsByTagName('head')[0].appendChild(this.styleContainer);
+    this.createStylesManager = function(){
+        this.stylesManager = new StylesManager({
+            baseId: this.id
+        });
     };
     this.createOrderStyleElement = function(){
-        //TODO Добавить префикс - корневой класс типа '.flex-grid-visualizer-' + this.id, чтобы стили влияли только на используемый DOM-контейнер
-        this.orderStyleContainer = document.createElement('style');
-        this.orderStyleContainer.id = 'flex-grid-visualizer-order-style-container-' + this.id;
-        document.getElementsByTagName('head')[0].appendChild(this.orderStyleContainer);
+
+        this.orderStylesManager = new StylesManager({
+            baseId: this.id
+        });
     };
-    this.createSizesStyleElement = function(){
-        this.sizesStyleContainer = document.createElement('style');
-        this.sizesStyleContainer.id = 'flex-grid-visualizer-sizes-style-container-' + this.id;
-        document.getElementsByTagName('head')[0].appendChild(this.sizesStyleContainer);
+    this.createSizesStylesManager = function(){
+
+        this.sizesStylesManager = new StylesManager({
+            baseId: this.id
+        });
     };
-    this.updateStyleElement = function(){//TODO Возможно, общие для всех экземпляров стили будут вынесены в отдельный CSS-файл
-        let styles = '';
+    this.updateStyles = function(){
         for (let styleId in this.styles) {
-            styles += styleId + ' {' + this.styles[styleId] + '}' + "\n"
+            this.stylesManager.setStyle(
+                styleId,
+                this.styles[styleId],
+                null,
+                this.getStyleContext()
+            );
         }
-        this.styleContainer.textContent = styles;
+        this.stylesManager.update();
     };
-    this.updateSizesStyleElement = function(){
-        let styles = '';
-        let rootClassName = '.' + this.getRootClassName() + ' ';
-        for (let styleId in this.sizeStyles) {
-            let selector = styleId
-                .split(',')
-                .map(function(selector){return rootClassName + selector;})
-                .join(',');
-            styles += selector + ' {' + this.sizeStyles[styleId] + '}' + "\n"
-        }
-        this.sizesStyleContainer.textContent = styles;
-    };
-    this.updateOrderStyleElement = function(){
+
+    this.updateColumnsOrder = function(){
         let iRow = 0;
         while (iRow < this.headers.nodes.length) {
             let iCell = 0;
@@ -379,7 +324,12 @@ function AbstractVisualizer()
                 let headerData = this.headers.nodes[iRow][iCell];
                 let selector = '.flex-grid-nodal-headers-row-lvl' + iRow +
                     ' .' + headerData.id.replaceAll('.', '_');
-                this.orderStyles[selector] = 'order: ' + iCell + ';';
+                this.orderStylesManager.setStyle(
+                    selector,
+                    'order: ' + iCell + ';',
+                    null,
+                    this.getStyleContext()
+                );
                 iCell++;
             }
             iRow++;
@@ -398,18 +348,24 @@ function AbstractVisualizer()
             for (let selector in selectors) {
 
                 selector += '.' + idClass;
-                this.orderStyles[selector] = 'order: ' + iCell + ';';
+                this.orderStylesManager.setStyle(
+                    selector,
+                    'order: ' + iCell + ';',
+                    null,
+                    this.getStyleContext()
+                );
             }
+
             iCell++;
 
         }
-        let styles = '';
-        let rootClassName = '.' + this.getRootClassName() + ' ';
-        for (let styleId in this.orderStyles) {
-            styles += rootClassName + styleId + ' {' + this.orderStyles[styleId] + '}' + "\n"
-        }
-        this.orderStyleContainer.textContent = styles;
+
+        this.orderStylesManager.update();
     };
+
+    this.getStyleContext = function(){
+        return '.' + this.id + ' ';
+    }
     this.wrap = function(){
         if (!this.wrapped) {
 
@@ -426,8 +382,8 @@ function AbstractVisualizer()
             this.createFilterPanel();
             this.createDataPanel();
             this.createFooterPanel();
-            this.createStyleElement();
-            this.createSizesStyleElement();
+            this.createStylesManager();
+            this.createSizesStylesManager();
             this.createOrderStyleElement();
             this.wrapped = true;
         }
@@ -647,7 +603,7 @@ function AbstractVisualizer()
 
 
 
-                        changeOrder && priv.updateOrderStyleElement();
+                        changeOrder && priv.updateColumnsOrder();
 
 
                     }
@@ -858,7 +814,7 @@ function AbstractVisualizer()
 
         this.DOM.headerPanel.appendChild(headersRow);
         this.updateColumnsWidth();
-        this.updateOrderStyleElement();
+        this.updateColumnsOrder();
         this.setHeadersHandlers();
     };
     this.updateColumnsWidth = function (/**@type {Object[]|string[]|null} */columns){
@@ -880,9 +836,13 @@ function AbstractVisualizer()
                 +headerData.width;
 
             let idClass = headerData.id.replaceAll('.', '_');
-            this.sizeStyles['.flex-grid-cell.' + idClass] = 'width: ' + width + this.widthUnit;
+            this.sizesStylesManager.setStyle(
+                '.flex-grid-cell.' + idClass,
+                'width: ' + width + this.widthUnit + ';',
+                null,
+                this.getStyleContext()
+            );
             iCell++;
-
         }
 
         //пересчитываем ширину родительских заголовков и общую ширину строки и таблицы
@@ -925,20 +885,41 @@ function AbstractVisualizer()
 
         }
 
+        let context = this.getStyleContext();
+
         for (let headerName in widths)
         {
             if (!this.headers.dict[headerName].extClass) {
-
-                this.sizeStyles['.flex-grid-nodal-header-cell.' + headerName.replaceAll('.', '_')] = 'width: ' + widths[headerName] + this.widthUnit;
+                this.sizesStylesManager.setStyle(
+                    '.flex-grid-nodal-header-cell.' + headerName.replaceAll('.', '_'),
+                    'width: ' + widths[headerName] + this.widthUnit + ';',
+                    null,
+                    context
+                );
             }
         }
         //Полная ширина строки и таблицы
         let tw = totalWidth + this.widthUnit;
-        this.sizeStyles['.flex-grid-row'] = 'width: ' + tw + ';';
-        this.sizeStyles['.flex-grid-content-panel>.flex-grid-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
-        this.sizeStyles['.flex-grid-content-panel'] = 'width: ' + tw + '; min-width: ' + tw + ';';
+        this.sizesStylesManager.setStyle(
+            '.flex-grid-row',
+            'width: ' + tw + ';',
+            null,
+            context
+        );
+        this.sizesStylesManager.setStyle(
+            '.flex-grid-content-panel>.flex-grid-panel',
+            'width: ' + tw + '; min-width: ' + tw + ';',
+            null,
+            context
+        );
+        this.sizesStylesManager.setStyle(
+            '.flex-grid-content-panel',
+            'width: ' + tw + '; min-width: ' + tw + ';',
+            null,
+            context
+        );
 
-        this.updateSizesStyleElement();
+        this.sizesStylesManager.update();
     };
 
     this.setColumnWidth = function(header, width){

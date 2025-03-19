@@ -388,7 +388,7 @@ function AbstractFlexGrid (config){
         if (errors) {
             throw 'Incorrect config: ' + errors.join('; ');
         }
-        config = {...config}
+        config = {...config}//TODO Конфиг копируется в публичной части. Здесь копирование может быть уже избыточным
         if (config.id) {
             this.customId = typeof config.id === typeof {} ? {...config.id} : config.id;
             delete config.id;

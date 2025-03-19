@@ -1824,7 +1824,7 @@ function AbstractFlexGrid (config){
         EventManager.subscribe(dataItem, 'beforeItemChange', this.events.beforeItemChange, evExtParams, evConf);
         EventManager.subscribe(dataItem, 'beforeChildItemChange', this.events.beforeChildItemChange, evExtParams, evConf);
         EventManager.subscribe(dataItem, 'itemChanged', this.events.itemChanged, evExtParams);
-        EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, {grid: this.pub});
+        EventManager.subscribe(dataItem, 'childItemChanged', this.events.childItemChanged, evExtParams);
 
 
         let storage = Storage.get(dataItem);
@@ -1915,22 +1915,7 @@ function AbstractFlexGrid (config){
                     this.reactiveArray(
                         new ReactiveDataItemDefinition(v)
                             .addParentDefinition(rpd)
-                    ):
-                    //                    (
-                    ////                            rpd = new ReactiveParentDefinition(dataItem).addField(propName, 'r'),
-                    //
-                    //                            v.forEach(function(itemArray){
-                    //                                return itemArray && typeof {} === typeof itemArray ?
-                    //                                    (
-                    //
-                    //                                        this.configureDataItemAsReactive(
-                    //                                            new ReactiveDataItemDefinition(itemArray)
-                    //                                                .addParentDefinition(rpd)
-                    //                                        )
-                    //                                    ):
-                    //                                    itemArray;
-                    //                            }.bind(this))
-                    //                    ) :
+                    ) :
                     this.configureDataItemAsReactive(
                         new ReactiveDataItemDefinition(v)
                             .addParentDefinition(rpd)

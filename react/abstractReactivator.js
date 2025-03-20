@@ -614,6 +614,11 @@ function AbstractReactivator(config)
         this.validateConfig();
 
         globalStorage = Storage.create(this);
+        /**
+         * ds - Direct Setter
+         * rs - Reverse Setter
+         * g - Getter
+         */
         globalStorage.callbacks = {
             g: {},
             ds: {},

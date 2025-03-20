@@ -32,13 +32,13 @@ function TestReactivate()
 
 
                     },
-                    evExtParams: {grid: this.pub},
-                    evConf: {returnResult: true}
+                    evExtParams: null,
+                    evConf: null
                 },
                 beforeChildItemChange: {
                     callback: function(){},
-                    evExtParams: {grid: this.pub},
-                    evConf: {returnResult: true}
+                    evExtParams: null,
+                    evConf: null
                 },
                 itemChanged: {
                     callback: function(){
@@ -46,11 +46,11 @@ function TestReactivate()
 
 
                     },
-                    evExtParams: {grid: this.pub}
+                    evExtParams: null
                 },
                 childItemChange: {
                     callback: function(){},
-                    evExtParams: {grid: this.pub}
+                    evExtParams: null
                 }
             },
             beforeEntityReactivation: function(dataItem){
@@ -62,7 +62,9 @@ function TestReactivate()
         let entity = {propName: 'propValue'};
 
         reactivator.reactivate(entity);
-
+        /**
+         * Проверяем наличие реакции на изменение значения свойства
+         */
         entity.propName = 'new propValue';
 
         return testResult;

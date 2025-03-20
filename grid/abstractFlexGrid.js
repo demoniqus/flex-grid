@@ -439,7 +439,9 @@ function AbstractFlexGrid (config){
         return this;
     };
 
-    this.getContainer = () => this.visualizer.getContainer();
+    this.getContainer = function() {
+        return this.visualizer.getContainer();
+    }
 
     this.configureEvents = function(){
         let gridEventsModel = new FlexGridEventsModel();

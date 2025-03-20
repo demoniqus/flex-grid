@@ -15,81 +15,94 @@
         }
         .completed-result {
             color: darkgreen;
-            background-color: rgba(220, 255, 220, .2)
+            background-color: rgba(220, 255, 220, .4)
         }
     </style>
     <script type="module">
         import {MetadataInterface} from "/tests/metadataInterface.js";
+        import {TesterInterface} from "/tests/testerInterface.js";
         import {Tester as ReactTester} from "/react/tests/tests.js";
+        import {Tester as EventManagerTester} from "/event/tests/tests.js";
 
-
-        ReactTester.runTests();
-        let result = ReactTester.result();
 
         let container = document.getElementById('container');
-        result.forEach(function(res){
-            /**
-             * @type {MetadataInterface}
-             */
-            let metadata = res.metadata;
 
-            /**
-             * @type {object}
-             */
-            let testResult = res.result.result();
+        let testers = [
+            ReactTester,
+            EventManagerTester
+        ]
 
-            let block = document.createElement('div');
-            block.classList.add('test-block');
+        testers.forEach(
+            function(/** @type {TesterInterface} */ tester){
+                tester.runTests();
 
+                let result = tester.result();
+                result.forEach(function(res){
+                    /**
+                     * @type {MetadataInterface}
+                     */
+                    let metadata = res.metadata;
 
-            let blockMetadata = document.createElement('div');
-            blockMetadata.classList.add('metadata-block');
-            block.appendChild(blockMetadata);
+                    /**
+                     * @type {object}
+                     */
+                    let testResult = res.result.result();
 
-            let blockTestName = document.createElement('div');
-            blockTestName.classList.add('metadata-block-name');
-            blockMetadata.appendChild(blockTestName);
-            blockTestName.innerText = metadata.name();
-
-            // let blockTestsCount = document.createElement('div');
-            // blockTestsCount.classList.add('metadata-block-tests-count');
-            // blockMetadata.appendChild(blockTestsCount);
-            // blockTestsCount.innerText = 'Кол-во тестов: ' + testResult.length;
-
-            let blockTestResult = document.createElement('div');
-            blockTestResult.classList.add('result-block');
-            block.appendChild(blockTestResult);
-
-            let blockTestErrors = document.createElement('div');
-            blockTestErrors.classList.add('errors-result-block');
-            blockTestResult.appendChild(blockTestErrors);
-
-            let blockTestCompleted = document.createElement('div');
-            blockTestCompleted.classList.add('completed-result-block');
-            blockTestResult.appendChild(blockTestCompleted);
-
-            testResult.errors.forEach(
-                (message) => {
-                    let resultBlock = document.createElement('div');
-                    resultBlock.classList.add('error-result');
-                    blockTestErrors.appendChild(resultBlock);
-                    resultBlock.innerText = message;
-                }
-            )
-            testResult.completed.forEach(
-                (message) => {
-                    let resultBlock = document.createElement('div');
-                    resultBlock.classList.add('completed-result');
-                    blockTestCompleted.appendChild(resultBlock);
-                    resultBlock.innerText = message;
-                }
-            )
+                    let block = document.createElement('div');
+                    block.classList.add('test-block');
 
 
+                    let blockMetadata = document.createElement('div');
+                    blockMetadata.classList.add('metadata-block');
+                    block.appendChild(blockMetadata);
+
+                    let blockTestName = document.createElement('div');
+                    blockTestName.classList.add('metadata-block-name');
+                    blockMetadata.appendChild(blockTestName);
+                    blockTestName.innerText = metadata.name();
+
+                    // let blockTestsCount = document.createElement('div');
+                    // blockTestsCount.classList.add('metadata-block-tests-count');
+                    // blockMetadata.appendChild(blockTestsCount);
+                    // blockTestsCount.innerText = 'Кол-во тестов: ' + testResult.length;
+
+                    let blockTestResult = document.createElement('div');
+                    blockTestResult.classList.add('result-block');
+                    block.appendChild(blockTestResult);
+
+                    let blockTestErrors = document.createElement('div');
+                    blockTestErrors.classList.add('errors-result-block');
+                    blockTestResult.appendChild(blockTestErrors);
+
+                    let blockTestCompleted = document.createElement('div');
+                    blockTestCompleted.classList.add('completed-result-block');
+                    blockTestResult.appendChild(blockTestCompleted);
+
+                    testResult.errors.forEach(
+                        (message) => {
+                            let resultBlock = document.createElement('div');
+                            resultBlock.classList.add('error-result');
+                            blockTestErrors.appendChild(resultBlock);
+                            resultBlock.innerText = message;
+                        }
+                    )
+                    testResult.completed.forEach(
+                        (message) => {
+                            let resultBlock = document.createElement('div');
+                            resultBlock.classList.add('completed-result');
+                            blockTestCompleted.appendChild(resultBlock);
+                            resultBlock.innerText = message;
+                        }
+                    )
 
 
-            container.appendChild(block);
-        })
+
+
+                    container.appendChild(block);
+                })
+            }
+        );
+
 
 
     </script>

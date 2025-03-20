@@ -920,41 +920,7 @@ function AbstractReactivator(config)
             eventRes;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     this.init();
-
-
 }
-
 
 export {AbstractReactivator}

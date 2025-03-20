@@ -26,7 +26,7 @@
         ReactTester.runTests();
         let result = ReactTester.result();
 
-        let container = document.getElementById('test');
+        let container = document.getElementById('container');
         result.forEach(function(res){
             /**
              * @type {MetadataInterface}
@@ -97,7 +97,5 @@
 </head>
 <body>
     <div id="container"></div>
-    <div id="container2"><div class="spinner"></div></div>
-    <div id="test"></div>
 </body>
 </html>

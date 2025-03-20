@@ -649,8 +649,8 @@ function AbstractFlexGrid (config){
                         evExtParams: {grid: this.pub},
                         evConf: {returnResult: true}
                     },
-                    itemChange: {
-                        callback: this.events.itemChange,
+                    itemChanged: {
+                        callback: this.events.itemChanged,
                         evExtParams: {grid: this.pub}
                     },
                     childItemChange: {

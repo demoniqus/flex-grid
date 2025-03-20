@@ -639,10 +639,24 @@ function AbstractFlexGrid (config){
             {
                 entityParentField: this.config.entityParentField,
                 events: {
-                    beforeItemChange: this.events.beforeItemChange,
-                    beforeChildItemChange: this.events.beforeChildItemChange,
-                    itemChange: this.events.itemChange,
-                    childItemChange: this.events.childItemChange,
+                    beforeItemChange: {
+                        callback: this.events.beforeItemChange,
+                        evExtParams: {grid: this.pub},
+                        evConf: {returnResult: true}
+                    },
+                    beforeChildItemChange: {
+                        callback: this.events.beforeChildItemChange,
+                        evExtParams: {grid: this.pub},
+                        evConf: {returnResult: true}
+                    },
+                    itemChange: {
+                        callback: this.events.itemChange,
+                        evExtParams: {grid: this.pub}
+                    },
+                    childItemChange: {
+                        callback: this.events.childItemChange,
+                        evExtParams: {grid: this.pub}
+                    }
                 },
                 beforeEntityReactivation: function(dataItem){this.createGridStorageIntoObject(dataItem);}.bind(this),
 

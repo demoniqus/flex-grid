@@ -231,21 +231,6 @@ function AbstractReactivator(config)
 
     };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     this.reactiveArray = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
 
         let priv = this,
@@ -697,7 +682,6 @@ function AbstractReactivator(config)
         let origValue = storage.original[propName];
         let parents = [];
         let i;
-        let priv = this;
 
         if (origValue === value) {
             //Смены родителя фактически не произошло.
@@ -720,8 +704,19 @@ function AbstractReactivator(config)
                 properties: [propName],
                 eventSubtype: 'setParent',
             });
-            EventManager.subscribe(value, 'beforeChildItemChange', config.events.beforeChildItemChange, {grid: priv.pub}, {returnResult: true});
-            EventManager.subscribe(value, 'childItemChanged', config.events.childItemChanged, {grid: priv.pub});
+            EventManager.subscribe(
+                value,
+                'beforeChildItemChange',
+                config.events.beforeChildItemChange.callback,
+                config.events.beforeChildItemChange.evExtParams,
+                config.events.beforeChildItemChange.evConf
+            );
+            EventManager.subscribe(
+                value,
+                'childItemChanged',
+                config.events.childItemChanged.callback,
+                config.events.childItemChanged.evExtParams,
+            );
         }
 
 

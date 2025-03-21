@@ -13,7 +13,7 @@ function ReactiveDataItemDefinition(/**@type {Object} */dataItem)
         existsDefinition ?
             existsDefinition.merge(parentDefinition) :
             priv.parentDefinitions.push(parentDefinition);
-        return this;
+        return this; //TODO Может возвращать не this, а merged or pushed?
     }
 }
 

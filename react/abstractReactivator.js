@@ -845,7 +845,7 @@ function AbstractReactivator(config)
 
         parents.forEach(function(parent){
             if (stop) return;
-            if (priv.fire(parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
+            if (priv.fire(parent.parent, 'beforeChildItemChange', {child: {...eventParams}, properties: parent.properties}) === false) {
                 stop = true;
             }
         })

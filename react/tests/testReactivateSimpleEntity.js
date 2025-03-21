@@ -6,7 +6,7 @@ import {TestResultInterface} from "../../tests/testResultInterface.js";
 import {Metadata} from "../../tests/metadata.js";
 import {Storage} from "../../storage/storage.js";
 
-function TestReactivate()
+function TestReactivateSimpleEntity()
 {
     let keys = {
         event: {
@@ -81,7 +81,7 @@ function TestReactivate()
     this.metadata = new Metadata({name: 'TestReactivate', file: import.meta.url})
 }
 
-TestReactivate.prototype = new TestInterface();
+TestReactivateSimpleEntity.prototype = new TestInterface();
 
 
-export {TestReactivate}
+export {TestReactivateSimpleEntity}

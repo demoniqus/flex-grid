@@ -50,32 +50,32 @@ function TestEventFiring()
         };
 
         let callback = function(eventParams){
-            testResult.setExpected(keys.event.call);
-            eventParams && testResult.setExpected(keys.event.argument.exists);
+            testResult.register(keys.event.call);
+            eventParams && testResult.register(keys.event.argument.exists);
 
             if (eventParams) {
-                typeof {} === typeof eventParams &&  testResult.setExpected(keys.event.argument.type);
+                typeof {} === typeof eventParams &&  testResult.register(keys.event.argument.type);
 
                 if (typeof {} === typeof eventParams) {
-                    (eventParams.eventName || '') === evName && testResult.setExpected(keys.event.argument.hasEventName);
-                    (eventParams.eventExtendedParams || null) === evExtParams && testResult.setExpected(keys.event.argument.hasExtParams);
-                    (eventParams.sourceEventParams || null) === evParams && testResult.setExpected(keys.event.argument.hasEventParams);
+                    (eventParams.eventName || '') === evName && testResult.register(keys.event.argument.hasEventName);
+                    (eventParams.eventExtendedParams || null) === evExtParams && testResult.register(keys.event.argument.hasExtParams);
+                    (eventParams.sourceEventParams || null) === evParams && testResult.register(keys.event.argument.hasEventParams);
                 }
             }
 
             return evResult;
         };
         let callback2 = function(eventParams){
-            testResult.setExpected(keys.event.call);
-            eventParams && testResult.setExpected(keys.event.argument.exists);
+            testResult.register(keys.event.call);
+            eventParams && testResult.register(keys.event.argument.exists);
 
             if (eventParams) {
-                typeof {} === typeof eventParams &&  testResult.setExpected(keys.event.argument.type);
+                typeof {} === typeof eventParams &&  testResult.register(keys.event.argument.type);
 
                 if (typeof {} === typeof eventParams) {
-                    (eventParams.eventName || '') === evName && testResult.setExpected(keys.event.argument.hasEventName);
-                    (eventParams.eventExtendedParams || null) === evExtParams && testResult.setExpected(keys.event.argument.hasExtParams);
-                    (eventParams.sourceEventParams || null) === evParams && testResult.setExpected(keys.event.argument.hasEventParams);
+                    (eventParams.eventName || '') === evName && testResult.register(keys.event.argument.hasEventName);
+                    (eventParams.eventExtendedParams || null) === evExtParams && testResult.register(keys.event.argument.hasExtParams);
+                    (eventParams.sourceEventParams || null) === evParams && testResult.register(keys.event.argument.hasEventParams);
                 }
             }
 
@@ -93,8 +93,8 @@ function TestEventFiring()
         result[0] === evResult &&
         result[1] === evResult &&
         (
-            testResult.setExpected(keys.event.useEventConfig),
-            testResult.setExpected(keys.event.result)
+            testResult.register(keys.event.useEventConfig),
+            testResult.register(keys.event.result)
         )
 
 

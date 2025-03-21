@@ -37,7 +37,7 @@ function TestResult()
         /** @type {string} */ message
     ) => errors.push(message);
 
-    this.setExpected = function (
+    this.register = function (
         /** @type {string} */ key,
         /** @type {int} */ count,
     ) {

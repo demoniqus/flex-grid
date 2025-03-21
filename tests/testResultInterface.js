@@ -23,11 +23,11 @@ function TestResultInterface()
         throw 'Method \'error\' not implemented';
     }
 
-    this.setExpected = (
+    this.register = (
         /** @type {string} */ key,
         /** @type {int} */ count,
     ) => {
-        throw 'Method \'setExpected\' not implemented';
+        throw 'Method \'register\' not implemented';
     }
 
     this.result = () => {

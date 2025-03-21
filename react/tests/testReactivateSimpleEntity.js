@@ -27,7 +27,7 @@ function TestReactivateSimpleEntity()
             events: {
                 beforeItemChange: {
                     callback: function(eventParams){
-                        testResult.setExpected(keys.event.call.beforeItemChange);
+                        testResult.register(keys.event.call.beforeItemChange);
 
 
                     },
@@ -41,7 +41,7 @@ function TestReactivateSimpleEntity()
                 },
                 itemChanged: {
                     callback: function(){
-                        testResult.setExpected(keys.event.call.itemChanged);
+                        testResult.register(keys.event.call.itemChanged);
 
 
                     },

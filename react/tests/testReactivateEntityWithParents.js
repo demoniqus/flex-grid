@@ -68,23 +68,23 @@ function TestReactivateEntityWithParents()
             events: {
                 beforeItemChange: {
                     callback: function(eventParams){
-                        testResult.setExpected(keys.event.call.beforeItemChange);
+                        testResult.register(keys.event.call.beforeItemChange);
 
                         eventParams.sourceObject === entity &&
-                            testResult.setExpected(keys.event.beforeItemChange.sourceObject);
+                            testResult.register(keys.event.beforeItemChange.sourceObject);
                     },
                     evExtParams: null,
                     evConf: null
                 },
                 beforeChildItemChange: {
                     callback: function(eventParams){
-                        testResult.setExpected(keys.event.call.beforeChildItemChange);
+                        testResult.register(keys.event.call.beforeChildItemChange);
 
                         eventParams.sourceObject.id in childEventInitiatorsDict &&
-                            testResult.setExpected(keys.event.beforeChildItemChange.order);
+                            testResult.register(keys.event.beforeChildItemChange.order);
 
                         eventParams.sourceEventParams.child.object === entity &&
-                            testResult.setExpected(keys.event.beforeChildItemChange.child);
+                            testResult.register(keys.event.beforeChildItemChange.child);
 
                     },
                     evExtParams: null,
@@ -92,34 +92,34 @@ function TestReactivateEntityWithParents()
                 },
                 itemChanged: {
                     callback: function(eventParams){
-                        testResult.setExpected(keys.event.call.itemChanged);
+                        testResult.register(keys.event.call.itemChanged);
 
                         eventParams.sourceObject === entity &&
-                            testResult.setExpected(keys.event.itemChanged.sourceObject);
+                            testResult.register(keys.event.itemChanged.sourceObject);
 
                         eventParams.sourceObject.childPropName === 'new propValue' &&
-                            testResult.setExpected(keys.event.itemChanged.newValue);
+                            testResult.register(keys.event.itemChanged.newValue);
                     },
                     evExtParams: null
                 },
                 childItemChanged: {
                     callback: function(eventParams){
-                        testResult.setExpected(keys.event.call.childItemChanged);
+                        testResult.register(keys.event.call.childItemChanged);
 
                         eventParams.sourceObject.id in childEventInitiatorsDict &&
-                            testResult.setExpected(keys.event.childItemChanged.order);
+                            testResult.register(keys.event.childItemChanged.order);
 
                         eventParams.sourceEventParams.child.object === entity &&
-                            testResult.setExpected(keys.event.childItemChanged.child);
+                            testResult.register(keys.event.childItemChanged.child);
                     },
                     evExtParams: null
                 }
             },
             beforeEntityReactivation: function(dataItem){
                 Storage.create(dataItem);
-                testResult.setExpected(keys.beforeEntityReactivation.call);
+                testResult.register(keys.beforeEntityReactivation.call);
                 beforeEntityReactivationOrder.shift() === dataItem &&
-                    testResult.setExpected(keys.beforeEntityReactivation.order);
+                    testResult.register(keys.beforeEntityReactivation.order);
             },
 
         });

@@ -9,13 +9,16 @@ function AbstractReactivator(config)
         {...config}:
         {};
 
-    let globalStorage
+    let globalStorage;
 
     this.setEntityParentFields = function(/** @type {array|string|null} */ entityParentFields){
         if (!entityParentFields) {
             return;
         }
-
+        /**
+         * Объединяем имеющийся список полей с прямыми ссылками на родителя с новым списком.
+         * При этом не забываем об уникальности значений
+         */
         !(entityParentFields instanceof Array) && (entityParentFields = [entityParentFields]);
 
         let map = {}, i = -1;
@@ -40,16 +43,30 @@ function AbstractReactivator(config)
             entityParentField && (map[entityParentField] = true);
         }
 
-        !(entityParentFields instanceof Array) && (entityParentFields = [entityParentFields + '']);
+        entityParentFields = [];
 
+        for (let entityParentField in map) {
+            entityParentFields.push(entityParentField);
+        }
+
+        /**
+         * Получили уникальный список полей с прямыми ссылками
+         */
         config.entityParentFields = entityParentFields;
 
         if (config.entityParentFields.length) {
 
             config.reactivateEntity = function(dataItem){
+                /**
+                 * @type {ReactiveDataItemDefinition}
+                 */
+                let reactiveDataItemDefinition = new ReactiveDataItemDefinition(dataItem);
+                /**
+                 * Добавляем к определению сущности определение всех родительских связей
+                 */
                 config.entityParentFields.map(
                     function(/** @type {string} */ entityParentField){
-                        this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
+                        reactiveDataItemDefinition.addParentDefinition(
                             new ReactiveParentDefinition(
                                 /**
                                  * Для прямых связей исходное значение извлекается в момент генерации событий прямо из значения поля, поэтому
@@ -59,9 +76,14 @@ function AbstractReactivator(config)
                                  */
                                 dataItem[entityParentField]
                             ).addField(entityParentField, 'd')
-                        ))
-                    }.bind(this)
+                        );
+                    }
                 );
+                /**
+                 * Однократно вызываем конфигурирование
+                 */
+                this.configureDataItemAsReactive(reactiveDataItemDefinition);
+
             }.bind(this);
         }
     }

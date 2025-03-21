@@ -14,7 +14,7 @@ function TestReactivate()
                 beforeItemChange: 'TestReactivate.event.call.beforeItemChange',
                 itemChanged: 'TestReactivate.event.call.itemChanged',
                 beforeChildItemChange: 'TestReactivate.event.call.beforeChildItemChange',
-                childItemChange: 'TestReactivate.event.call.childItemChange',
+                childItemChanged: 'TestReactivate.event.call.childItemChanged',
             }
         }
     }
@@ -48,7 +48,7 @@ function TestReactivate()
                     },
                     evExtParams: null
                 },
-                childItemChange: {
+                childItemChanged: {
                     callback: function(){},
                     evExtParams: null
                 }
@@ -75,7 +75,7 @@ function TestReactivate()
         testResult.expect(keys.event.call.beforeItemChange, 'Ожидался вызов события beforeItemChange');
         testResult.expect(keys.event.call.itemChanged, 'Ожидался вызов события itemChange');
         testResult.unexpect(keys.event.call.beforeChildItemChange, 'Вызов события \'beforeChildItemChange\' не ожидался');
-        testResult.unexpect(keys.event.call.childItemChange, 'Вызов события \'childItemChange\' не ожидался');
+        testResult.unexpect(keys.event.call.childItemChanged, 'Вызов события \'childItemChange\' не ожидался');
     }
 
     this.metadata = new Metadata({name: 'TestReactivate', file: import.meta.url})

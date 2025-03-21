@@ -91,8 +91,33 @@ function AbstractReactivator(config)
     this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
         let dataItem = reactiveDataItemDefinition.getDataItem();//Объект данных
 
+        let storage = Storage.get(dataItem);
+        //Параметры реактивности
+        //storage.original - Хранилище значений
+        //storage.reactive.parents - Список родителей для текущего объекта
+        //storage.reactive.directParentFields - Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
+        //storage.reactive.fields - Список сконфигурированных реактивных полей объекта
+        //storage.reactive.definition - Реактивное описание объекта
+        if (storage && 'reactive' in storage) {
+            /**
+             * Элемент уже сконфигурирован ранее. А сейчас его еще раз пытается запустить на конфигурирование reverse-родитель.
+             */
+            return;
+        }
 
         config.beforeEntityReactivation(dataItem);
+
+        storage = Storage.get(dataItem);
+
+        storage.reactive = {
+            parents: [],
+            directParentFields: {},
+            fields: {},
+            definition: reactiveDataItemDefinition
+        };
+
+
+        storage.original = {};
 
         let key = 'beforeItemChange'
         let eventConf = config.events[key];
@@ -110,27 +135,11 @@ function AbstractReactivator(config)
         eventConf = config.events[key];
         EventManager.subscribe(dataItem, key, eventConf.callback, eventConf.evExtParams);
 
-        let storage = Storage.get(dataItem);
-        //Параметры реактивности
-        //storage.original - Хранилище значений
-        //storage.reactive.parents - Список родителей для текущего объекта
-        //storage.reactive.directParentFields - Список полей, хранящих прямые ссылки из объекта на его родителя child.parentField = parent
-        //storage.reactive.fields - Список сконфигурированных реактивных полей объекта
-        !('reactive' in storage) && (
-            storage.reactive = {
-                parents: [],
-                directParentFields: {},
-                fields: {}
-            },
-            storage.original = {}
-        );
-
         let reactiveConfig = {enumerable: true};
 
         this.configureDirectReferences(dataItem, storage, reactiveConfig);
         this.configureReverseReferences(dataItem, storage, reactiveConfig);
         this.configureParentDefinition(reactiveDataItemDefinition, storage);
-
     }
 
     this.configureDirectReferences = function (dataItem, storage, reactiveConfig) {
@@ -201,21 +210,30 @@ function AbstractReactivator(config)
             storage.reactive.fields[propName] = {
                 type: 0// 0 = 'reverse'
             };
-            //Если значение является объектом или набором объектов, делаем их также реактивными
+            //Если значение является объектом или набором объектов, делаем их также реактивными, если они еще
+            // не реактивные. Если они уже сконфигурированы, то просто добавим им еще одну связь с родителем
             if (v && typeof {} === typeof v) {
                 //Все элементы массива находятся в одних и тех же свойствах родителя, что и сам массив.
                 //Поэтому им можно единый ReactiveParentDefinition прописать
                 let rpd  = new ReactiveParentDefinition(dataItem).addField(propName, 'r')
-                //TODO Сделать реактивными массивы. Массивы могут включать как реактивные элементы, так и примитивные значения
-                v instanceof Array ?
-                    this.reactiveArray(
-                        new ReactiveDataItemDefinition(v)
-                            .addParentDefinition(rpd)
-                    ) :
-                    this.configureDataItemAsReactive(
-                        new ReactiveDataItemDefinition(v)
-                            .addParentDefinition(rpd)
-                    );
+
+                let childStorage = Storage.get(v);
+
+                let rdid;
+
+                if (childStorage && childStorage.reactive) {
+                    rdid = childStorage.reactive.definition;
+                    rdid.addParentDefinition(rpd);
+                    this.configureParentDefinition(rdid, childStorage);
+                }
+                else {
+                    rdid = new ReactiveDataItemDefinition(v);
+                    rdid.addParentDefinition(rpd);
+
+                    v instanceof Array ?
+                        this.reactiveArray(rdid) :
+                        this.configureDataItemAsReactive(rdid)
+                }
             }
 
             let callbacks = this.getReverseCallbacks(propName);
@@ -244,7 +262,11 @@ function AbstractReactivator(config)
              *
              * @type {ReactiveParentDefinition}
              */
-            let targetParentDefinition = reactive.parents.find((/**@type {ReactiveParentDefinition} */parentItem) => parentItem.getParent() === sourceParentDefinition.getParent())
+            let targetParentDefinition = reactive.parents.find(
+                (/**@type {ReactiveParentDefinition} */parentItem) =>
+                    parentItem.getParent() === sourceParentDefinition.getParent()
+            );
+
             if (!targetParentDefinition) {
                 targetParentDefinition = sourceParentDefinition;
                 reactive.parents.push(targetParentDefinition);

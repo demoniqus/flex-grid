@@ -5,7 +5,7 @@ import {TestResultInterface} from "../../tests/testResultInterface.js";
 import {Metadata} from "../../tests/metadata.js";
 import {Storage} from "../../storage/storage.js";
 
-function TestReactivateSimpleEntity()
+function TestReactivateEntityWithDirectParent()
 {
     let keys = {
         event: {
@@ -22,25 +22,29 @@ function TestReactivateSimpleEntity()
         let testResult = new TestResult()
         this.setExpected(testResult);
 
+        let parent = {parentPropName: 123};
+
+        let entity = {childPropName: 'propValue', parent};
+
         let reactivator = new Reactivator({
-            entityParentField: null,
+            entityParentField: 'parent',
             events: {
                 beforeItemChange: {
                     callback: function(eventParams){
                         testResult.setExpected(keys.event.call.beforeItemChange);
-
-
                     },
                     evExtParams: null,
                     evConf: null
                 },
                 beforeChildItemChange: {
-                    callback: function(){},
+                    callback: function(eventParams){
+                        testResult.setExpected(keys.event.call.beforeChildItemChange)
+                    },
                     evExtParams: null,
                     evConf: null
                 },
                 itemChanged: {
-                    callback: function(){
+                    callback: function(eventParams){
                         testResult.setExpected(keys.event.call.itemChanged);
 
 
@@ -48,7 +52,9 @@ function TestReactivateSimpleEntity()
                     evExtParams: null
                 },
                 childItemChanged: {
-                    callback: function(){},
+                    callback: function(eventParams){
+                        testResult.setExpected(keys.event.call.childItemChanged)
+                    },
                     evExtParams: null
                 }
             },
@@ -58,13 +64,18 @@ function TestReactivateSimpleEntity()
 
         });
 
-        let entity = {propName: 'propValue'};
 
+        /**
+         * Реактивируем оба элемента - сущность и ее родителя - поскольку реактивность предполагает настройку реакции
+         * на события конкретной сущности, а не связанных с нею других сущностей. Настраиваемая сущность сама реагирует
+         * и может генерировать события для связанных с нею других сущностей, но не обеспечивает их реагирование
+         */
         reactivator.reactivate(entity);
+        reactivator.reactivate(parent);
         /**
          * Проверяем наличие реакции на изменение значения свойства
          */
-        entity.propName = 'new propValue';
+        entity.childPropName = 'new propValue';
 
         return testResult;
     }
@@ -73,14 +84,14 @@ function TestReactivateSimpleEntity()
 
         testResult.expect(keys.event.call.beforeItemChange, 'Ожидался вызов события \'beforeItemChange\'');
         testResult.expect(keys.event.call.itemChanged, 'Ожидался вызов события \'itemChange\'');
-        testResult.unexpect(keys.event.call.beforeChildItemChange, 'Вызов события \'beforeChildItemChange\' не ожидался');
-        testResult.unexpect(keys.event.call.childItemChanged, 'Вызов события \'childItemChange\' не ожидался');
+        testResult.expect(keys.event.call.beforeChildItemChange, 'Ожидался вызов события \'beforeChildItemChange\'');
+        testResult.expect(keys.event.call.childItemChanged, 'Ожидался вызов события \'childItemChange\'');
     }
 
-    this.metadata = new Metadata({name: 'TestReactivate', file: import.meta.url})
+    this.metadata = new Metadata({name: 'TestReactivateEntityWithDirectParent', file: import.meta.url})
 }
 
-TestReactivateSimpleEntity.prototype = new TestInterface();
+TestReactivateEntityWithDirectParent.prototype = new TestInterface();
 
 
-export {TestReactivateSimpleEntity}
+export {TestReactivateEntityWithDirectParent}

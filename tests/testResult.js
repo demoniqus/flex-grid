@@ -42,7 +42,7 @@ function TestResult()
         /** @type {int} */ count,
     ) {
         if (!(key in expected)) {
-            errors.push('Ожидался \'' + key + '\'');
+            errors.push('Не ожидался \'' + key + '\'');
             return;
         }
 

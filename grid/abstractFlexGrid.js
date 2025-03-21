@@ -637,7 +637,7 @@ function AbstractFlexGrid (config){
 
         this.reactivator = new Reactivator(
             {
-                entityParentField: this.config.entityParentField,
+                entityParentFields: this.config.entityParentField,
                 events: {
                     beforeItemChange: {
                         callback: this.events.beforeItemChange,

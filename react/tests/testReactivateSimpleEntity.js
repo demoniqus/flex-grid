@@ -23,7 +23,7 @@ function TestReactivateSimpleEntity()
         this.setExpected(testResult);
 
         let reactivator = new Reactivator({
-            entityParentField: null,
+            entityParentFields: null,
             events: {
                 beforeItemChange: {
                     callback: function(eventParams){

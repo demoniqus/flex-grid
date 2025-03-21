@@ -27,7 +27,7 @@ function TestReactivateEntityWithDirectParent()
         let entity = {childPropName: 'propValue', parent};
 
         let reactivator = new Reactivator({
-            entityParentField: 'parent',
+            entityParentFields: 'parent',
             events: {
                 beforeItemChange: {
                     callback: function(eventParams){

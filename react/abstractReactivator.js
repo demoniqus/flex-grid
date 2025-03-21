@@ -11,22 +11,59 @@ function AbstractReactivator(config)
 
     let globalStorage
 
-    this.setEntityParentField = function(entityParentField){
-        config.entityParentField = entityParentField;
-        config.reactivateEntity = function(dataItem){
-            this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
-                new ReactiveParentDefinition(
-                    /**
-                     * Для прямых связей исходное значение извлекается в момент генерации событий прямо из значения поля, поэтому
-                     * здесь нет большого смысла передавать это значение. Но пусть будет....
-                     * К тому же, т.к. данные могут состоять из сущностей разных типов, то некоторые типы могут вообще
-                     * не содержать в себе этого значения
-                     */
-                    dataItem[config.entityParentField]
-                ).addField(config.entityParentField, 'd')
+    this.setEntityParentFields = function(/** @type {array|string|null} */ entityParentFields){
+        if (!entityParentFields) {
+            return;
+        }
 
-            ))
-        }.bind(this);
+        !(entityParentFields instanceof Array) && (entityParentFields = [entityParentFields]);
+
+        let map = {}, i = -1;
+
+        while (++i < config.entityParentFields.length) {
+            /**
+             * @type {string}
+             */
+            let entityParentField = config.entityParentFields[i];
+            entityParentField = entityParentField.replace('/^\s+/', '').replace('/\s+$/', '');
+            entityParentField && (map[entityParentField] = true);
+        }
+
+        i = -1;
+
+        while (++i < entityParentFields.length) {
+            /**
+             * @type {string}
+             */
+            let entityParentField = entityParentFields[i];
+            entityParentField = (entityParentField || '').replace('/^\s+/', '').replace('/\s+$/', '');
+            entityParentField && (map[entityParentField] = true);
+        }
+
+        !(entityParentFields instanceof Array) && (entityParentFields = [entityParentFields + '']);
+
+        config.entityParentFields = entityParentFields;
+
+        if (config.entityParentFields.length) {
+
+            config.reactivateEntity = function(dataItem){
+                config.entityParentFields.map(
+                    function(/** @type {string} */ entityParentField){
+                        this.configureDataItemAsReactive(new ReactiveDataItemDefinition(dataItem).addParentDefinition(
+                            new ReactiveParentDefinition(
+                                /**
+                                 * Для прямых связей исходное значение извлекается в момент генерации событий прямо из значения поля, поэтому
+                                 * здесь нет большого смысла передавать это значение. Но пусть будет....
+                                 * К тому же, т.к. данные могут состоять из сущностей разных типов, то некоторые типы могут вообще
+                                 * не содержать в себе этого значения
+                                 */
+                                dataItem[entityParentField]
+                            ).addField(entityParentField, 'd')
+                        ))
+                    }.bind(this)
+                );
+            }.bind(this);
+        }
     }
 
     this.configureDataItemAsReactive = function(/**@type {ReactiveDataItemDefinition} */ reactiveDataItemDefinition){
@@ -68,16 +105,16 @@ function AbstractReactivator(config)
 
         let reactiveConfig = {enumerable: true};
 
-        this.configureDirectReference(dataItem, storage, reactiveConfig);
+        this.configureDirectReferences(dataItem, storage, reactiveConfig);
         this.configureReverseReferences(dataItem, storage, reactiveConfig);
         this.configureParentDefinition(reactiveDataItemDefinition, storage);
 
     }
 
-    this.configureDirectReference = function (dataItem, storage, reactiveConfig) {
+    this.configureDirectReferences = function (dataItem, storage, reactiveConfig) {
         if (
-            !config.entityParentField ||
-            !(config.entityParentField in dataItem)
+            !config.entityParentFields ||
+            !config.entityParentFields.length
         ) {
             /**
              * Либо конфигурация вообще не предусматривает прямые ссылки на родителя,
@@ -86,39 +123,46 @@ function AbstractReactivator(config)
              */
             return;
         }
-        let propName = config.entityParentField;
-        //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
-        // но у разных гридов могут быть разные поля
-        //Запоминаем, что данное поле является прямой ссылкой на одного из родителей.
-        //Если сущность используется в нескольких местах, то у нее может быть и несколько прямых
-        //родителей - по одному на каждую точку использования
-        storage.reactive.directParentFields[propName] = true
 
-        !(propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
+        config.entityParentFields.forEach(function(/** @type {string} */ propName){
+            if (
+                !propName ||
+                !(propName in dataItem)
+            ) {
+                return
+            }
+            //TODO Надо сгенерировать единственный объект, т.к. для грида список полей,способных содержать прямые ссылки на родителя, единый
+            // но у разных гридов могут быть разные поля
+            //Запоминаем, что данное поле является прямой ссылкой на одного из родителей.
+            //Если сущность используется в нескольких местах, то у нее может быть и несколько прямых
+            //родителей - по одному на каждую точку использования
+            storage.reactive.directParentFields[propName] = true
 
-        if (
-            storage.reactive.fields[propName].type === 1 //1 = direct
-        ) {
-            //Это свойство уже сконфигурировано должным образом
-            return;
-        }
+            !(propName in storage.reactive.fields) && (storage.reactive.fields[propName] = {});
 
-        storage.reactive.fields[propName].type = 1;//1 = direct
+            if (
+                storage.reactive.fields[propName].type === 1 //1 = direct
+            ) {
+                //Это свойство уже сконфигурировано должным образом
+                return;
+            }
 
-        //Запоминаем оригинальное значение
-        storage.original[propName] = dataItem[propName];
+            storage.reactive.fields[propName].type = 1;//1 = direct
 
-        //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
-        // Например, смета может передать фрагментам свой номер
+            //Запоминаем оригинальное значение
+            storage.original[propName] = dataItem[propName];
 
-        //Здесь уже точно существуют необходимые callback'и для propName, поэтому не проверяем их наличие
-        let callbacks = this.getDirectCallbacks(propName);
-        reactiveConfig.get = callbacks.g;
+            //По умолчанию родитель не должен извещать потомков о своем изменении, но при необходимости можно это событие сгенерировать
+            // Например, смета может передать фрагментам свой номер
 
-        reactiveConfig.set = callbacks.ds;
+            //Здесь уже точно существуют необходимые callback'и для propName, поэтому не проверяем их наличие
+            let callbacks = this.getDirectCallbacks(propName);
+            reactiveConfig.get = callbacks.g;
 
-        Object.defineProperty(dataItem, propName, reactiveConfig);
+            reactiveConfig.set = callbacks.ds;
 
+            Object.defineProperty(dataItem, propName, reactiveConfig);
+        }.bind(this));
     }
 
     this.configureReverseReferences = function (dataItem, storage, reactiveConfig) {
@@ -198,7 +242,12 @@ function AbstractReactivator(config)
     }
 
     this.extendsConfig = function(){
-        !('entityParentField' in config) && (config.entityParentField === undefined);
+        !config.entityParentFields && (config.entityParentFields = []);
+        !(config.entityParentFields instanceof Array) && (config.entityParentFields = [config.entityParentFields + '']);
+        /**
+         * Здесь в любом случае config.entityParentFields будет массивом, т.к. теоретически сущность может иметь неограниченное
+         * количество прямых родителей
+         */
 
         (
             !('events' in config) ||
@@ -227,7 +276,7 @@ function AbstractReactivator(config)
 
         'function' !== typeof config.beforeEntityReactivation && (config.beforeEntityReactivation = function(){});
 
-        !!config.entityParentField && this.setEntityParentField(config.entityParentField);
+        this.setEntityParentFields(config.entityParentFields);
 
     };
 
